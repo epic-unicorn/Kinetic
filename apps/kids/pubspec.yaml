@@ -34,6 +34,15 @@ dependencies:
   kinetic_core:
     path: ../../packages/core
 
+  kinetic_sync:
+    path: ../../packages/sync
+
+  kinetic_support:
+    path: ../../packages/support
+
+  kinetic_kiosk:
+    path: ../../packages/kiosk
+
   flutter_secure_storage: ^9.2.2
   cryptography_flutter: ^2.3.2
 

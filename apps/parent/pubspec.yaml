@@ -37,6 +37,9 @@ dependencies:
   kinetic_sync:
     path: ../../packages/sync
 
+  kinetic_support:
+    path: ../../packages/support
+
   # Hardware-backed secure storage (Android Keystore / iOS Keychain)
   flutter_secure_storage: ^9.2.2
 
