@@ -1,0 +1,31 @@
+name: kinetic_sync
+description: P2P mDNS discovery and CouchDB replication for Kinetic Link.
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  kinetic_core:
+    path: ../core
+
+  # mDNS discovery + advertising (Android NSD / iOS Bonjour)
+  bonsoir: ^6.0.2
+
+  # HTTP client for CouchDB REST API
+  http: ^1.2.0
+
+  # AES-256-GCM (re-exported here so document_codec can use it directly)
+  cryptography: ^2.7.0
+
+  # Value equality for SyncPeer
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  mocktail: ^1.0.4
