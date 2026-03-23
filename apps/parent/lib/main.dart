@@ -7,6 +7,36 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'secure/flutter_secure_key_value_store.dart';
 import 'support/couch_document_store.dart';
 
+// ---------------------------------------------------------------------------
+// Hub configuration — supply at build time via --dart-define, e.g.:
+//   flutter build apk \
+//     --dart-define=MESH_KEY_HEX=<64-char-hex> \
+//     --dart-define=COUCH_USER=kinetic \
+//     --dart-define=COUCH_PASSWORD=changeme
+//
+// The defaults below match hub/.env.example for local development.
+// ---------------------------------------------------------------------------
+
+const _kMeshKeyHex = String.fromEnvironment(
+  'MESH_KEY_HEX',
+  // dev-only fallback — replace in production via --dart-define
+  defaultValue:
+      'dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0',
+);
+const _kCouchUser = String.fromEnvironment(
+  'COUCH_USER',
+  defaultValue: 'kinetic',
+);
+const _kCouchPassword = String.fromEnvironment(
+  'COUCH_PASSWORD',
+  defaultValue: 'changeme',
+);
+
+List<int> _parseMeshKey() => List.generate(
+  32,
+  (i) => int.parse(_kMeshKeyHex.substring(i * 2, i * 2 + 2), radix: 16),
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const KineticParentApp());
@@ -22,7 +52,7 @@ class KineticParentApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00C6FF),
+          seedColor: const Color(0xFF44BBA4),
           brightness: Brightness.dark,
         ),
       ),
@@ -62,7 +92,8 @@ class _RootShellState extends State<_RootShell> {
     _syncOrchestrator = SyncOrchestrator(
       discoveryService: BonsoirMdnsDiscoveryService(),
       syncService: _syncService,
-      meshKey: List<int>.filled(32, 0), // placeholder until FamilyPlan exists
+      meshKey: _parseMeshKey(),
+      credentials: (username: _kCouchUser, password: _kCouchPassword),
     );
     _syncOrchestrator.statusStream.listen(
       (s) => setState(() => _syncStatus = s),
@@ -182,21 +213,21 @@ class _PairingScreenState extends State<PairingScreen> {
               Text(
                 'Show this QR to the other device to join the family mesh.',
                 textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.white60),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFD3D0CB),
+                ),
               ),
               const SizedBox(height: 32),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFE7E5DF),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: QrImageView(
                   data: _qrPayload!,
                   size: 220,
-                  backgroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFE7E5DF),
                 ),
               ),
               const SizedBox(height: 24),

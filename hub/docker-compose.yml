@@ -1,0 +1,64 @@
+services:
+  # ---------------------------------------------------------------------------
+  # CouchDB 3 — the sync hub.  All encrypted family documents are stored here.
+  # Devices discover this hub via mDNS and push/pull incrementally.
+  # ---------------------------------------------------------------------------
+  couchdb:
+    image: couchdb:3.4
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-kinetic}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-changeme}
+    volumes:
+      - couch_data:/opt/couchdb/data
+    ports:
+      - "5984:5984"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5984/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # One-shot init container: finishes CouchDB single-node setup and creates
+  # the kinetic_family database.  Runs once and exits.
+  # ---------------------------------------------------------------------------
+  couch_init:
+    image: curlimages/curl:latest
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    volumes:
+      - ./init:/init:ro
+    entrypoint: ["/bin/sh", "/init/setup-couch.sh"]
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-kinetic}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-changeme}
+      COUCHDB_HOST: couchdb
+      COUCHDB_PORT: 5984
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # mDNS advertiser — announces the hub on the local network so that the
+  # Flutter apps discover it automatically via BonsoirMdnsDiscoveryService.
+  #
+  # NOTE: requires network_mode: host, which works on Linux (e.g. Raspberry Pi).
+  # On macOS / Windows Docker Desktop, run advertise/advertise.py directly on
+  # the host instead:
+  #   pip install zeroconf && python hub/advertise/advertise.py
+  # ---------------------------------------------------------------------------
+  advertiser:
+    build:
+      context: ./advertise
+    network_mode: host
+    environment:
+      COUCH_PORT: ${COUCH_PORT:-5984}
+      HUB_ID: ${HUB_ID:-kinetic-hub}
+    depends_on:
+      couch_init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  couch_data:

@@ -303,13 +303,6 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
-  kinetic_kiosk:
-    dependency: "direct main"
-    description:
-      path: "../../packages/kiosk"
-      relative: true
-    source: path
-    version: "0.1.0"
   kinetic_support:
     dependency: "direct main"
     description:

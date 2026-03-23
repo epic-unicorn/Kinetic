@@ -1,10 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:kinetic_core/kinetic_core.dart';
-import 'package:kinetic_kiosk/kinetic_kiosk.dart';
 import 'package:kinetic_support/kinetic_support.dart';
 import 'package:kinetic_sync/kinetic_sync.dart';
 
 import 'secure/flutter_secure_key_value_store.dart';
+
+// ---------------------------------------------------------------------------
+// Hub configuration — supply at build time via --dart-define, e.g.:
+//   flutter build apk \
+//     --dart-define=MESH_KEY_HEX=<64-char-hex> \
+//     --dart-define=COUCH_USER=kinetic \
+//     --dart-define=COUCH_PASSWORD=changeme
+//
+// The defaults below match hub/.env.example for local development.
+// ---------------------------------------------------------------------------
+
+const _kMeshKeyHex = String.fromEnvironment(
+  'MESH_KEY_HEX',
+  // dev-only fallback — replace in production via --dart-define
+  defaultValue:
+      'dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0',
+);
+const _kCouchUser = String.fromEnvironment(
+  'COUCH_USER',
+  defaultValue: 'kinetic',
+);
+const _kCouchPassword = String.fromEnvironment(
+  'COUCH_PASSWORD',
+  defaultValue: 'changeme',
+);
+
+List<int> _parseMeshKey() => List.generate(
+  32,
+  (i) => int.parse(_kMeshKeyHex.substring(i * 2, i * 2 + 2), radix: 16),
+);
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -29,7 +58,7 @@ class KineticKidsApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFD700),
+          seedColor: const Color(0xFFE7BB41),
           brightness: Brightness.dark,
         ),
       ),
@@ -39,7 +68,7 @@ class KineticKidsApp extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Shell — owns all shared services; rebuilds on kiosk status changes.
+// Shell — owns all shared services.
 // ---------------------------------------------------------------------------
 
 class _KidsShell extends StatefulWidget {
@@ -55,10 +84,8 @@ class _KidsShellState extends State<_KidsShell> {
   late final SyncOrchestrator _syncOrchestrator;
   late final ApprovalService _approvalService;
   late final TicketService _ticketService;
-  late final AndroidKioskService _kioskService;
 
   DeviceIdentity? _identity;
-  KioskState _kioskState = const KioskState.unlocked();
 
   @override
   void initState() {
@@ -68,17 +95,14 @@ class _KidsShellState extends State<_KidsShell> {
     _syncOrchestrator = SyncOrchestrator(
       discoveryService: BonsoirMdnsDiscoveryService(),
       syncService: _syncService,
-      meshKey: List<int>.filled(32, 0), // placeholder — replaced in Phase 5
+      meshKey: _parseMeshKey(),
+      credentials: (username: _kCouchUser, password: _kCouchPassword),
     );
     _syncOrchestrator.start();
 
     final store = _SyncDocumentStore(_syncService);
     _approvalService = ApprovalService(store: store);
     _ticketService = TicketService(store: store);
-
-    _kioskService = AndroidKioskService();
-    _kioskService.initialize();
-    _kioskService.stateStream.listen((s) => setState(() => _kioskState = s));
 
     _loadIdentity();
   }
@@ -91,7 +115,6 @@ class _KidsShellState extends State<_KidsShell> {
   @override
   void dispose() {
     _syncOrchestrator.dispose();
-    _kioskService.dispose();
     super.dispose();
   }
 
@@ -104,8 +127,6 @@ class _KidsShellState extends State<_KidsShell> {
       identity: _identity!,
       approvalService: _approvalService,
       ticketService: _ticketService,
-      kioskService: _kioskService,
-      kioskState: _kioskState,
       syncService: _syncService,
     );
   }
@@ -134,8 +155,6 @@ class KidsHomeScreen extends StatefulWidget {
   final DeviceIdentity identity;
   final ApprovalService approvalService;
   final TicketService ticketService;
-  final KioskService kioskService;
-  final KioskState kioskState;
   final CouchSyncService syncService;
 
   const KidsHomeScreen({
@@ -143,8 +162,6 @@ class KidsHomeScreen extends StatefulWidget {
     required this.identity,
     required this.approvalService,
     required this.ticketService,
-    required this.kioskService,
-    required this.kioskState,
     required this.syncService,
   });
 
@@ -175,16 +192,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
     final tasks = _myTasks;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Missions'),
-        centerTitle: true,
-        actions: [
-          _KioskLockButton(
-            kioskService: widget.kioskService,
-            kioskState: widget.kioskState,
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('My Missions'), centerTitle: true),
       body: Column(
         children: [
           _XpHeader(balance: xpBalance),
@@ -243,13 +251,13 @@ class _XpHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.star, color: Colors.amber, size: 28),
+          const Icon(Icons.star, color: Color(0xFFE7BB41), size: 28),
           const SizedBox(width: 8),
           Text(
             '$balance XP',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.amber,
+              color: const Color(0xFFE7BB41),
             ),
           ),
         ],
@@ -271,11 +279,11 @@ class _EmptyMissions extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.celebration, size: 64, color: Colors.amber),
+          Icon(Icons.celebration, size: 64, color: Color(0xFFE7BB41)),
           SizedBox(height: 16),
           Text(
             'All done! No missions right now.',
-            style: TextStyle(color: Colors.white54),
+            style: TextStyle(color: Color(0xFFD3D0CB)),
           ),
         ],
       ),
@@ -354,39 +362,6 @@ class _TaskCard extends StatelessWidget {
     final updated = task.copyWith(status: newStatus);
     syncService.upsertLocal({'_id': updated.id, ...updated.toJson()});
     onChanged();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Kiosk lock/unlock button in the AppBar
-// ---------------------------------------------------------------------------
-
-class _KioskLockButton extends StatelessWidget {
-  final KioskService kioskService;
-  final KioskState kioskState;
-
-  const _KioskLockButton({
-    required this.kioskService,
-    required this.kioskState,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isLocked = kioskState.isLocked;
-    return IconButton(
-      tooltip: isLocked ? 'Exit kiosk mode' : 'Enter kiosk mode',
-      icon: Icon(
-        isLocked ? Icons.lock : Icons.lock_open,
-        color: isLocked ? Colors.amber : Colors.white38,
-      ),
-      onPressed: () async {
-        if (isLocked) {
-          await kioskService.unlock();
-        } else {
-          await kioskService.lock();
-        }
-      },
-    );
   }
 }
 
