@@ -8,7 +8,7 @@ This document covers building release APKs, running the hub, managing secrets, a
 
 A complete Kinetic Link deployment consists of:
 
-1. **Hub** — a Linux machine on the family LAN (Raspberry Pi 4 is ideal) running the Docker Compose stack.
+1. **Hub** — a Linux machine on the family LAN (Raspberry Pi 4 or Unraid server are ideal) running the Docker Compose stack.
 2. **Parent app** — installed on one or more Android/iOS devices belonging to parents.
 3. **Kids app** — installed on Android devices used by children.
 
@@ -164,6 +164,91 @@ adb install build/app/outputs/flutter-apk/app-release.apk
 ```
 
 Or transfer the APK via email / Google Drive and install from Files.
+
+---
+
+## 4. Running the hub locally (development)
+
+---
+
+## 3b. Running the hub on Unraid
+
+Unraid is Linux-based, so `network_mode: host` works correctly — mDNS broadcast works inside the container without any workaround.
+
+### Prerequisites
+
+- Unraid 6.10 or later.
+- **Compose Manager** plugin installed from Community Applications (search "Compose Manager").
+- The `hub/` folder from this repo accessible on your Unraid server (e.g. via a share or git clone to `/mnt/user/appdata/kinetic/`).
+
+### First-time setup
+
+**1. Copy the repo's hub folder to Unraid**
+
+From your dev machine (or directly on the Unraid bash terminal):
+```bash
+# Option A — copy over the network (from your dev machine)
+scp -r hub/ root@<unraid-ip>:/mnt/user/appdata/kinetic/
+
+# Option B — clone the whole repo on Unraid
+ssh root@<unraid-ip>
+git clone <repo-url> /mnt/user/appdata/kinetic/kinetic
+cd /mnt/user/appdata/kinetic/kinetic/hub
+```
+
+**2. Set up the environment file**
+```bash
+cd /mnt/user/appdata/kinetic/hub   # or wherever you placed hub/
+cp .env.example .env
+nano .env
+# Set:
+#   COUCHDB_USER      — admin username
+#   COUCHDB_PASSWORD  — admin password (not the mesh key)
+#   HUB_ID            — e.g. "the-smiths-hub"
+#   COUCH_PORT        — leave as 5984 unless you have a conflict
+```
+
+**3. Add the stack in Compose Manager**
+
+- Go to Unraid UI → **Docker** tab → **Compose** (top menu).
+- Click **Add Stack**, give it a name (e.g. `kinetic-hub`).
+- Set the **Compose file path** to the `docker-compose.yml` inside your hub folder, e.g.:
+  `/mnt/user/appdata/kinetic/hub/docker-compose.yml`
+- Set the **Environment file** to the `.env` you just edited.
+- Click **Compose Up**.
+
+Compose Manager will pull the images and start all three services (`couchdb`, `couch_init`, `advertiser`).
+
+**4. Verify**
+
+In the Unraid terminal:
+```bash
+curl -s http://localhost:5984/ | python3 -m json.tool
+# Should return CouchDB welcome JSON
+
+docker ps
+# couchdb and advertiser should show "Up"; couch_init "Exited (0)"
+```
+
+### Persistent data
+
+CouchDB stores its data in the named volume `couch_data`. On Unraid, Docker named volumes live under `/var/lib/docker/volumes/`. If you want the data in your array instead (recommended for backup), map it explicitly in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - /mnt/user/appdata/kinetic/couch_data:/opt/couchdb/data
+```
+
+### Auto-start on boot
+
+Compose Manager automatically restarts stacks that were running before a reboot — no extra configuration needed.
+
+### Checking logs
+
+Either use the Unraid Docker tab → click the container → **Logs**, or from the terminal:
+```bash
+docker compose -f /mnt/user/appdata/kinetic/hub/docker-compose.yml logs -f
+```
 
 ---
 

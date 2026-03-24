@@ -19,7 +19,7 @@ const _kMeshKeyHex = String.fromEnvironment(
   'MESH_KEY_HEX',
   // dev-only fallback — replace in production via --dart-define
   defaultValue:
-      'dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0',
+      'de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10',
 );
 const _kCouchUser = String.fromEnvironment(
   'COUCH_USER',

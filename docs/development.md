@@ -171,7 +171,7 @@ cd apps/kids
 flutter run
 ```
 
-The dev mesh key `dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0` is baked into both apps as a fallback — it matches nothing in production (where you supply your own via `--dart-define`).
+The dev mesh key `de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10` is baked into both apps as a fallback — it matches nothing in production (where you supply your own via `--dart-define`).
 
 ---
 
