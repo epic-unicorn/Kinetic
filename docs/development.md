@@ -39,9 +39,21 @@ packages/core     — identity, models, pairing
 packages/sync     — mDNS, AES-256-GCM, CouchDB replication
 packages/support  — approvals, XP ledger, help tickets
 apps/parent       — parent Flutter app
+  lib/
+  ├── db/         — Drift AppDatabase (personal task tables + DAOs)
+  ├── todo/
+  │   ├── models/    — PersonalTask, TaskList, enums (local-only types)
+  │   ├── services/  — TodoRepository, MissionConverterService
+  │   ├── screens/   — TasksScreen
+  │   └── widgets/   — TaskTile, TaskDetailSheet, ConvertToMissionSheet, QuickAddBar
+  ├── partner/    — LoadAnalyzer, LoadSyncService, PartnerScreen
+  ├── settings/   — SettingsScreen
+  └── support/    — CouchDocumentStore wrapper
 apps/kids         — kids Flutter app
 hub/              — Docker Compose sync hub
 ```
+
+> **Personal tasks vs shared tasks** — `PersonalTask` is stored in the device-local Drift SQLite database and never syncs. When a parent promotes a personal task to a kids mission via *Convert to Mission*, `MissionConverterService` creates a `kinetic_core.Task` and upserts it into `CouchDocumentStore`, from where it syncs to child devices on the next heartbeat. The `PersonalTask.kidsTaskId` field stores the backlink.
 
 ---
 

@@ -1,6 +1,6 @@
 # Kinetic Link
 
-Local-first family task management. Parents assign missions and habits to children; kids complete them and earn XP; parents approve and the ledger updates — all over an encrypted peer-to-peer sync layer with no cloud dependency.
+Local-first family task management. Parents manage their own to-do lists, promote tasks to kids missions with an XP reward, balance workloads with their partner, and approve completed tasks — all over an encrypted peer-to-peer sync layer with no cloud dependency.
 
 ---
 
@@ -40,7 +40,7 @@ Local-first family task management. Parents assign missions and habits to childr
 | `packages/core` | Ed25519 device identity, QR pairing, `Task` / `FamilyPlan` models |
 | `packages/sync` | mDNS discovery (Bonsoir), AES-256-GCM document encryption, CouchDB push/pull, `SyncOrchestrator` |
 | `packages/support` | `ApprovalService`, `XpLedger`, `TicketService`, `DocumentStore` interface |
-| `apps/parent` | Parent dashboard — pair devices, approve tasks, view help tickets |
+| `apps/parent` | Parent dashboard — personal task manager, convert tasks to kids missions, partner load balancing, approve tasks, pair devices, view help tickets |
 | `apps/kids` | Child home screen — view missions, mark tasks done, ask for help |
 | `hub/` | Docker Compose: CouchDB 3 + one-shot init + mDNS advertiser sidecar |
 
@@ -50,6 +50,7 @@ Local-first family task management. Parents assign missions and habits to childr
 - **Encrypted at rest and in transit** — AES-256-GCM with a family mesh key baked in at build time.  The hub stores only ciphertext and never holds the key.
 - **No account / cloud sign-up** — devices pair via QR code over the local network.  The mesh key is distributed as a `--dart-define` build flag.
 - **CRDT merge** — `Task` conflicts resolve by `updatedAt` (last-write-wins); `FamilyPlan` conflicts by `crdtVersion`.
+- **Personal task layer** — the parent app embeds a local-only SQLite task manager (Drift) for the parent's own to-dos.  Personal tasks never leave the device unless promoted to a kids mission via **Convert to Mission**, at which point they are written into the shared CouchDB store and gain an XP reward and optional child assignment.
 
 ---
 

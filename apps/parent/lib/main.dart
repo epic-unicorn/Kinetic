@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_core/kinetic_core.dart';
 import 'package:kinetic_support/kinetic_support.dart';
 import 'package:kinetic_sync/kinetic_sync.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
+import 'db/app_database.dart';
+import 'partner/screens/partner_screen.dart';
+import 'partner/services/load_sync_service.dart';
 import 'secure/flutter_secure_key_value_store.dart';
+import 'settings/settings_screen.dart';
 import 'support/couch_document_store.dart';
+import 'todo/screens/tasks_screen.dart';
+import 'todo/services/mission_converter_service.dart';
+import 'todo/services/todo_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Hub configuration — supply at build time via --dart-define, e.g.:
@@ -79,6 +85,11 @@ class _RootShellState extends State<_RootShell> {
   late final SyncOrchestrator _syncOrchestrator;
   late final ApprovalService _approvalService;
   late final TicketService _ticketService;
+  late final AppDatabase _db;
+  late final TodoRepository _todoRepository;
+  late final LoadSyncService _loadSyncService;
+  late final CouchDocumentStore _store;
+  late final MissionConverterService _missionConverter;
 
   int _selectedIndex = 0;
   SyncStatus _syncStatus = SyncStatus.idle();
@@ -101,174 +112,75 @@ class _RootShellState extends State<_RootShell> {
     _syncOrchestrator.start();
 
     final store = CouchDocumentStore(_syncService);
+    _store = store;
     _approvalService = ApprovalService(store: store);
     _ticketService = TicketService(store: store);
+
+    _db = AppDatabase();
+    _todoRepository = TodoRepository(db: _db);
+    _loadSyncService = LoadSyncService(
+      store: store,
+      identityService: _identityService,
+    );
+    _missionConverter = MissionConverterService(
+      store: _store,
+      repo: _todoRepository,
+      identityService: _identityService,
+    );
   }
 
   @override
   void dispose() {
     _syncOrchestrator.dispose();
+    _db.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final screens = [
-      PairingScreen(
-        identityService: _identityService,
-        pairingService: _pairingService,
-        syncStatus: _syncStatus,
-      ),
+      TasksScreen(repo: _todoRepository, converter: _missionConverter),
       ApprovalsScreen(
         approvalService: _approvalService,
         ticketService: _ticketService,
         syncStatus: _syncStatus,
       ),
+      PartnerScreen(
+        repo: _todoRepository,
+        loadSyncService: _loadSyncService,
+        syncStatus: _syncStatus,
+      ),
+      SettingsScreen(
+        identityService: _identityService,
+        pairingService: _pairingService,
+        syncStatus: _syncStatus,
+      ),
     ];
 
     return Scaffold(
-      body: screens[_selectedIndex],
+      body: IndexedStack(index: _selectedIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         destinations: [
-          const NavigationDestination(icon: Icon(Icons.qr_code), label: 'Pair'),
+          const NavigationDestination(
+            icon: Icon(Icons.check_circle_outline),
+            selectedIcon: Icon(Icons.check_circle),
+            label: 'Tasks',
+          ),
           NavigationDestination(
             icon: _PendingBadge(count: _approvalService.pendingTasks.length),
             label: 'Approvals',
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Pairing Screen — Phase 1 entry point
-// ---------------------------------------------------------------------------
-
-class PairingScreen extends StatefulWidget {
-  final IdentityService identityService;
-  final PairingService pairingService;
-  final SyncStatus syncStatus;
-
-  const PairingScreen({
-    super.key,
-    required this.identityService,
-    required this.pairingService,
-    required this.syncStatus,
-  });
-
-  @override
-  State<PairingScreen> createState() => _PairingScreenState();
-}
-
-class _PairingScreenState extends State<PairingScreen> {
-  DeviceIdentity? _identity;
-  String? _qrPayload;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _isLoading = true);
-    final identity = await widget.identityService.getOrCreateIdentity();
-    final qr = await widget.pairingService.generatePairingPayload(
-      deviceLabel: 'Parent Phone',
-      role: MemberRole.parent,
-    );
-    if (!mounted) return;
-    setState(() {
-      _identity = identity;
-      _qrPayload = qr;
-      _isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final shortId = _identity!.deviceId.substring(0, 8).toUpperCase();
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Kinetic Link'), centerTitle: true),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Pair a second device',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Show this QR to the other device to join the family mesh.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFFD3D0CB),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7E5DF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: QrImageView(
-                  data: _qrPayload!,
-                  size: 220,
-                  backgroundColor: const Color(0xFFE7E5DF),
-                ),
-              ),
-              const SizedBox(height: 24),
-              _DeviceBadge(shortId: shortId),
-              const Spacer(),
-              _SyncBanner(status: widget.syncStatus),
-              const SizedBox(height: 12),
-              FilledButton.tonal(
-                onPressed: _load,
-                child: const Text('Regenerate QR'),
-              ),
-            ],
+          const NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Partner',
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DeviceBadge extends StatelessWidget {
-  final String shortId;
-  const _DeviceBadge({required this.shortId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.fingerprint, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            'Device  $shortId\u2026',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(fontFamily: 'monospace'),
+          const NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
