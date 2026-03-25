@@ -57,10 +57,10 @@ String formatDueDate(DateTime due, {bool allDay = true}) {
   ).difference(DateTime(now.year, now.month, now.day)).inDays;
 
   final datePart = switch (diff) {
-    0 => 'Today',
-    1 => 'Tomorrow',
-    -1 => 'Yesterday',
-    _ when diff < 0 => '${diff.abs()}d overdue',
+    0 => 'Vandaag',
+    1 => 'Morgen',
+    -1 => 'Gisteren',
+    _ when diff < 0 => '${diff.abs()}d te laat',
     _ when diff < 7 => _weekday(d.weekday),
     _ => '${d.day} ${_month(d.month)}',
   };
@@ -83,27 +83,27 @@ bool isOverdue(DateTime due) {
 
 String _weekday(int w) => const [
   '',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+  'Maandag',
+  'Dinsdag',
+  'Woensdag',
+  'Donderdag',
+  'Vrijdag',
+  'Zaterdag',
+  'Zondag',
 ][w];
 
 String _month(int m) => const [
   '',
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
+  'jan',
+  'feb',
+  'mrt',
+  'apr',
+  'mei',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'okt',
+  'nov',
+  'dec',
 ][m];

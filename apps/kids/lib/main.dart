@@ -192,7 +192,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
     final tasks = _myTasks;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Missions'), centerTitle: true),
+      appBar: AppBar(title: const Text('Mijn Opdrachten'), centerTitle: true),
       body: Column(
         children: [
           _XpHeader(balance: xpBalance),
@@ -213,7 +213,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.help_outline),
-        label: const Text('Ask for help'),
+        label: const Text('Vraag hulp'),
         onPressed: () => _showHelpDialog(context),
       ),
     );
@@ -282,7 +282,7 @@ class _EmptyMissions extends StatelessWidget {
           Icon(Icons.celebration, size: 64, color: Color(0xFFE7BB41)),
           SizedBox(height: 16),
           Text(
-            'All done! No missions right now.',
+            'Alles klaar! Geen opdrachten op dit moment.',
             style: TextStyle(color: Color(0xFFD3D0CB)),
           ),
         ],
@@ -341,14 +341,14 @@ class _TaskCard extends StatelessWidget {
 
   Widget? _actionButton() {
     if (task.status == TaskStatus.pendingApproval) {
-      return const Chip(label: Text('Waiting…'));
+      return const Chip(label: Text('Wachten…'));
     }
     if (task.status == TaskStatus.pending ||
         task.status == TaskStatus.inProgress) {
       final isHabit = task.category == TaskCategory.habit;
       return FilledButton.tonal(
         onPressed: _handleSubmit,
-        child: Text(isHabit ? 'Done' : 'Submit'),
+        child: Text(isHabit ? 'Klaar' : 'Inleveren'),
       );
     }
     return null;

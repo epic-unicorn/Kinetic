@@ -137,7 +137,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               autofocus: widget.task == null,
               style: tt.titleLarge,
               decoration: const InputDecoration(
-                hintText: 'Task title',
+                hintText: 'Taaknaam',
                 border: InputBorder.none,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -152,7 +152,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               controller: _notesCtrl,
               style: tt.bodyMedium?.copyWith(color: kColorWarmGrey),
               decoration: const InputDecoration(
-                hintText: 'Notes',
+                hintText: 'Notities',
                 border: InputBorder.none,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -167,7 +167,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             icon: Icons.calendar_today_outlined,
             label: _dueDate != null
                 ? formatDueDate(_dueDate!, allDay: _isAllDay)
-                : 'Add due date',
+                : 'Vervaldatum toevoegen',
             active: _dueDate != null,
             onTap: () => _pickDate(),
             trailing: _dueDate != null
@@ -183,8 +183,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           _MetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
-                ? 'Priority'
-                : 'Priority: ${_priority.name}',
+                ? 'Prioriteit'
+                : 'Prioriteit: ${switch (_priority) {
+                    TaskPriority.low => 'Laag',
+                    TaskPriority.medium => 'Middel',
+                    TaskPriority.high => 'Hoog',
+                    TaskPriority.none => 'Geen',
+                  }}',
             active: _priority != TaskPriority.none,
             color: _priority != TaskPriority.none
                 ? priorityColor(_priority)
@@ -193,21 +198,21 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           ),
           _MetaRow(
             icon: _isFlagged ? Icons.flag : Icons.flag_outlined,
-            label: 'Flag',
+            label: 'Markeer',
             active: _isFlagged,
             color: _isFlagged ? kColorGold : null,
             onTap: () => setState(() => _isFlagged = !_isFlagged),
           ),
           _MetaRow(
             icon: _isPrivate ? Icons.lock : Icons.lock_open_outlined,
-            label: _isPrivate ? 'Private (won\'t be proposed)' : 'Private',
+            label: _isPrivate ? 'Privé (niet voorgesteld)' : 'Privé',
             active: _isPrivate,
             onTap: () => setState(() => _isPrivate = !_isPrivate),
           ),
           if (_dueDate != null)
             _MetaRow(
               icon: Icons.repeat,
-              label: _recurrenceRule ?? 'Repeat',
+              label: _recurrenceRule ?? 'Herhalen',
               active: _recurrenceRule != null,
               onTap: () => _pickRecurrence(context),
             ),
@@ -218,7 +223,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               widget.converter != null)
             _MetaRow(
               icon: Icons.bolt,
-              label: 'Convert to mission',
+              label: 'Zet om naar opdracht',
               color: kColorGold,
               active: false,
               onTap: () => _openMissionSheet(context),
@@ -226,7 +231,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           else if (widget.task != null && widget.task!.kidsTaskId != null)
             _MetaRow(
               icon: Icons.bolt,
-              label: 'Mission created ✓',
+              label: 'Opdracht aangemaakt ✓',
               color: kColorTeal,
               active: true,
               onTap: null,
@@ -242,12 +247,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: const Text('Annuleren'),
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: Text(widget.task == null ? 'Add' : 'Save'),
+                  child: Text(widget.task == null ? 'Toevoegen' : 'Opslaan'),
                 ),
               ],
             ),
@@ -308,11 +313,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       ? kColorWarmGrey
                       : priorityColor(p),
                 ),
-                title: Text(
-                  p == TaskPriority.none
-                      ? 'None'
-                      : '${p.name[0].toUpperCase()}${p.name.substring(1)}',
-                ),
+                title: Text(switch (p) {
+                  TaskPriority.none => 'Geen',
+                  TaskPriority.low => 'Laag',
+                  TaskPriority.medium => 'Middel',
+                  TaskPriority.high => 'Hoog',
+                }),
                 trailing: _priority == p
                     ? const Icon(Icons.check, color: kColorTeal)
                     : null,
@@ -343,11 +349,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   void _pickRecurrence(BuildContext context) {
     // Simple recurrence picker — RRULE strings
     final options = <(String, String)>[
-      ('Daily', 'FREQ=DAILY'),
-      ('Weekdays', 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR'),
-      ('Weekly', 'FREQ=WEEKLY'),
-      ('Fortnightly', 'FREQ=WEEKLY;INTERVAL=2'),
-      ('Monthly', 'FREQ=MONTHLY'),
+      ('Dagelijks', 'FREQ=DAILY'),
+      ('Werkdagen', 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR'),
+      ('Wekelijks', 'FREQ=WEEKLY'),
+      ('Tweewekelijks', 'FREQ=WEEKLY;INTERVAL=2'),
+      ('Maandelijks', 'FREQ=MONTHLY'),
     ];
     showModalBottomSheet(
       context: context,
@@ -357,7 +363,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           children: [
             ListTile(
               leading: const Icon(Icons.block_outlined),
-              title: const Text('No repeat'),
+              title: const Text('Geen herhaling'),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _recurrenceRule = null);

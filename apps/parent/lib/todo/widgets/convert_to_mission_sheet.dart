@@ -56,7 +56,7 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
           children: [
             const Icon(Icons.bolt, color: kColorGold, size: 18),
             const SizedBox(width: 8),
-            Text('"${widget.task.title}" → Mission ($_xp XP)'),
+            Text('"${widget.task.title}" → Opdracht ($_xp XP)'),
           ],
         ),
       ),
@@ -83,7 +83,7 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                 children: [
                   const Icon(Icons.bolt, color: kColorGold),
                   const SizedBox(width: 8),
-                  Text('Convert to Mission', style: tt.titleMedium),
+                  Text('Zet om naar opdracht', style: tt.titleMedium),
                 ],
               ),
               const SizedBox(height: 4),
@@ -98,7 +98,7 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
               // ── XP Slider ────────────────────────────────────────────────
               Row(
                 children: [
-                  Text('XP reward', style: tt.labelMedium),
+                  Text('XP beloning', style: tt.labelMedium),
                   const Spacer(),
                   _XpBadge(xp: _xp),
                 ],
@@ -129,13 +129,13 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
               // ── Child assignment ─────────────────────────────────────────
               if (_children.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                Text('Assign to', style: tt.labelMedium),
+                Text('Toewijzen aan', style: tt.labelMedium),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: [
                     _ChildChip(
-                      label: 'Anyone',
+                      label: 'Iedereen',
                       selected: _selectedChildId == null,
                       onTap: () => setState(() => _selectedChildId = null),
                     ),
@@ -163,7 +163,7 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'This task is marked private. The mission will still be visible to children on their devices.',
+                        'Deze taak is als privé gemarkeerd. De opdracht is wel zichtbaar voor kinderen op hun apparaten.',
                         style: tt.labelSmall?.copyWith(color: kColorWarmGrey),
                       ),
                     ),
@@ -186,7 +186,9 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.bolt),
-                      label: Text(_converting ? 'Creating…' : 'Create mission'),
+                      label: Text(
+                        _converting ? 'Aanmaken…' : 'Opdracht aanmaken',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -194,7 +196,7 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                     onPressed: _converting
                         ? null
                         : () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: const Text('Annuleren'),
                   ),
                 ],
               ),

@@ -90,10 +90,10 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   String _viewTitle(String view) => switch (view) {
-    _kSmartToday => 'Today',
-    _kSmartScheduled => 'Scheduled',
-    _kSmartFlagged => 'Flagged',
-    _kSmartAll => 'All Tasks',
+    _kSmartToday => 'Vandaag',
+    _kSmartScheduled => 'Gepland',
+    _kSmartFlagged => 'Gemarkeerd',
+    _kSmartAll => 'Alle taken',
     _ => view, // user list name passed separately via state
   };
 
@@ -112,10 +112,10 @@ class _SmartListChips extends StatelessWidget {
   const _SmartListChips({required this.activeView, required this.onSelect});
 
   static const _chips = <(String, IconData, String)>[
-    ('Today', Icons.wb_sunny_outlined, _kSmartToday),
-    ('Scheduled', Icons.calendar_month, _kSmartScheduled),
-    ('Flagged', Icons.flag_outlined, _kSmartFlagged),
-    ('All', Icons.list_alt_outlined, _kSmartAll),
+    ('Vandaag', Icons.wb_sunny_outlined, _kSmartToday),
+    ('Gepland', Icons.calendar_month, _kSmartScheduled),
+    ('Gemarkeerd', Icons.flag_outlined, _kSmartFlagged),
+    ('Alles', Icons.list_alt_outlined, _kSmartAll),
   ];
 
   @override
@@ -206,10 +206,10 @@ class _EmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, message) = switch (view) {
-      _kSmartToday => (Icons.wb_sunny_outlined, 'Nothing due today'),
-      _kSmartFlagged => (Icons.flag_outlined, 'No flagged tasks'),
-      _kSmartScheduled => (Icons.event_available, 'No upcoming tasks'),
-      _ => (Icons.check_circle_outline, 'All done!'),
+      _kSmartToday => (Icons.wb_sunny_outlined, 'Niets voor vandaag'),
+      _kSmartFlagged => (Icons.flag_outlined, 'Geen gemarkeerde taken'),
+      _kSmartScheduled => (Icons.event_available, 'Geen geplande taken'),
+      _ => (Icons.check_circle_outline, 'Alles klaar!'),
     };
     return Center(
       child: Column(
@@ -254,7 +254,7 @@ class _ListDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                'Lists',
+                'Lijsten',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -262,25 +262,25 @@ class _ListDrawer extends StatelessWidget {
             // ── Smart lists ─────────────────────────────────────────────────
             _DrawerItem(
               icon: Icons.wb_sunny_outlined,
-              label: 'Today',
+              label: 'Vandaag',
               selected: activeView == _kSmartToday,
               onTap: () => onSelect(_kSmartToday),
             ),
             _DrawerItem(
               icon: Icons.calendar_month,
-              label: 'Scheduled',
+              label: 'Gepland',
               selected: activeView == _kSmartScheduled,
               onTap: () => onSelect(_kSmartScheduled),
             ),
             _DrawerItem(
               icon: Icons.flag_outlined,
-              label: 'Flagged',
+              label: 'Gemarkeerd',
               selected: activeView == _kSmartFlagged,
               onTap: () => onSelect(_kSmartFlagged),
             ),
             _DrawerItem(
               icon: Icons.list_alt_outlined,
-              label: 'All Tasks',
+              label: 'Alle taken',
               selected: activeView == _kSmartAll,
               onTap: () => onSelect(_kSmartAll),
             ),
@@ -289,7 +289,7 @@ class _ListDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
               child: Text(
-                'My Lists',
+                'Mijn lijsten',
                 style: Theme.of(
                   context,
                 ).textTheme.labelSmall?.copyWith(color: kColorWarmGrey),
@@ -326,7 +326,7 @@ class _ListDrawer extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.add, color: kColorTeal),
               title: const Text(
-                'New List',
+                'Nieuwe lijst',
                 style: TextStyle(color: kColorTeal),
               ),
               onTap: () => _newList(context),
@@ -342,22 +342,22 @@ class _ListDrawer extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New List'),
+        title: const Text('Nieuwe lijst'),
         content: TextField(
           controller: ctrl,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'List name'),
+          decoration: const InputDecoration(hintText: 'Lijstnaam'),
           textCapitalization: TextCapitalization.words,
           onSubmitted: (_) => _createAndPop(ctx, ctrl, context),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Annuleren'),
           ),
           FilledButton(
             onPressed: () => _createAndPop(ctx, ctrl, context),
-            child: const Text('Create'),
+            child: const Text('Aanmaken'),
           ),
         ],
       ),

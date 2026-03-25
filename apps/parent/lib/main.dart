@@ -166,11 +166,11 @@ class _RootShellState extends State<_RootShell> {
           const NavigationDestination(
             icon: Icon(Icons.check_circle_outline),
             selectedIcon: Icon(Icons.check_circle),
-            label: 'Tasks',
+            label: 'Taken',
           ),
           NavigationDestination(
             icon: _PendingBadge(count: _approvalService.pendingTasks.length),
-            label: 'Approvals',
+            label: 'Goedkeuren',
           ),
           const NavigationDestination(
             icon: Icon(Icons.people_outline),
@@ -180,7 +180,7 @@ class _RootShellState extends State<_RootShell> {
           const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: 'Instellingen',
           ),
         ],
       ),
@@ -197,20 +197,20 @@ class _SyncBanner extends StatelessWidget {
     final (icon, label, color) = switch (status.state) {
       SyncState.idle when status.lastResult != null => (
         Icons.check_circle_outline,
-        'Synced ↑${status.lastResult!.pushed} ↓${status.lastResult!.pulled}',
+        'Gesynchroniseerd ↑${status.lastResult!.pushed} ↓${status.lastResult!.pulled}',
         Colors.greenAccent,
       ),
       SyncState.syncing => (
         Icons.sync,
-        'Syncing with ${status.peer?.deviceId.substring(0, 8) ?? '…'}',
+        'Synchroniseren met ${status.peer?.deviceId.substring(0, 8) ?? '…'}',
         Colors.blueAccent,
       ),
       SyncState.error => (
         Icons.error_outline,
-        status.errorMessage ?? 'Sync error',
+        status.errorMessage ?? 'Synchronisatiefout',
         Colors.redAccent,
       ),
-      _ => (Icons.cloud_off, 'Waiting for home server…', Colors.white38),
+      _ => (Icons.cloud_off, 'Wachten op thuisserver…', Colors.white38),
     };
 
     return Row(
@@ -276,7 +276,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Approvals & Help'),
+        title: const Text('Goedkeuren & Hulp'),
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(24),
@@ -293,7 +293,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               children: [
                 if (pendingTasks.isNotEmpty) ...[
                   _SectionHeader(
-                    label: 'Proof submissions (${pendingTasks.length})',
+                    label: 'Bewijs ingediend (${pendingTasks.length})',
                   ),
                   ...pendingTasks.map(
                     (task) => _TaskApprovalCard(
@@ -305,7 +305,9 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                   const SizedBox(height: 16),
                 ],
                 if (openTickets.isNotEmpty) ...[
-                  _SectionHeader(label: 'Help tickets (${openTickets.length})'),
+                  _SectionHeader(
+                    label: 'Hulpverzoeken (${openTickets.length})',
+                  ),
                   ...openTickets.map(
                     (ticket) => _TicketCard(
                       ticket: ticket,
@@ -332,7 +334,7 @@ class _EmptyInbox extends StatelessWidget {
           Icon(Icons.inbox, size: 64, color: Colors.white24),
           SizedBox(height: 16),
           Text(
-            'All clear — nothing to approve.',
+            'Alles in orde — niets te beoordelen.',
             style: TextStyle(color: Colors.white38),
           ),
         ],
@@ -389,7 +391,7 @@ class _TaskApprovalCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Approve',
+              tooltip: 'Goedkeuren',
               icon: const Icon(Icons.check_circle, color: Colors.greenAccent),
               onPressed: () {
                 approvalService.approveTask(
@@ -401,7 +403,7 @@ class _TaskApprovalCard extends StatelessWidget {
               },
             ),
             IconButton(
-              tooltip: 'Reject',
+              tooltip: 'Afwijzen',
               icon: const Icon(Icons.cancel, color: Colors.redAccent),
               onPressed: () {
                 approvalService.rejectTask(task: task, approverId: 'parent');
@@ -438,19 +440,19 @@ class _TicketCard extends StatelessWidget {
         leading: const Icon(Icons.help_outline, color: Colors.blueAccent),
         title: Text(ticket.title),
         subtitle: Text(
-          ticket.description ?? 'No description',
+          ticket.description ?? 'Geen beschrijving',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.white54),
         ),
         trailing: TextButton(
-          child: const Text('Resolve'),
+          child: const Text('Oplossen'),
           onPressed: () {
             ticketService.updateStatus(
               ticket.id,
               status: TicketStatus.resolved,
               resolvedById: 'parent',
-              resolution: 'Resolved by parent',
+              resolution: 'Opgelost door ouder',
             );
             onDone();
           },

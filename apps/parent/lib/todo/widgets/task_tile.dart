@@ -62,9 +62,9 @@ class TaskTile extends StatelessWidget {
         repo.deleteTask(task.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('"${task.title}" deleted'),
+            content: Text('"${task.title}" verwijderd'),
             action: SnackBarAction(
-              label: 'Undo',
+              label: 'Ongedaan maken',
               onPressed: () {
                 // Re-create task with same data
                 repo.createTask(
@@ -271,7 +271,7 @@ class _TaskTileContent extends StatelessWidget {
                 task.isFlagged ? Icons.flag : Icons.flag_outlined,
                 color: kColorGold,
               ),
-              title: Text(task.isFlagged ? 'Unflag' : 'Flag'),
+              title: Text(task.isFlagged ? 'Markering verwijderen' : 'Markeer'),
               onTap: () {
                 Navigator.pop(context);
                 repo.toggleFlag(task.id, flagged: !task.isFlagged);
@@ -282,7 +282,7 @@ class _TaskTileContent extends StatelessWidget {
                 task.isPrivate ? Icons.lock_open_outlined : Icons.lock_outline,
                 color: kColorWarmGrey,
               ),
-              title: Text(task.isPrivate ? 'Make shareable' : 'Make private'),
+              title: Text(task.isPrivate ? 'Deelbaar maken' : 'Privé maken'),
               onTap: () {
                 Navigator.pop(context);
                 repo.togglePrivate(task.id, isPrivate: !task.isPrivate);
@@ -293,7 +293,7 @@ class _TaskTileContent extends StatelessWidget {
                 Icons.delete_outline,
                 color: Colors.redAccent,
               ),
-              title: const Text('Delete task'),
+              title: const Text('Taak verwijderen'),
               onTap: () {
                 Navigator.pop(context);
                 repo.deleteTask(task.id);
@@ -332,7 +332,7 @@ class _MissionBadge extends StatelessWidget {
             const Icon(Icons.bolt, size: 10, color: kColorGold),
             const SizedBox(width: 2),
             Text(
-              'Mission',
+              'Opdracht',
               style: Theme.of(
                 context,
               ).textTheme.labelSmall?.copyWith(color: kColorGold, fontSize: 10),

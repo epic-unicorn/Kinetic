@@ -158,8 +158,9 @@ class TodoRepository {
     String? recurrenceRule,
     bool isFlagged = false,
     bool? isPrivate,
+    TaskCategory? category,
   }) async {
-    final autoCategory = _classifier.classify(title, notes: notes);
+    final autoCategory = category ?? _classifier.classify(title, notes: notes);
 
     // Inherit list privacy default when not explicitly set.
     bool taskIsPrivate = isPrivate ?? false;

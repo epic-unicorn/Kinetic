@@ -68,6 +68,24 @@ class LoadSyncService {
     });
   }
 
+  /// Writes a shared-task doc so both partners can see an accepted proposal.
+  /// Call this when the receiving partner accepts a proposal.
+  void acceptProposal(PartnerProposal proposal) {
+    final id = _myDeviceId;
+    if (id == null) return;
+    _store.upsert({
+      '_id': 'shared_task_${proposal.id}',
+      'type': 'shared_task',
+      'fromDeviceId': proposal.fromParentId,
+      'acceptedByDeviceId': id,
+      'taskTitle': proposal.taskTitle,
+      'taskCategory': proposal.taskCategory.name,
+      'taskPriority': proposal.taskPriority.index,
+      'taskDueDate': proposal.taskDueDate?.toIso8601String(),
+      'acceptedAt': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
   // ── Inbound ───────────────────────────────────────────────────────────────
 
   /// Returns the partner's most recent load snapshot, or null if unavailable.
@@ -85,6 +103,24 @@ class LoadSyncService {
       }
     }
     return latest;
+  }
+
+  /// Returns all shared-task docs involving this device (sender or acceptor),
+  /// sorted newest first.
+  List<SharedTask> get sharedTasks {
+    final id = _myDeviceId;
+    final results = <SharedTask>[];
+    for (final doc in _store.all) {
+      if (doc['type'] != 'shared_task') continue;
+      if (id != null &&
+          doc['fromDeviceId'] != id &&
+          doc['acceptedByDeviceId'] != id)
+        continue;
+      final task = SharedTask._fromJson(doc);
+      if (task != null) results.add(task);
+    }
+    results.sort((a, b) => b.acceptedAt.compareTo(a.acceptedAt));
+    return results;
   }
 
   /// Imports pending partner_proposal docs addressed to this device into the
@@ -134,4 +170,52 @@ class LoadSyncService {
     TaskCategory.finance => 'finance',
     TaskCategory.other => '',
   };
+}
+
+// ---------------------------------------------------------------------------
+// SharedTask — a proposal that was accepted by the receiving partner.
+// Both the sender and the acceptor can see this doc via CouchDB sync.
+// ---------------------------------------------------------------------------
+
+class SharedTask {
+  final String id;
+  final String fromDeviceId;
+  final String acceptedByDeviceId;
+  final String taskTitle;
+  final TaskCategory taskCategory;
+  final TaskPriority taskPriority;
+  final DateTime? taskDueDate;
+  final DateTime acceptedAt;
+
+  const SharedTask({
+    required this.id,
+    required this.fromDeviceId,
+    required this.acceptedByDeviceId,
+    required this.taskTitle,
+    required this.taskCategory,
+    required this.taskPriority,
+    required this.taskDueDate,
+    required this.acceptedAt,
+  });
+
+  static SharedTask? _fromJson(Map<String, dynamic> doc) {
+    try {
+      return SharedTask(
+        id: doc['_id'] as String,
+        fromDeviceId: doc['fromDeviceId'] as String,
+        acceptedByDeviceId: doc['acceptedByDeviceId'] as String,
+        taskTitle: doc['taskTitle'] as String,
+        taskCategory: TaskCategory.values.byName(
+          (doc['taskCategory'] as String?) ?? 'other',
+        ),
+        taskPriority: TaskPriority.values[(doc['taskPriority'] as int?) ?? 0],
+        taskDueDate: doc['taskDueDate'] != null
+            ? DateTime.parse(doc['taskDueDate'] as String)
+            : null,
+        acceptedAt: DateTime.parse(doc['acceptedAt'] as String),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }

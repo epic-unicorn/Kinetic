@@ -26,15 +26,17 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), centerTitle: false),
+      appBar: AppBar(title: const Text('Instellingen'), centerTitle: false),
       body: ListView(
         children: [
           // ── Pairing section ──────────────────────────────────────────────
-          const _SectionHeader(label: 'Device pairing'),
+          const _SectionHeader(label: 'Apparaat koppelen'),
           ListTile(
             leading: const Icon(Icons.qr_code, color: kColorTeal),
-            title: const Text('Pair a device'),
-            subtitle: const Text('Show QR code to add another phone'),
+            title: const Text('Apparaat koppelen'),
+            subtitle: const Text(
+              'Toon QR-code om een tweede telefoon toe te voegen',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(
               context,
@@ -49,19 +51,19 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           // ── Sync status ──────────────────────────────────────────────────
-          const _SectionHeader(label: 'Sync'),
+          const _SectionHeader(label: 'Synchronisatie'),
           ListTile(
             leading: _syncIcon(syncStatus),
             title: Text(_syncLabel(syncStatus)),
-            subtitle: const Text('Home server (hub)'),
+            subtitle: const Text('Thuisserver (hub)'),
           ),
 
-          // ── About ────────────────────────────────────────────────────────
-          const _SectionHeader(label: 'About'),
+          // ── Over ─────────────────────────────────────────────────────────
+          const _SectionHeader(label: 'Over'),
           ListTile(
             leading: const Icon(Icons.info_outline, color: kColorWarmGrey),
             title: const Text('Kinetic Link'),
-            subtitle: const Text('Version 1.0.0'),
+            subtitle: const Text('Versie 1.0.0'),
           ),
         ],
       ),
@@ -79,11 +81,11 @@ class SettingsScreen extends StatelessWidget {
   };
 
   String _syncLabel(SyncStatus s) => switch (s.state) {
-    SyncState.syncing => 'Syncing…',
-    SyncState.error => s.errorMessage ?? 'Sync error',
+    SyncState.syncing => 'Synchroniseren…',
+    SyncState.error => s.errorMessage ?? 'Synchronisatiefout',
     SyncState.idle when s.lastResult != null =>
-      'Synced ↑${s.lastResult!.pushed} ↓${s.lastResult!.pulled}',
-    _ => 'Waiting for home server',
+      'Gesynchroniseerd ↑${s.lastResult!.pushed} ↓${s.lastResult!.pulled}',
+    _ => 'Wachten op thuisserver',
   };
 }
 
@@ -154,7 +156,10 @@ class _PairingPageState extends State<_PairingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pair Device'), centerTitle: false),
+      appBar: AppBar(
+        title: const Text('Apparaat koppelen'),
+        centerTitle: false,
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -164,12 +169,12 @@ class _PairingPageState extends State<_PairingPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'Pair a second device',
+                      'Koppel een tweede apparaat',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Show this QR to the other device to join the family mesh.',
+                      'Toon deze QR-code aan het andere apparaat om het gezinsnetwerk te joinen.',
                       textAlign: TextAlign.center,
                       style: Theme.of(
                         context,
@@ -197,7 +202,7 @@ class _PairingPageState extends State<_PairingPage> {
                     const Spacer(),
                     FilledButton.tonal(
                       onPressed: _load,
-                      child: const Text('Regenerate QR'),
+                      child: const Text('QR opnieuw genereren'),
                     ),
                   ],
                 ),

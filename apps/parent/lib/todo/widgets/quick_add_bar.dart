@@ -106,7 +106,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
                 controller: _ctrl,
                 style: Theme.of(context).textTheme.bodyLarge,
                 decoration: const InputDecoration(
-                  hintText: 'New task…',
+                  hintText: 'Nieuwe taak…',
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -118,7 +118,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
             // Expand to full detail
             IconButton(
               icon: const Icon(Icons.expand_less, color: kColorWarmGrey),
-              tooltip: 'More options',
+              tooltip: 'Meer opties',
               onPressed: _openFull,
             ),
           ],
