@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../partner/services/load_sync_service.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
@@ -21,12 +22,14 @@ class TaskTile extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final MissionConverterService? converter;
+  final LoadSyncService? syncService;
 
   const TaskTile({
     super.key,
     required this.task,
     required this.repo,
     this.converter,
+    this.syncService,
   });
 
   @override
@@ -83,7 +86,12 @@ class TaskTile extends StatelessWidget {
           ),
         );
       },
-      child: _TaskTileContent(task: task, repo: repo, converter: converter),
+      child: _TaskTileContent(
+        task: task,
+        repo: repo,
+        converter: converter,
+        syncService: syncService,
+      ),
     );
   }
 }
@@ -92,11 +100,13 @@ class _TaskTileContent extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final MissionConverterService? converter;
+  final LoadSyncService? syncService;
 
   const _TaskTileContent({
     required this.task,
     required this.repo,
     this.converter,
+    this.syncService,
   });
 
   @override
@@ -299,8 +309,39 @@ class _TaskTileContent extends StatelessWidget {
                 repo.deleteTask(task.id);
               },
             ),
+            if (syncService != null)
+              ListTile(
+                leading: const Icon(Icons.share_outlined, color: kColorTeal),
+                title: const Text('Voorstel sturen naar partner'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _sendProposalToPartner(context);
+                },
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _sendProposalToPartner(BuildContext context) {
+    final partnerLoad = syncService?.partnerLoad;
+    if (partnerLoad == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Partner is niet beschikbaar'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    syncService!.sendProposal(toDeviceId: partnerLoad.deviceId, task: task);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('"${task.title}" voorgesteld aan partner'),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

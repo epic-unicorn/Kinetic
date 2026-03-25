@@ -135,6 +135,10 @@ class PersonalTask {
   final String? kidsTaskId;
 
   final TaskCategory category;
+
+  /// When to fire a local reminder notification; null = no reminder.
+  final DateTime? remindAt;
+
   final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -154,6 +158,7 @@ class PersonalTask {
     required this.isPrivate,
     this.kidsTaskId,
     required this.category,
+    this.remindAt,
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
@@ -170,6 +175,7 @@ class PersonalTask {
     bool isFlagged = false,
     bool isPrivate = false,
     TaskCategory? category,
+    DateTime? remindAt,
     int sortOrder = 0,
   }) {
     final now = DateTime.now().toUtc();
@@ -188,6 +194,7 @@ class PersonalTask {
       isPrivate: isPrivate,
       kidsTaskId: null,
       category: category ?? TaskCategory.other,
+      remindAt: remindAt,
       sortOrder: sortOrder,
       createdAt: now,
       updatedAt: now,
@@ -200,6 +207,7 @@ class PersonalTask {
     String? notes,
     TaskPriority? priority,
     DateTime? dueDate,
+    bool clearDueDate = false,
     bool? isAllDay,
     String? recurrenceRule,
     bool? isCompleted,
@@ -208,6 +216,8 @@ class PersonalTask {
     bool? isPrivate,
     String? kidsTaskId,
     TaskCategory? category,
+    DateTime? remindAt,
+    bool clearRemindAt = false,
     int? sortOrder,
   }) {
     return PersonalTask(
@@ -216,7 +226,7 @@ class PersonalTask {
       title: title ?? this.title,
       notes: notes ?? this.notes,
       priority: priority ?? this.priority,
-      dueDate: dueDate ?? this.dueDate,
+      dueDate: clearDueDate ? null : (dueDate ?? this.dueDate),
       isAllDay: isAllDay ?? this.isAllDay,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
       isCompleted: isCompleted ?? this.isCompleted,
@@ -225,6 +235,7 @@ class PersonalTask {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       category: category ?? this.category,
+      remindAt: clearRemindAt ? null : (remindAt ?? this.remindAt),
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt,
       updatedAt: DateTime.now().toUtc(),

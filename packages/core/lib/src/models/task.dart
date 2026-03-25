@@ -20,6 +20,9 @@ enum TaskStatus {
   /// Mission photo submitted; awaiting parent approval before XP is granted.
   pendingApproval,
   completed,
+
+  /// dueDate + 1 day has passed with no kid response.
+  overdue,
 }
 
 /// A single unit of work (mission, habit, or parent task) in the Family Plan.
@@ -42,6 +45,9 @@ class Task extends Equatable {
   /// Device-local path of the proof photo; non-null only after submission.
   final String? proofPhotoPath;
 
+  /// Optional deadline set by the parent when the mission is created.
+  final DateTime? dueDate;
+
   final DateTime createdAt;
 
   /// Updated on every state transition; used as LWW timestamp in CRDT merge.
@@ -58,6 +64,7 @@ class Task extends Equatable {
     this.status = TaskStatus.pending,
     required this.xpReward,
     this.proofPhotoPath,
+    this.dueDate,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -70,6 +77,7 @@ class Task extends Equatable {
     int xpReward = 0,
     String? assignedToId,
     String? description,
+    DateTime? dueDate,
   }) {
     final now = DateTime.now().toUtc();
     return Task(
@@ -81,6 +89,7 @@ class Task extends Equatable {
       description: description,
       category: category,
       xpReward: xpReward,
+      dueDate: dueDate,
       createdAt: now,
       updatedAt: now,
     );
@@ -94,6 +103,7 @@ class Task extends Equatable {
     TaskStatus? status,
     int? xpReward,
     String? proofPhotoPath,
+    DateTime? dueDate,
   }) =>
       Task(
         id: id,
@@ -106,6 +116,7 @@ class Task extends Equatable {
         status: status ?? this.status,
         xpReward: xpReward ?? this.xpReward,
         proofPhotoPath: proofPhotoPath ?? this.proofPhotoPath,
+        dueDate: dueDate ?? this.dueDate,
         createdAt: createdAt,
         updatedAt: DateTime.now().toUtc(),
       );
@@ -121,6 +132,7 @@ class Task extends Equatable {
         'status': status.name,
         'xpReward': xpReward,
         'proofPhotoPath': proofPhotoPath,
+        'dueDate': dueDate?.toIso8601String(),
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -136,11 +148,14 @@ class Task extends Equatable {
         status: TaskStatus.values.byName(json['status'] as String),
         xpReward: json['xpReward'] as int,
         proofPhotoPath: json['proofPhotoPath'] as String?,
+        dueDate: json['dueDate'] != null
+            ? DateTime.parse(json['dueDate'] as String)
+            : null,
         createdAt: DateTime.parse(json['createdAt'] as String),
         updatedAt: DateTime.parse(json['updatedAt'] as String),
       );
 
   @override
   List<Object?> get props =>
-      [id, familyPlanId, title, status, xpReward, updatedAt];
+      [id, familyPlanId, title, status, xpReward, dueDate, updatedAt];
 }

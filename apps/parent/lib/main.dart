@@ -9,6 +9,7 @@ import 'partner/services/load_sync_service.dart';
 import 'secure/flutter_secure_key_value_store.dart';
 import 'settings/settings_screen.dart';
 import 'support/couch_document_store.dart';
+import 'support/parent_notification_service.dart';
 import 'todo/screens/tasks_screen.dart';
 import 'todo/services/mission_converter_service.dart';
 import 'todo/services/todo_repository.dart';
@@ -86,6 +87,7 @@ class _RootShellState extends State<_RootShell> {
   late final ApprovalService _approvalService;
   late final TicketService _ticketService;
   late final AppDatabase _db;
+  late final ParentNotificationService _notifSvc;
   late final TodoRepository _todoRepository;
   late final LoadSyncService _loadSyncService;
   late final CouchDocumentStore _store;
@@ -117,7 +119,8 @@ class _RootShellState extends State<_RootShell> {
     _ticketService = TicketService(store: store);
 
     _db = AppDatabase();
-    _todoRepository = TodoRepository(db: _db);
+    _notifSvc = ParentNotificationService();
+    _todoRepository = TodoRepository(db: _db, notifications: _notifSvc);
     _loadSyncService = LoadSyncService(
       store: store,
       identityService: _identityService,
@@ -126,6 +129,7 @@ class _RootShellState extends State<_RootShell> {
       store: _store,
       repo: _todoRepository,
       identityService: _identityService,
+      notifications: _notifSvc,
     );
   }
 
@@ -139,7 +143,11 @@ class _RootShellState extends State<_RootShell> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      TasksScreen(repo: _todoRepository, converter: _missionConverter),
+      TasksScreen(
+        repo: _todoRepository,
+        converter: _missionConverter,
+        syncService: _loadSyncService,
+      ),
       ApprovalsScreen(
         approvalService: _approvalService,
         ticketService: _ticketService,

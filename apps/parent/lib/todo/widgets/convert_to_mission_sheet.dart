@@ -31,6 +31,7 @@ class ConvertToMissionSheet extends StatefulWidget {
 class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
   int _xp = 20;
   String? _selectedChildId;
+  DateTime? _dueDate;
   bool _converting = false;
 
   late final List<({String id, String name})> _children;
@@ -42,11 +43,21 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
   }
 
   Future<void> _convert() async {
+    if (_selectedChildId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecteer een kind voor de opdracht'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
     setState(() => _converting = true);
     await widget.converter.convertToMission(
       widget.task,
       xpReward: _xp,
       assignToChildId: _selectedChildId,
+      dueDate: _dueDate,
     );
     if (!mounted) return;
     Navigator.pop(context);
@@ -61,6 +72,19 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickDueDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate?.toLocal() ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _dueDate = DateTime(picked.year, picked.month, picked.day).toUtc();
+    });
   }
 
   @override
@@ -95,7 +119,52 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
               ),
               const SizedBox(height: 24),
 
+              // ── Child assignment (REQUIRED) ──────────────────────────────
+              Row(
+                children: [
+                  Text('Kind', style: tt.labelMedium),
+                  const Spacer(),
+                  if (_selectedChildId != null)
+                    const Icon(Icons.check_circle, size: 18, color: kColorTeal),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (_children.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: kColorWarmGrey.withAlpha(40),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: kColorWarmGrey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Geen kinderen beschikbaar. Controleer de synchronisatie.',
+                          style: tt.labelSmall?.copyWith(color: kColorWarmGrey),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final child in _children)
+                      _ChildChip(
+                        label: child.name,
+                        selected: _selectedChildId == child.id,
+                        onTap: () =>
+                            setState(() => _selectedChildId = child.id),
+                      ),
+                  ],
+                ),
+
               // ── XP Slider ────────────────────────────────────────────────
+              const SizedBox(height: 24),
               Row(
                 children: [
                   Text('XP beloning', style: tt.labelMedium),
@@ -126,29 +195,46 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                 ],
               ),
 
-              // ── Child assignment ─────────────────────────────────────────
-              if (_children.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Text('Toewijzen aan', style: tt.labelMedium),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _ChildChip(
-                      label: 'Iedereen',
-                      selected: _selectedChildId == null,
-                      onTap: () => setState(() => _selectedChildId = null),
-                    ),
-                    for (final child in _children)
-                      _ChildChip(
-                        label: child.name,
-                        selected: _selectedChildId == child.id,
-                        onTap: () =>
-                            setState(() => _selectedChildId = child.id),
+              // ── Due date ─────────────────────────────────────────────────
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: _pickDueDate,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.event_outlined,
+                        size: 18,
+                        color: _dueDate != null ? kColorTeal : kColorWarmGrey,
                       ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _dueDate != null
+                              ? 'Inleveren vóór: ${formatDueDate(_dueDate!, allDay: true)}'
+                              : 'Inleverdatum toevoegen',
+                          style: TextStyle(
+                            color: _dueDate != null
+                                ? kColorTeal
+                                : kColorWarmGrey,
+                          ),
+                        ),
+                      ),
+                      if (_dueDate != null)
+                        GestureDetector(
+                          onTap: () => setState(() => _dueDate = null),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: kColorWarmGrey,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
 
               // ── Privacy note ─────────────────────────────────────────────
               if (widget.task.isPrivate) ...[
@@ -178,7 +264,9 @@ class _ConvertToMissionSheetState extends State<ConvertToMissionSheet> {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: _converting ? null : _convert,
+                      onPressed: (_converting || _selectedChildId == null)
+                          ? null
+                          : _convert,
                       icon: _converting
                           ? const SizedBox(
                               width: 16,

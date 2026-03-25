@@ -97,6 +97,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           isFlagged: _isFlagged,
           isPrivate: _isPrivate,
           listId: _listId,
+          clearDueDate: _dueDate == null,
         ),
       );
     }
@@ -270,31 +271,29 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       lastDate: DateTime(2099),
     );
     if (picked == null || !mounted) return;
-    if (!_isAllDay) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: _dueDate != null
-            ? TimeOfDay.fromDateTime(_dueDate!.toLocal())
-            : const TimeOfDay(hour: 9, minute: 0),
-      );
-      if (!mounted) return;
-      if (time != null) {
-        setState(() {
-          _dueDate = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            time.hour,
-            time.minute,
-          ).toUtc();
-          _isAllDay = false;
-        });
-        return;
-      }
-    }
+    // Always offer a time — cancelling the time picker keeps the date all-day.
+    final time = await showTimePicker(
+      // ignore: use_build_context_synchronously
+      context: context,
+      initialTime: (!_isAllDay && _dueDate != null)
+          ? TimeOfDay.fromDateTime(_dueDate!.toLocal())
+          : const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (!mounted) return;
     setState(() {
-      _dueDate = DateTime(picked.year, picked.month, picked.day).toUtc();
-      _isAllDay = true;
+      if (time != null) {
+        _dueDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          time.hour,
+          time.minute,
+        ).toUtc();
+        _isAllDay = false;
+      } else {
+        _dueDate = DateTime(picked.year, picked.month, picked.day).toUtc();
+        _isAllDay = true;
+      }
     });
   }
 

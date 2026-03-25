@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:kinetic_support/kinetic_support.dart';
 
 import '../../db/app_database.dart';
 import '../models/enums.dart';
@@ -15,10 +16,15 @@ import 'category_classifier.dart';
 class TodoRepository {
   final AppDatabase _db;
   final CategoryClassifier _classifier;
+  final NotificationService? _notifications;
 
-  TodoRepository({required AppDatabase db, CategoryClassifier? classifier})
-    : _db = db,
-      _classifier = classifier ?? categoryClassifier;
+  TodoRepository({
+    required AppDatabase db,
+    CategoryClassifier? classifier,
+    NotificationService? notifications,
+  }) : _db = db,
+       _classifier = classifier ?? categoryClassifier,
+       _notifications = notifications;
 
   // ── Lists ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +74,20 @@ class TodoRepository {
           ..where((t) => t.isCompleted.equals(false))
           ..orderBy([
             (t) => OrderingTerm.asc(t.sortOrder),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .watch()
+        .map((rows) => rows.map(_taskFromRow).toList());
+  }
+
+  /// All incomplete tasks ordered by due date (nulls last), then created_at.
+  Stream<List<PersonalTask>> watchOpenTasks() {
+    return (_db.select(_db.personalTasks)
+          ..where((t) => t.isCompleted.equals(false))
+          ..orderBy([
+            // Sort rows with no due date after those that have one.
+            (t) => OrderingTerm.asc(t.dueDate.isNull()),
+            (t) => OrderingTerm.asc(t.dueDate),
             (t) => OrderingTerm.asc(t.createdAt),
           ]))
         .watch()
@@ -136,6 +156,13 @@ class TodoRepository {
         .map((rows) => rows.map(_taskFromRow).toList());
   }
 
+  /// Permanently removes all completed tasks (bulk cleanup).
+  Future<void> deleteCompletedTasks() async {
+    await (_db.delete(
+      _db.personalTasks,
+    )..where((t) => t.isCompleted.equals(true))).go();
+  }
+
   /// Tasks belonging to a specific list.
   Stream<List<PersonalTask>> watchTasksInList(String listId) {
     return (_db.select(_db.personalTasks)
@@ -159,6 +186,7 @@ class TodoRepository {
     bool isFlagged = false,
     bool? isPrivate,
     TaskCategory? category,
+    DateTime? remindAt,
   }) async {
     final autoCategory = category ?? _classifier.classify(title, notes: notes);
 
@@ -182,8 +210,10 @@ class TodoRepository {
       isFlagged: isFlagged,
       isPrivate: taskIsPrivate,
       category: autoCategory,
+      remindAt: remindAt,
     );
     await _db.into(_db.personalTasks).insert(_taskToCompanion(task));
+    await _scheduleReminderFor(task);
     return task;
   }
 
@@ -191,6 +221,9 @@ class TodoRepository {
     await (_db.update(
       _db.personalTasks,
     )..where((t) => t.id.equals(task.id))).write(_taskToCompanion(task));
+    // Cancel old reminder, then schedule the (possibly new) one.
+    await _notifications?.cancelReminder(_notifId(task.id));
+    await _scheduleReminderFor(task);
   }
 
   Future<void> completeTask(String taskId) async {
@@ -203,6 +236,7 @@ class TodoRepository {
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
+    await _notifications?.cancelReminder(_notifId(taskId));
   }
 
   Future<void> uncompleteTask(String taskId) async {
@@ -240,6 +274,7 @@ class TodoRepository {
   }
 
   Future<void> deleteTask(String taskId) async {
+    await _notifications?.cancelReminder(_notifId(taskId));
     await (_db.delete(
       _db.personalSubtasks,
     )..where((t) => t.taskId.equals(taskId))).go();
@@ -384,6 +419,25 @@ class TodoRepository {
         updatedAt: Value(l.updatedAt),
       );
 
+  // ── Notification helpers ───────────────────────────────────────────────────
+
+  int _notifId(String taskId) => taskId.hashCode.abs();
+
+  Future<void> _scheduleReminderFor(PersonalTask task) async {
+    final notif = _notifications;
+    if (notif == null) return;
+    // Fire a notification at the exact due date+time (only when not all-day).
+    final dueDate = task.dueDate;
+    if (dueDate == null || task.isAllDay) return;
+    if (dueDate.isBefore(DateTime.now())) return;
+    await notif.scheduleReminder(
+      id: _notifId(task.id),
+      title: task.title,
+      body: 'Herinnering: ${task.title}',
+      at: dueDate,
+    );
+  }
+
   PersonalTask _taskFromRow(PersonalTaskRow r) => PersonalTask(
     id: r.id,
     listId: r.listId,
@@ -399,6 +453,7 @@ class TodoRepository {
     isPrivate: r.isPrivate,
     kidsTaskId: r.kidsTaskId,
     category: TaskCategory.values.byName(r.category),
+    remindAt: r.remindAt,
     sortOrder: r.sortOrder,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -420,6 +475,7 @@ class TodoRepository {
         isPrivate: Value(t.isPrivate),
         kidsTaskId: Value(t.kidsTaskId),
         category: Value(t.category.name),
+        remindAt: Value(t.remindAt),
         sortOrder: Value(t.sortOrder),
         createdAt: Value(t.createdAt),
         updatedAt: Value(t.updatedAt),

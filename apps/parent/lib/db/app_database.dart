@@ -13,7 +13,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Add remindAt column (nullable — no default needed).
+        await m.addColumn(personalTasks, personalTasks.remindAt);
+      }
+    },
+  );
 
   // Open a persistent SQLite file in the app's documents directory.
   static QueryExecutor _openConnection() {

@@ -83,7 +83,6 @@ class _KidsShellState extends State<_KidsShell> {
   late final CouchSyncService _syncService;
   late final SyncOrchestrator _syncOrchestrator;
   late final ApprovalService _approvalService;
-  late final TicketService _ticketService;
 
   DeviceIdentity? _identity;
 
@@ -102,7 +101,6 @@ class _KidsShellState extends State<_KidsShell> {
 
     final store = _SyncDocumentStore(_syncService);
     _approvalService = ApprovalService(store: store);
-    _ticketService = TicketService(store: store);
 
     _loadIdentity();
   }
@@ -126,7 +124,6 @@ class _KidsShellState extends State<_KidsShell> {
     return KidsHomeScreen(
       identity: _identity!,
       approvalService: _approvalService,
-      ticketService: _ticketService,
       syncService: _syncService,
     );
   }
@@ -154,14 +151,12 @@ class _SyncDocumentStore implements DocumentStore {
 class KidsHomeScreen extends StatefulWidget {
   final DeviceIdentity identity;
   final ApprovalService approvalService;
-  final TicketService ticketService;
   final CouchSyncService syncService;
 
   const KidsHomeScreen({
     super.key,
     required this.identity,
     required this.approvalService,
-    required this.ticketService,
     required this.syncService,
   });
 
@@ -171,6 +166,33 @@ class KidsHomeScreen extends StatefulWidget {
 
 class _KidsHomeScreenState extends State<KidsHomeScreen> {
   void _refresh() => setState(() {});
+
+  /// Detect tasks whose dueDate + 1 day has passed and mark them overdue.
+  /// Returns true if any task was updated (triggers rebuild).
+  bool _checkOverdueTasks() {
+    final now = DateTime.now().toUtc();
+    bool changed = false;
+    for (final doc in widget.syncService.localDocs) {
+      if (doc['assignedToId'] != widget.identity.deviceId) continue;
+      final statusStr = doc['status'] as String? ?? '';
+      if (statusStr == TaskStatus.completed.name ||
+          statusStr == TaskStatus.pendingApproval.name ||
+          statusStr == TaskStatus.overdue.name)
+        continue;
+      final dueDateStr = doc['dueDate'] as String?;
+      if (dueDateStr == null) continue;
+      final dueDate = DateTime.parse(dueDateStr);
+      if (now.isAfter(dueDate.add(const Duration(days: 1)))) {
+        widget.syncService.upsertLocal({
+          ...doc,
+          'status': TaskStatus.overdue.name,
+          'updatedAt': now.toIso8601String(),
+        });
+        changed = true;
+      }
+    }
+    return changed;
+  }
 
   List<Task> get _myTasks => widget.syncService.localDocs
       .where(
@@ -183,6 +205,11 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Check and auto-mark overdue tasks after the frame renders.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_checkOverdueTasks()) setState(() {});
+    });
+
     final ledgerDoc = widget.syncService.localDocs
         .where((d) => d['_id'] == 'xp:${widget.identity.deviceId}')
         .firstOrNull;
@@ -211,24 +238,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.help_outline),
-        label: const Text('Vraag hulp'),
-        onPressed: () => _showHelpDialog(context),
-      ),
     );
-  }
-
-  Future<void> _showHelpDialog(BuildContext context) async {
-    final submitted = await showDialog<bool>(
-      context: context,
-      builder: (_) => _HelpTicketDialog(
-        familyPlanId: 'plan:main',
-        requesterId: widget.identity.deviceId,
-        ticketService: widget.ticketService,
-      ),
-    );
-    if (submitted == true) _refresh();
   }
 }
 
@@ -313,13 +323,26 @@ class _TaskCard extends StatelessWidget {
       child: ListTile(
         leading: _statusIcon(task.status),
         title: Text(task.title),
-        subtitle: task.xpReward > 0
-            ? Text(
-                '+${task.xpReward} XP',
-                style: const TextStyle(color: Colors.amber),
-              )
-            : null,
+        subtitle: _buildSubtitle(),
         trailing: _actionButton(),
+      ),
+    );
+  }
+
+  Widget? _buildSubtitle() {
+    final parts = <String>[];
+    if (task.xpReward > 0) parts.add('+${task.xpReward} XP');
+    if (task.dueDate != null) {
+      final d = task.dueDate!.toLocal();
+      parts.add('Inleveren vóór ${d.day}-${d.month}-${d.year}');
+    }
+    if (parts.isEmpty) return null;
+    return Text(
+      parts.join('  ·  '),
+      style: TextStyle(
+        color: task.status == TaskStatus.overdue
+            ? Colors.redAccent
+            : Colors.amber,
       ),
     );
   }
@@ -336,12 +359,20 @@ class _TaskCard extends StatelessWidget {
         Icons.check_circle,
         color: Colors.green,
       ),
+      TaskStatus.overdue => const Icon(Icons.schedule, color: Colors.redAccent),
     };
   }
 
   Widget? _actionButton() {
     if (task.status == TaskStatus.pendingApproval) {
       return const Chip(label: Text('Wachten…'));
+    }
+    if (task.status == TaskStatus.overdue) {
+      return Chip(
+        label: const Text('Niet op tijd'),
+        backgroundColor: Colors.redAccent.withAlpha(40),
+        labelStyle: const TextStyle(color: Colors.redAccent),
+      );
     }
     if (task.status == TaskStatus.pending ||
         task.status == TaskStatus.inProgress) {
@@ -362,87 +393,5 @@ class _TaskCard extends StatelessWidget {
     final updated = task.copyWith(status: newStatus);
     syncService.upsertLocal({'_id': updated.id, ...updated.toJson()});
     onChanged();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Help-ticket dialog
-// ---------------------------------------------------------------------------
-
-class _HelpTicketDialog extends StatefulWidget {
-  final String familyPlanId;
-  final String requesterId;
-  final TicketService ticketService;
-
-  const _HelpTicketDialog({
-    required this.familyPlanId,
-    required this.requesterId,
-    required this.ticketService,
-  });
-
-  @override
-  State<_HelpTicketDialog> createState() => _HelpTicketDialogState();
-}
-
-class _HelpTicketDialogState extends State<_HelpTicketDialog> {
-  final _titleCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _descCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Ask for help'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'What do you need help with?',
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please enter a title'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _descCtrl,
-              decoration: const InputDecoration(
-                labelText: 'More details (optional)',
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('Send')),
-      ],
-    );
-  }
-
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    widget.ticketService.createTicket(
-      familyPlanId: widget.familyPlanId,
-      requesterId: widget.requesterId,
-      title: _titleCtrl.text.trim(),
-      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-    );
-    Navigator.pop(context, true);
   }
 }

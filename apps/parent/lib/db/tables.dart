@@ -63,6 +63,9 @@ class PersonalTasks extends Table {
   // Auto-detected: household / health / admin / school / finance / other
   TextColumn get category => text().withDefault(const Constant('other'))();
 
+  /// When to fire a local reminder notification; null = no reminder.
+  DateTimeColumn get remindAt => dateTime().nullable()();
+
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   DateTimeColumn get createdAt => dateTime()();

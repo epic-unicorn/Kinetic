@@ -693,6 +693,17 @@ class $PersonalTasksTable extends PersonalTasks
     requiredDuringInsert: false,
     defaultValue: const Constant('other'),
   );
+  static const VerificationMeta _remindAtMeta = const VerificationMeta(
+    'remindAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> remindAt = GeneratedColumn<DateTime>(
+    'remind_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -743,6 +754,7 @@ class $PersonalTasksTable extends PersonalTasks
     isPrivate,
     kidsTaskId,
     category,
+    remindAt,
     sortOrder,
     createdAt,
     updatedAt,
@@ -856,6 +868,12 @@ class $PersonalTasksTable extends PersonalTasks
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
+    if (data.containsKey('remind_at')) {
+      context.handle(
+        _remindAtMeta,
+        remindAt.isAcceptableOrUnknown(data['remind_at']!, _remindAtMeta),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -943,6 +961,10 @@ class $PersonalTasksTable extends PersonalTasks
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
+      remindAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}remind_at'],
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -979,6 +1001,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   final bool isPrivate;
   final String? kidsTaskId;
   final String category;
+
+  /// When to fire a local reminder notification; null = no reminder.
+  final DateTime? remindAt;
   final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -997,6 +1022,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     required this.isPrivate,
     this.kidsTaskId,
     required this.category,
+    this.remindAt,
     required this.sortOrder,
     required this.createdAt,
     required this.updatedAt,
@@ -1030,6 +1056,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       map['kids_task_id'] = Variable<String>(kidsTaskId);
     }
     map['category'] = Variable<String>(category);
+    if (!nullToAbsent || remindAt != null) {
+      map['remind_at'] = Variable<DateTime>(remindAt);
+    }
     map['sort_order'] = Variable<int>(sortOrder);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1064,6 +1093,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ? const Value.absent()
           : Value(kidsTaskId),
       category: Value(category),
+      remindAt: remindAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remindAt),
       sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -1090,6 +1122,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       isPrivate: serializer.fromJson<bool>(json['isPrivate']),
       kidsTaskId: serializer.fromJson<String?>(json['kidsTaskId']),
       category: serializer.fromJson<String>(json['category']),
+      remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -1113,6 +1146,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       'isPrivate': serializer.toJson<bool>(isPrivate),
       'kidsTaskId': serializer.toJson<String?>(kidsTaskId),
       'category': serializer.toJson<String>(category),
+      'remindAt': serializer.toJson<DateTime?>(remindAt),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -1134,6 +1168,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     bool? isPrivate,
     Value<String?> kidsTaskId = const Value.absent(),
     String? category,
+    Value<DateTime?> remindAt = const Value.absent(),
     int? sortOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -1154,6 +1189,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate: isPrivate ?? this.isPrivate,
     kidsTaskId: kidsTaskId.present ? kidsTaskId.value : this.kidsTaskId,
     category: category ?? this.category,
+    remindAt: remindAt.present ? remindAt.value : this.remindAt,
     sortOrder: sortOrder ?? this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -1182,6 +1218,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ? data.kidsTaskId.value
           : this.kidsTaskId,
       category: data.category.present ? data.category.value : this.category,
+      remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -1205,6 +1242,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('category: $category, ')
+          ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -1228,6 +1266,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate,
     kidsTaskId,
     category,
+    remindAt,
     sortOrder,
     createdAt,
     updatedAt,
@@ -1250,6 +1289,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           other.isPrivate == this.isPrivate &&
           other.kidsTaskId == this.kidsTaskId &&
           other.category == this.category &&
+          other.remindAt == this.remindAt &&
           other.sortOrder == this.sortOrder &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -1270,6 +1310,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
   final Value<bool> isPrivate;
   final Value<String?> kidsTaskId;
   final Value<String> category;
+  final Value<DateTime?> remindAt;
   final Value<int> sortOrder;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -1289,6 +1330,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.category = const Value.absent(),
+    this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1309,6 +1351,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.category = const Value.absent(),
+    this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -1332,6 +1375,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Expression<bool>? isPrivate,
     Expression<String>? kidsTaskId,
     Expression<String>? category,
+    Expression<DateTime>? remindAt,
     Expression<int>? sortOrder,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -1352,6 +1396,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       if (isPrivate != null) 'is_private': isPrivate,
       if (kidsTaskId != null) 'kids_task_id': kidsTaskId,
       if (category != null) 'category': category,
+      if (remindAt != null) 'remind_at': remindAt,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1374,6 +1419,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Value<bool>? isPrivate,
     Value<String?>? kidsTaskId,
     Value<String>? category,
+    Value<DateTime?>? remindAt,
     Value<int>? sortOrder,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -1394,6 +1440,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       category: category ?? this.category,
+      remindAt: remindAt ?? this.remindAt,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1446,6 +1493,9 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (remindAt.present) {
+      map['remind_at'] = Variable<DateTime>(remindAt.value);
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -1478,6 +1528,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('category: $category, ')
+          ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -2891,6 +2942,7 @@ typedef $$PersonalTasksTableCreateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String> category,
+      Value<DateTime?> remindAt,
       Value<int> sortOrder,
       required DateTime createdAt,
       required DateTime updatedAt,
@@ -2912,6 +2964,7 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String> category,
+      Value<DateTime?> remindAt,
       Value<int> sortOrder,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -3041,6 +3094,11 @@ class $$PersonalTasksTableFilterComposer
 
   ColumnFilters<String> get category => $composableBuilder(
     column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get remindAt => $composableBuilder(
+    column: $table.remindAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3182,6 +3240,11 @@ class $$PersonalTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get remindAt => $composableBuilder(
+    column: $table.remindAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -3276,6 +3339,9 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get remindAt =>
+      $composableBuilder(column: $table.remindAt, builder: (column) => column);
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
@@ -3377,6 +3443,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -3396,6 +3463,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 category: category,
+                remindAt: remindAt,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -3417,6 +3485,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
@@ -3436,6 +3505,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 category: category,
+                remindAt: remindAt,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
