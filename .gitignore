@@ -1,0 +1,54 @@
+# Environment / secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# Keep the example template tracked
+!.env.example
+
+# ── Miscellaneous ────────────────────────────────────────────────────────────
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# ── Flutter / Dart / Pub ─────────────────────────────────────────────────────
+**/doc/api/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+# ── Android ──────────────────────────────────────────────────────────────────
+gradle-wrapper.jar
+**/.gradle/
+**/captures/
+**/local.properties
+GeneratedPluginRegistrant.java
+.cxx/
+
+# Android signing — never commit keystores or key configs
+key.properties
+**/*.keystore
+**/*.jks
