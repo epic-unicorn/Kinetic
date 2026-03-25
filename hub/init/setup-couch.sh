@@ -16,7 +16,7 @@ curl -sf -X POST "${BASE}/_cluster_setup" \
 
 echo "==> Ensuring system databases exist..."
 for db in _users _replicator; do
-  result=$(curl -sf -o /dev/null -w "%{http_code}" -X PUT "${BASE}/${db}")
+  result=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${BASE}/${db}")
   if [ "$result" = "201" ]; then
     echo "    Created ${db}"
   elif [ "$result" = "412" ]; then
@@ -27,7 +27,7 @@ for db in _users _replicator; do
 done
 
 echo "==> Creating kinetic_family database..."
-result=$(curl -sf -o /dev/null -w "%{http_code}" -X PUT "${BASE}/kinetic_family")
+result=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "${BASE}/kinetic_family")
 if [ "$result" = "201" ]; then
   echo "    Created kinetic_family"
 elif [ "$result" = "412" ]; then
