@@ -7,6 +7,9 @@
     <!-- CHANGE_WIFI_MULTICAST_STATE is required for mDNS multicast on Android -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
+    <!-- Camera for QR enrollment scan -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <!-- Notification permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

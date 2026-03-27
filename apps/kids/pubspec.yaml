@@ -43,6 +43,12 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   cryptography_flutter: ^2.3.2
 
+  # QR code scanning (parent enrollment QR)
+  mobile_scanner: ^7.0.0
+
+  # QR code display (show child-enrollment QR for parent app to scan back)
+  qr_flutter: ^4.1.0
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

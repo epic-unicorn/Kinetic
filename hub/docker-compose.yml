@@ -60,5 +60,27 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Enrollment server — serves a QR code at http://<hub-ip>:8765/enroll
+  # that the parent app scans on first launch to receive the mesh key +
+  # CouchDB credentials.  Bind-mount nothing sensitive; credentials come
+  # from the .env file.  You can stop this container after family setup.
+  # ---------------------------------------------------------------------------
+  enroll:
+    build:
+      context: ./enroll
+    ports:
+      - "8765:8765"
+    environment:
+      MESH_KEY_HEX: ${MESH_KEY_HEX}
+      COUCHDB_USER: ${COUCHDB_USER:-kinetic}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-changeme}
+      HUB_ID: ${HUB_ID:-kinetic-hub}
+      ENROLL_PORT: 8765
+    depends_on:
+      couch_init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
 volumes:
   couch_data:

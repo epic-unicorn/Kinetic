@@ -41,16 +41,23 @@ packages/support  — approvals, XP ledger, help tickets
 apps/parent       — parent Flutter app
   lib/
   ├── db/         — Drift AppDatabase (personal task tables + DAOs)
+  ├── enrollment/ — HubEnrollmentScreen (QR scan, first-launch gate)
   ├── todo/
   │   ├── models/    — PersonalTask, TaskList, enums (local-only types)
   │   ├── services/  — TodoRepository, MissionConverterService
   │   ├── screens/   — TasksScreen
   │   └── widgets/   — TaskTile, TaskDetailSheet, ConvertToMissionSheet, QuickAddBar
   ├── partner/    — LoadAnalyzer, LoadSyncService, PartnerScreen
-  ├── settings/   — SettingsScreen
+  ├── settings/   — SettingsScreen (hub re-enroll + child QR)
   └── support/    — CouchDocumentStore wrapper
 apps/kids         — kids Flutter app
+  lib/
+  ├── enrollment/ — ChildEnrollmentScreen (QR scan, first-launch gate)
+  └── ...
 hub/              — Docker Compose sync hub
+  ├── advertise/  — mDNS advertiser
+  ├── enroll/     — QR enrollment server (port 8765)
+  └── init/       — CouchDB one-time setup
 ```
 
 > **Personal tasks vs shared tasks** — `PersonalTask` is stored in the device-local Drift SQLite database and never syncs. When a parent promotes a personal task to a kids mission via *Convert to Mission*, `MissionConverterService` creates a `kinetic_core.Task` and upserts it into `CouchDocumentStore`, from where it syncs to child devices on the next heartbeat. The `PersonalTask.kidsTaskId` field stores the backlink.
@@ -156,10 +163,10 @@ All three packages and both apps should report **No issues found**.
 
 ## Running the apps locally
 
-Both apps connect to the hub over mDNS + CouchDB. For local development:
+Both apps use `kDebugMode` to bypass enrollment and connect to the hub automatically — no QR scanning needed during development.
 
-1. Start the hub (see [deployment.md § Running the hub locally](deployment.md#running-the-hub-locally)).
-2. Run the app with the dev defaults (mesh key and credentials are baked in as fallback values):
+1. Start the hub (see [deployment.md § Running the hub locally](deployment.md#4-running-the-hub-locally-development)).
+2. Run the app directly:
 
 ```bash
 # Parent app
@@ -171,7 +178,7 @@ cd apps/kids
 flutter run
 ```
 
-The dev mesh key `de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10` is baked into both apps as a fallback — it matches nothing in production (where you supply your own via `--dart-define`).
+In `kDebugMode` both apps skip secure-storage lookup and use the built-in dev key `de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10` plus `kinetic`/`changeme` credentials — matching the defaults in `hub/.env.example`.  In a release build this guard is stripped and the app requires proper enrollment.
 
 ---
 

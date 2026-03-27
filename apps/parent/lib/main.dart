@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kinetic_core/kinetic_core.dart';
 import 'package:kinetic_support/kinetic_support.dart';
 import 'package:kinetic_sync/kinetic_sync.dart';
 
 import 'db/app_database.dart';
+import 'enrollment/hub_enrollment_screen.dart';
 import 'partner/screens/partner_screen.dart';
 import 'partner/services/load_sync_service.dart';
 import 'secure/flutter_secure_key_value_store.dart';
@@ -15,33 +17,17 @@ import 'todo/services/mission_converter_service.dart';
 import 'todo/services/todo_repository.dart';
 
 // ---------------------------------------------------------------------------
-// Hub configuration — supply at build time via --dart-define, e.g.:
-//   flutter build apk \
-//     --dart-define=MESH_KEY_HEX=<64-char-hex> \
-//     --dart-define=COUCH_USER=kinetic \
-//     --dart-define=COUCH_PASSWORD=changeme
-//
-// The defaults below match hub/.env.example for local development.
+// Dev-only fallback credentials used when no key is stored and the app runs
+// in debug mode (matches hub/.env.example defaults).
 // ---------------------------------------------------------------------------
+const _kDevMeshKeyHex =
+    'de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10';
+const _kDevCouchUser = 'kinetic';
+const _kDevCouchPassword = 'changeme';
 
-const _kMeshKeyHex = String.fromEnvironment(
-  'MESH_KEY_HEX',
-  // dev-only fallback — replace in production via --dart-define
-  defaultValue:
-      'de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10',
-);
-const _kCouchUser = String.fromEnvironment(
-  'COUCH_USER',
-  defaultValue: 'kinetic',
-);
-const _kCouchPassword = String.fromEnvironment(
-  'COUCH_PASSWORD',
-  defaultValue: 'changeme',
-);
-
-List<int> _parseMeshKey() => List.generate(
+List<int> _hexToBytes(String hex) => List.generate(
   32,
-  (i) => int.parse(_kMeshKeyHex.substring(i * 2, i * 2 + 2), radix: 16),
+  (i) => int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16),
 );
 
 Future<void> main() async {
@@ -83,7 +69,7 @@ class _RootShellState extends State<_RootShell> {
   late final IdentityService _identityService;
   late final PairingService _pairingService;
   late final CouchSyncService _syncService;
-  late final SyncOrchestrator _syncOrchestrator;
+  SyncOrchestrator? _syncOrchestrator;
   late final ApprovalService _approvalService;
   late final TicketService _ticketService;
   late final AppDatabase _db;
@@ -93,6 +79,8 @@ class _RootShellState extends State<_RootShell> {
   late final CouchDocumentStore _store;
   late final MissionConverterService _missionConverter;
 
+  // null = still checking storage; false = need enrollment; true = ready
+  bool? _enrolled;
   int _selectedIndex = 0;
   SyncStatus _syncStatus = SyncStatus.idle();
 
@@ -102,16 +90,6 @@ class _RootShellState extends State<_RootShell> {
     _identityService = IdentityService(store: FlutterSecureKeyValueStore());
     _pairingService = PairingService(identityService: _identityService);
     _syncService = CouchSyncService();
-    _syncOrchestrator = SyncOrchestrator(
-      discoveryService: BonsoirMdnsDiscoveryService(),
-      syncService: _syncService,
-      meshKey: _parseMeshKey(),
-      credentials: (username: _kCouchUser, password: _kCouchPassword),
-    );
-    _syncOrchestrator.statusStream.listen(
-      (s) => setState(() => _syncStatus = s),
-    );
-    _syncOrchestrator.start();
 
     final store = CouchDocumentStore(_syncService);
     _store = store;
@@ -131,17 +109,80 @@ class _RootShellState extends State<_RootShell> {
       identityService: _identityService,
       notifications: _notifSvc,
     );
+
+    _checkEnrollment();
   }
+
+  Future<void> _checkEnrollment() async {
+    // In debug mode use the dev fallback so `flutter run` still works.
+    if (kDebugMode) {
+      _startSync(
+        _hexToBytes(_kDevMeshKeyHex),
+        _kDevCouchUser,
+        _kDevCouchPassword,
+      );
+      if (mounted) setState(() => _enrolled = true);
+      return;
+    }
+
+    final secStore = FlutterSecureKeyValueStore();
+    final hex = await secStore.read(key: kMeshKeyHexKey);
+    if (hex == null) {
+      if (mounted) setState(() => _enrolled = false);
+      return;
+    }
+
+    final user = await secStore.read(key: kCouchUserKey) ?? _kDevCouchUser;
+    final pass =
+        await secStore.read(key: kCouchPasswordKey) ?? _kDevCouchPassword;
+    _startSync(_hexToBytes(hex), user, pass);
+    if (mounted) setState(() => _enrolled = true);
+  }
+
+  void _startSync(List<int> meshKey, String couchUser, String couchPassword) {
+    _syncOrchestrator?.dispose();
+    _syncOrchestrator = SyncOrchestrator(
+      discoveryService: BonsoirMdnsDiscoveryService(),
+      syncService: _syncService,
+      meshKey: meshKey,
+      credentials: (username: couchUser, password: couchPassword),
+    );
+    _syncOrchestrator!.statusStream.listen(
+      (s) => setState(() => _syncStatus = s),
+    );
+    _syncOrchestrator!.start();
+  }
+
+  void _onEnrolled(List<int> meshKey, String couchUser, String couchPassword) {
+    _startSync(meshKey, couchUser, couchPassword);
+    setState(() => _enrolled = true);
+  }
+
+  void _onSkip() => setState(() => _enrolled = true); // standalone, no sync
 
   @override
   void dispose() {
-    _syncOrchestrator.dispose();
+    _syncOrchestrator?.dispose();
     _db.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Still checking secure storage.
+    if (_enrolled == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // First launch — no mesh key stored yet.
+    if (_enrolled == false) {
+      return HubEnrollmentScreen(
+        pairingService: _pairingService,
+        onEnrolled: _onEnrolled,
+        onSkip: _onSkip,
+      );
+    }
+
     final screens = [
       TasksScreen(
         repo: _todoRepository,
@@ -162,6 +203,7 @@ class _RootShellState extends State<_RootShell> {
         identityService: _identityService,
         pairingService: _pairingService,
         syncStatus: _syncStatus,
+        onReenroll: _onEnrolled,
       ),
     ];
 

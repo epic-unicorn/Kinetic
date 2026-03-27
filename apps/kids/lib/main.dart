@@ -1,38 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kinetic_core/kinetic_core.dart';
 import 'package:kinetic_support/kinetic_support.dart';
 import 'package:kinetic_sync/kinetic_sync.dart';
 
+import 'enrollment/child_enrollment_screen.dart';
 import 'secure/flutter_secure_key_value_store.dart';
 
 // ---------------------------------------------------------------------------
-// Hub configuration — supply at build time via --dart-define, e.g.:
-//   flutter build apk \
-//     --dart-define=MESH_KEY_HEX=<64-char-hex> \
-//     --dart-define=COUCH_USER=kinetic \
-//     --dart-define=COUCH_PASSWORD=changeme
-//
-// The defaults below match hub/.env.example for local development.
+// Dev-only fallback credentials used in debug mode (no enrollment needed).
 // ---------------------------------------------------------------------------
+const _kDevMeshKeyHex =
+    'de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10';
+const _kDevCouchUser = 'kinetic';
+const _kDevCouchPassword = 'changeme';
 
-const _kMeshKeyHex = String.fromEnvironment(
-  'MESH_KEY_HEX',
-  // dev-only fallback — replace in production via --dart-define
-  defaultValue:
-      'de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10',
-);
-const _kCouchUser = String.fromEnvironment(
-  'COUCH_USER',
-  defaultValue: 'kinetic',
-);
-const _kCouchPassword = String.fromEnvironment(
-  'COUCH_PASSWORD',
-  defaultValue: 'changeme',
-);
-
-List<int> _parseMeshKey() => List.generate(
+List<int> _hexToBytes(String hex) => List.generate(
   32,
-  (i) => int.parse(_kMeshKeyHex.substring(i * 2, i * 2 + 2), radix: 16),
+  (i) => int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16),
 );
 
 // ---------------------------------------------------------------------------
@@ -80,47 +65,94 @@ class _KidsShell extends StatefulWidget {
 
 class _KidsShellState extends State<_KidsShell> {
   late final IdentityService _identityService;
+  late final PairingService _pairingService;
   late final CouchSyncService _syncService;
-  late final SyncOrchestrator _syncOrchestrator;
+  SyncOrchestrator? _syncOrchestrator;
   late final ApprovalService _approvalService;
 
   DeviceIdentity? _identity;
+  // null = checking; false = need enrollment; true = ready
+  bool? _enrolled;
 
   @override
   void initState() {
     super.initState();
     _identityService = IdentityService(store: FlutterSecureKeyValueStore());
+    _pairingService = PairingService(identityService: _identityService);
     _syncService = CouchSyncService();
-    _syncOrchestrator = SyncOrchestrator(
-      discoveryService: BonsoirMdnsDiscoveryService(),
-      syncService: _syncService,
-      meshKey: _parseMeshKey(),
-      credentials: (username: _kCouchUser, password: _kCouchPassword),
-    );
-    _syncOrchestrator.start();
 
     final store = _SyncDocumentStore(_syncService);
     _approvalService = ApprovalService(store: store);
 
-    _loadIdentity();
+    _checkEnrollment();
   }
 
-  Future<void> _loadIdentity() async {
+  Future<void> _checkEnrollment() async {
     final id = await _identityService.getOrCreateIdentity();
-    if (mounted) setState(() => _identity = id);
+    if (!mounted) return;
+    setState(() => _identity = id);
+
+    if (kDebugMode) {
+      _startSync(
+        _hexToBytes(_kDevMeshKeyHex),
+        _kDevCouchUser,
+        _kDevCouchPassword,
+      );
+      if (mounted) setState(() => _enrolled = true);
+      return;
+    }
+
+    final secStore = FlutterSecureKeyValueStore();
+    final hex = await secStore.read(key: kMeshKeyHexKey);
+    if (hex == null) {
+      if (mounted) setState(() => _enrolled = false);
+      return;
+    }
+
+    final user = await secStore.read(key: kCouchUserKey) ?? _kDevCouchUser;
+    final pass =
+        await secStore.read(key: kCouchPasswordKey) ?? _kDevCouchPassword;
+    _startSync(_hexToBytes(hex), user, pass);
+    if (mounted) setState(() => _enrolled = true);
+  }
+
+  void _startSync(List<int> meshKey, String couchUser, String couchPassword) {
+    _syncOrchestrator?.dispose();
+    _syncOrchestrator = SyncOrchestrator(
+      discoveryService: BonsoirMdnsDiscoveryService(),
+      syncService: _syncService,
+      meshKey: meshKey,
+      credentials: (username: couchUser, password: couchPassword),
+    );
+    _syncOrchestrator!.start();
+  }
+
+  void _onEnrolled(List<int> meshKey, String couchUser, String couchPassword) {
+    _startSync(meshKey, couchUser, couchPassword);
+    setState(() => _enrolled = true);
   }
 
   @override
   void dispose() {
-    _syncOrchestrator.dispose();
+    _syncOrchestrator?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_identity == null) {
+    // Still loading identity / checking secure storage.
+    if (_identity == null || _enrolled == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    // First launch — no mesh key stored yet, show enrollment scanner.
+    if (_enrolled == false) {
+      return ChildEnrollmentScreen(
+        pairingService: _pairingService,
+        onEnrolled: _onEnrolled,
+      );
+    }
+
     return KidsHomeScreen(
       identity: _identity!,
       approvalService: _approvalService,
@@ -177,8 +209,9 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
       final statusStr = doc['status'] as String? ?? '';
       if (statusStr == TaskStatus.completed.name ||
           statusStr == TaskStatus.pendingApproval.name ||
-          statusStr == TaskStatus.overdue.name)
+          statusStr == TaskStatus.overdue.name) {
         continue;
+      }
       final dueDateStr = doc['dueDate'] as String?;
       if (dueDateStr == null) continue;
       final dueDate = DateTime.parse(dueDateStr);

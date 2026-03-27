@@ -114,8 +114,9 @@ class LoadSyncService {
       if (doc['type'] != 'shared_task') continue;
       if (id != null &&
           doc['fromDeviceId'] != id &&
-          doc['acceptedByDeviceId'] != id)
+          doc['acceptedByDeviceId'] != id) {
         continue;
+      }
       final task = SharedTask._fromJson(doc);
       if (task != null) results.add(task);
     }

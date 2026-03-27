@@ -49,6 +49,9 @@ dependencies:
   # QR code display for pairing screen
   qr_flutter: ^4.1.0
 
+  # QR code scanning (hub enrollment + child enrollment)
+  mobile_scanner: ^7.0.0
+
   cupertino_icons: ^1.0.8
 
   # Local SQLite persistence (personal todos + partner proposals)

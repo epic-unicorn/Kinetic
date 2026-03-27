@@ -24,22 +24,30 @@ class PairingService {
 
   /// Generates a base64-encoded pairing payload for display as a QR code.
   ///
-  /// Each call produces a **fresh 32-byte mesh key**. The first device to
-  /// initiate pairing owns the mesh key and distributes it to all peers.
+  /// If [meshKeyBytes] is provided the payload reuses that key (so a child
+  /// device can be enrolled onto the same mesh as the hub).  Otherwise a
+  /// fresh 32-byte key is generated.
+  ///
+  /// [couchCredentials] optionally embeds CouchDB credentials so the
+  /// scanning device can connect to the hub without a separate step.
   Future<String> generatePairingPayload({
     required String deviceLabel,
     required MemberRole role,
+    List<int>? meshKeyBytes,
+    ({String username, String password})? couchCredentials,
   }) async {
     final identity = await _identityService.getOrCreateIdentity();
-    final meshKey = _generateSecureMeshKey();
+    final meshKey = meshKeyBytes ?? _generateSecureMeshKey();
 
-    final payload = {
+    final payload = <String, dynamic>{
       'v': _payloadVersion,
       'id': identity.deviceId,
       'pk': identity.publicKeyBase64,
       'mk': base64Encode(meshKey),
       'role': role.name,
       'label': deviceLabel,
+      if (couchCredentials != null) 'cu': couchCredentials.username,
+      if (couchCredentials != null) 'cp': couchCredentials.password,
     };
 
     return base64Encode(utf8.encode(jsonEncode(payload)));
@@ -59,12 +67,16 @@ class PairingService {
         throw FormatException('Unsupported pairing payload version: $version');
       }
 
+      final cu = map['cu'] as String?;
+      final cp = map['cp'] as String?;
       return PairingData(
         deviceId: map['id'] as String,
         publicKeyBase64: map['pk'] as String,
         meshKeyBase64: map['mk'] as String,
         role: MemberRole.values.byName(map['role'] as String),
         label: map['label'] as String,
+        couchUsername: cu,
+        couchPassword: cp,
       );
     } on FormatException {
       rethrow;
@@ -89,12 +101,18 @@ class PairingData {
   final MemberRole role;
   final String label;
 
+  /// Optional CouchDB credentials embedded by the hub enrollment QR.
+  final String? couchUsername;
+  final String? couchPassword;
+
   const PairingData({
     required this.deviceId,
     required this.publicKeyBase64,
     required this.meshKeyBase64,
     required this.role,
     required this.label,
+    this.couchUsername,
+    this.couchPassword,
   });
 
   /// Converts this pairing data into a trusted [FamilyMember] record.

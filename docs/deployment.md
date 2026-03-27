@@ -12,7 +12,7 @@ A complete Kinetic Link deployment consists of:
 2. **Parent app** — installed on one or more Android/iOS devices belonging to parents.
 3. **Kids app** — installed on Android devices used by children.
 
-All three components must share the same **mesh key**.  The hub never holds this key; it stores only encrypted blobs.
+All three components must share the same **mesh key**.  The hub holds the key and distributes it to apps at enrollment time via a QR code — the key is never baked into the app binary.
 
 ---
 
@@ -25,7 +25,9 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 # example output: a3f1c09e4b782d56...  (64 hex chars)
 ```
 
-Keep this value secret; treat it like a password.  You will supply it as a `--dart-define` argument to every app build.
+Paste this value as `MESH_KEY_HEX` in `hub/.env`.  **Keep the `.env` file secret** — treat it like a password manager vault file.
+
+The key is distributed to each app at enrollment time via a QR code served by the hub; you never need to pass it to a build tool.
 
 ---
 
@@ -46,11 +48,12 @@ cd hub
 
 # 1. Copy and edit the environment file
 cp .env.example .env
-# Edit .env:
-#   COUCHDB_USER   — admin username (anything, never shown in the app)
-#   COUCHDB_PASSWORD — admin password (not the mesh key; used for replication auth)
-#   HUB_ID         — a stable name for this hub, e.g. "the-smiths-hub"
-#   COUCH_PORT     — leave as 5984 unless you remap
+# Edit .env — uncomment and fill in all four values:
+#   COUCHDB_USER        — admin username (anything, never shown in the app)
+#   COUCHDB_PASSWORD    — admin password (not the mesh key)
+#   HUB_ID              — a stable name for this hub, e.g. "the-smiths-hub"
+#   MESH_KEY_HEX        — output of: python3 -c "import secrets; print(secrets.token_hex(32))"
+#   COUCH_PORT          — leave as 5984 unless you remap
 
 # 2. Start the stack
 docker compose up -d
@@ -65,7 +68,8 @@ Verify everything is running:
 
 ```bash
 docker compose ps
-# All three services should show "running" / "exited 0"
+# All four services should show "running" / "exited 0"
+# (couchdb, couch_init, advertiser, enroll)
 
 curl -s http://localhost:5984/ | python3 -m json.tool
 # Should return CouchDB welcome JSON
@@ -76,6 +80,7 @@ curl -s http://localhost:5984/ | python3 -m json.tool
 ```bash
 docker compose logs couchdb      # CouchDB
 docker compose logs advertiser   # mDNS advertiser
+docker compose logs enroll       # enrollment QR server
 docker compose logs couch_init   # one-shot init (already exited)
 ```
 
@@ -103,75 +108,7 @@ Use a `launchd` plist (macOS) or a Scheduled Task / NSSM service (Windows) to ke
 
 ---
 
-## 3. Building app releases
-
-Both apps use `--dart-define` for all secrets.  Nothing sensitive is committed to the repository.
-
-### Required `--dart-define` arguments
-
-| Key | Description | Example |
-|---|---|---|
-| `MESH_KEY_HEX` | 64 hex chars — your family mesh key | `a3f1c09e...` |
-| `COUCH_USER` | CouchDB admin username from `hub/.env` | `kinetic` |
-| `COUCH_PASSWORD` | CouchDB admin password from `hub/.env` | `s3cr3t!` |
-
-> **Dev builds** (plain `flutter run` / `flutter build` without `--dart-define`) fall back to a built-in dev key and `kinetic`/`changeme` credentials that match `hub/.env.example`.  This is intentional for local development but must never be used in a family deployment.
-
-### Parent app (Android APK)
-
-```bash
-cd apps/parent
-
-flutter build apk --release \
-  --dart-define=MESH_KEY_HEX=<your-64-char-hex-key> \
-  --dart-define=COUCH_USER=<username> \
-  --dart-define=COUCH_PASSWORD=<password>
-
-# Output: build/app/outputs/flutter-apk/app-release.apk
-```
-
-### Parent app (iOS)
-
-```bash
-cd apps/parent
-
-flutter build ipa \
-  --dart-define=MESH_KEY_HEX=<your-64-char-hex-key> \
-  --dart-define=COUCH_USER=<username> \
-  --dart-define=COUCH_PASSWORD=<password>
-
-# Output: build/ios/ipa/*.ipa
-```
-
-### Kids app (Android APK)
-
-```bash
-cd apps/kids
-
-flutter build apk --release \
-  --dart-define=MESH_KEY_HEX=<your-64-char-hex-key> \
-  --dart-define=COUCH_USER=<username> \
-  --dart-define=COUCH_PASSWORD=<password>
-
-# Output: build/app/outputs/flutter-apk/app-release.apk
-```
-
-### Installing on a device
-
-```bash
-# Connect device via USB with developer mode + USB debugging enabled
-adb install build/app/outputs/flutter-apk/app-release.apk
-```
-
-Or transfer the APK via email / Google Drive and install from Files.
-
----
-
-## 4. Running the hub locally (development)
-
----
-
-## 3b. Running the hub on Unraid
+## 2b. Running the hub on Unraid
 
 Unraid is Linux-based, so `network_mode: host` works correctly — mDNS broadcast works inside the container without any workaround.
 
@@ -205,6 +142,7 @@ nano .env
 #   COUCHDB_USER      — admin username
 #   COUCHDB_PASSWORD  — admin password (not the mesh key)
 #   HUB_ID            — e.g. "the-smiths-hub"
+#   MESH_KEY_HEX      — output of: python3 -c "import secrets; print(secrets.token_hex(32))"
 #   COUCH_PORT        — leave as 5984 unless you have a conflict
 ```
 
@@ -217,7 +155,7 @@ nano .env
 - Set the **Environment file** to the `.env` you just edited.
 - Click **Compose Up**.
 
-Compose Manager will pull the images and start all three services (`couchdb`, `couch_init`, `advertiser`).
+Compose Manager will pull the images and start all four services (`couchdb`, `couch_init`, `advertiser`, `enroll`).
 
 **4. Verify**
 
@@ -227,7 +165,7 @@ curl -s http://localhost:5984/ | python3 -m json.tool
 # Should return CouchDB welcome JSON
 
 docker ps
-# couchdb and advertiser should show "Up"; couch_init "Exited (0)"
+# couchdb, advertiser and enroll should show "Up"; couch_init "Exited (0)"
 ```
 
 ### Persistent data
@@ -252,9 +190,81 @@ docker compose -f /mnt/user/appdata/kinetic/hub/docker-compose.yml logs -f
 
 ---
 
-## 4. Running the hub locally (development)
+## 3. Enrolling devices
 
-For local development, start the hub using the default dev credentials and then run the Flutter app with `flutter run` (no `--dart-define` needed):
+Enrollment replaces the old `--dart-define` build-time key distribution.  **Apps downloaded from an app store work without a custom build.**
+
+### Enrollment flow
+
+```
+1. Hub starts → enroll service serves QR at http://<hub-ip>:8765/enroll
+2. Parent opens parent app (first launch) → scans hub QR
+   → mesh key + CouchDB credentials stored in Android Keystore / iOS Keychain
+3. Parent opens Settings → "Kindertoestel toevoegen"
+   → shows a new QR containing the stored mesh key + credentials
+4. Child device opens kids app (first launch) → scans parent QR
+   → key + credentials stored in the device's secure enclave
+```
+
+After step 4, both apps connect to the hub via mDNS and sync automatically.
+
+### Enrolling additional parent devices
+
+Open **Instellingen → Verbinden met hub** on the new device and scan the hub QR again.
+
+### Enrolling additional child devices
+
+Open **Instellingen → Kindertoestel toevoegen** on any enrolled parent device and scan from the new child device.
+
+### Standalone mode (no hub)
+
+During first launch the parent app offers **"Overslaan — zonder hub gebruiken"**.  Personal task management (the Tasks tab) works fully offline.  Family sync features (Approvals, XP, help tickets) are disabled until the parent enrolls via Settings later.
+
+---
+
+## 4. Building app releases
+
+No secrets are embedded in the binary.  A plain release build works for any family.
+
+```bash
+# Parent app
+cd apps/parent
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
+
+# Kids app
+cd apps/kids
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
+```
+
+For iOS:
+
+```bash
+cd apps/parent
+flutter build ipa
+# Output: build/ios/ipa/*.ipa
+```
+
+### Installing on a device
+
+```bash
+# Connect device via USB with developer mode + USB debugging enabled
+adb install build/app/outputs/flutter-apk/app-release.apk
+```
+
+Or transfer the APK via email / Google Drive and install from Files.
+
+> **Dev builds** (plain `flutter run` without any extra arguments) use a
+> built-in dev key and `kinetic`/`changeme` credentials (`kDebugMode` guard).
+> This matches `hub/.env.example` defaults for local development and is safe
+> because the guard is stripped in release builds.
+
+---
+
+## 5. Running the hub locally (development)
+
+For local development, start the hub using the default dev credentials and then run the Flutter app with `flutter run` (no enrollment needed — `kDebugMode` uses the built-in dev key):
 
 ```bash
 # Terminal 1 — start hub
@@ -267,11 +277,11 @@ cd apps/parent
 flutter run
 ```
 
-The dev mesh key baked into both apps matches nothing in production but works consistently across all dev machines running the same hub defaults.
+The dev mesh key `de10de10de10de10...` is used automatically in `kDebugMode` — no scanning or enrollment step is needed during development.
 
 ---
 
-## 5. Melos build scripts
+## 6. Melos build scripts
 
 Two Melos scripts are defined for convenience:
 
@@ -280,16 +290,11 @@ melos run build_parent   # flutter build apk --release for apps/parent
 melos run build_kids     # flutter build apk --release for apps/kids
 ```
 
-These run without `--dart-define`, producing APKs with the dev fallback key.  Pass additional arguments via `--` if needed:
-
-```bash
-# Not currently supported by Melos exec + flutter build in one step.
-# Use the direct flutter build commands above for production builds.
-```
+Because enrollment is now runtime-based, these produce fully functional release APKs with no extra arguments needed.
 
 ---
 
-## 6. Updating a live deployment
+## 7. Updating a live deployment
 
 ### Hub update
 
@@ -306,15 +311,19 @@ Data is in the named volume `couch_data` and survives image upgrades.
 
 ### App update
 
-1. Rebuild the APK with the same `--dart-define` values.
+1. Rebuild the APK (`flutter build apk --release`).
 2. Distribute via `adb install` or sideload.
-3. The mesh key does not change — existing data continues to sync.
+3. The mesh key is stored in the device's secure enclave and survives app updates — no re-enrollment needed.
 
 ---
 
-## 7. Security notes
+## 8. Security notes
 
-- **The mesh key is a shared family secret** — anyone with the key can decrypt all family data stored in CouchDB.  Distribute it only by building the APK yourself and installing directly.
-- **Change the default CouchDB password** before running the hub outside a trusted LAN.
-- **CouchDB is not exposed to the internet** in the default Docker Compose config — port 5984 binds to all interfaces, so ensure your router does not forward that port externally.
-- **Mesh key rotation** requires rebuilding and reinstalling both apps.  All data will need to be re-synced from a device that still holds the old plaintext in its local in-memory store, since changing the key makes old ciphertext unreadable.
+- **The mesh key is a shared family secret** — anyone with the key can decrypt all family data stored in CouchDB.  It is transmitted only within your LAN via a QR code scan and then stored in the OS-backed hardware secure enclave on each device.
+- **`hub/.env` must be kept secret** — it contains both the CouchDB password and the mesh key.  Do not commit it to version control (it is listed in `.gitignore`).
+- **Change the default CouchDB password** (`changeme`) before running the hub outside a trusted LAN.
+- **The enrollment server (port 8765) should not be exposed to the internet** — it broadcasts the mesh key in plaintext over the local network.  Block this port on your router.
+- **CouchDB (port 5984) should not be exposed to the internet** — the default Docker Compose config binds to all interfaces.  Ensure your router does not forward that port externally.
+- **Mesh key rotation** requires re-enrolling all devices: generate a new key, update `hub/.env`, restart the hub, and have each device re-enroll from the hub QR (Settings → Verbinden met hub / Kindertoestel toevoegen).  Old CouchDB data will appear empty until each device re-syncs after re-enrollment.
+- **Stopping the enroll service** after all devices are enrolled reduces the attack surface: `docker compose stop enroll`.
+
