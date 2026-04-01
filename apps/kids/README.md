@@ -1,6 +1,6 @@
 # Kinetic Link — Kids App
 
-Child-facing Flutter app. Children see tasks assigned by a parent, mark them done, and earn XP (display coming in Phase 14).
+Child-facing Flutter app. Children see tasks assigned by a parent, mark them done, and earn XP.
 
 ## Screens
 
@@ -26,7 +26,7 @@ flutter test       # run all tests
 flutter build apk --release
 ```
 
-## Backlog (Phase 14+)
+## Backlog
 
 - XP total display in the UI header
 - Parent approval workflow
