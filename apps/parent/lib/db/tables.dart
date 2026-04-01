@@ -146,6 +146,9 @@ class PartnerProposals extends Table {
   // pending / accepted / snoozed / dismissed
   TextColumn get status => text().withDefault(const Constant('pending'))();
 
+  // Sync state: clean (synced), dirty (modified locally), deleted (soft-delete)
+  TextColumn get syncState => text().withDefault(const Constant('clean'))();
+
   DateTimeColumn get receivedAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

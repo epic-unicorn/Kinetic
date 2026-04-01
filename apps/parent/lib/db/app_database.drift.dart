@@ -2657,6 +2657,18 @@ class $PartnerProposalsTable extends PartnerProposals
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _syncStateMeta = const VerificationMeta(
+    'syncState',
+  );
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+    'sync_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('clean'),
+  );
   static const VerificationMeta _receivedAtMeta = const VerificationMeta(
     'receivedAt',
   );
@@ -2689,6 +2701,7 @@ class $PartnerProposalsTable extends PartnerProposals
     taskPriority,
     taskDueDate,
     status,
+    syncState,
     receivedAt,
     updatedAt,
   ];
@@ -2767,6 +2780,12 @@ class $PartnerProposalsTable extends PartnerProposals
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('sync_state')) {
+      context.handle(
+        _syncStateMeta,
+        syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta),
+      );
+    }
     if (data.containsKey('received_at')) {
       context.handle(
         _receivedAtMeta,
@@ -2824,6 +2843,10 @@ class $PartnerProposalsTable extends PartnerProposals
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      syncState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_state'],
+      )!,
       receivedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}received_at'],
@@ -2851,6 +2874,7 @@ class PartnerProposalRow extends DataClass
   final int taskPriority;
   final DateTime? taskDueDate;
   final String status;
+  final String syncState;
   final DateTime receivedAt;
   final DateTime updatedAt;
   const PartnerProposalRow({
@@ -2862,6 +2886,7 @@ class PartnerProposalRow extends DataClass
     required this.taskPriority,
     this.taskDueDate,
     required this.status,
+    required this.syncState,
     required this.receivedAt,
     required this.updatedAt,
   });
@@ -2880,6 +2905,7 @@ class PartnerProposalRow extends DataClass
       map['task_due_date'] = Variable<DateTime>(taskDueDate);
     }
     map['status'] = Variable<String>(status);
+    map['sync_state'] = Variable<String>(syncState);
     map['received_at'] = Variable<DateTime>(receivedAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -2899,6 +2925,7 @@ class PartnerProposalRow extends DataClass
           ? const Value.absent()
           : Value(taskDueDate),
       status: Value(status),
+      syncState: Value(syncState),
       receivedAt: Value(receivedAt),
       updatedAt: Value(updatedAt),
     );
@@ -2918,6 +2945,7 @@ class PartnerProposalRow extends DataClass
       taskPriority: serializer.fromJson<int>(json['taskPriority']),
       taskDueDate: serializer.fromJson<DateTime?>(json['taskDueDate']),
       status: serializer.fromJson<String>(json['status']),
+      syncState: serializer.fromJson<String>(json['syncState']),
       receivedAt: serializer.fromJson<DateTime>(json['receivedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -2934,6 +2962,7 @@ class PartnerProposalRow extends DataClass
       'taskPriority': serializer.toJson<int>(taskPriority),
       'taskDueDate': serializer.toJson<DateTime?>(taskDueDate),
       'status': serializer.toJson<String>(status),
+      'syncState': serializer.toJson<String>(syncState),
       'receivedAt': serializer.toJson<DateTime>(receivedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -2948,6 +2977,7 @@ class PartnerProposalRow extends DataClass
     int? taskPriority,
     Value<DateTime?> taskDueDate = const Value.absent(),
     String? status,
+    String? syncState,
     DateTime? receivedAt,
     DateTime? updatedAt,
   }) => PartnerProposalRow(
@@ -2959,6 +2989,7 @@ class PartnerProposalRow extends DataClass
     taskPriority: taskPriority ?? this.taskPriority,
     taskDueDate: taskDueDate.present ? taskDueDate.value : this.taskDueDate,
     status: status ?? this.status,
+    syncState: syncState ?? this.syncState,
     receivedAt: receivedAt ?? this.receivedAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -2980,6 +3011,7 @@ class PartnerProposalRow extends DataClass
           ? data.taskDueDate.value
           : this.taskDueDate,
       status: data.status.present ? data.status.value : this.status,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
       receivedAt: data.receivedAt.present
           ? data.receivedAt.value
           : this.receivedAt,
@@ -2998,6 +3030,7 @@ class PartnerProposalRow extends DataClass
           ..write('taskPriority: $taskPriority, ')
           ..write('taskDueDate: $taskDueDate, ')
           ..write('status: $status, ')
+          ..write('syncState: $syncState, ')
           ..write('receivedAt: $receivedAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3014,6 +3047,7 @@ class PartnerProposalRow extends DataClass
     taskPriority,
     taskDueDate,
     status,
+    syncState,
     receivedAt,
     updatedAt,
   );
@@ -3029,6 +3063,7 @@ class PartnerProposalRow extends DataClass
           other.taskPriority == this.taskPriority &&
           other.taskDueDate == this.taskDueDate &&
           other.status == this.status &&
+          other.syncState == this.syncState &&
           other.receivedAt == this.receivedAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -3042,6 +3077,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
   final Value<int> taskPriority;
   final Value<DateTime?> taskDueDate;
   final Value<String> status;
+  final Value<String> syncState;
   final Value<DateTime> receivedAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -3054,6 +3090,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
     this.taskPriority = const Value.absent(),
     this.taskDueDate = const Value.absent(),
     this.status = const Value.absent(),
+    this.syncState = const Value.absent(),
     this.receivedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -3067,6 +3104,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
     this.taskPriority = const Value.absent(),
     this.taskDueDate = const Value.absent(),
     this.status = const Value.absent(),
+    this.syncState = const Value.absent(),
     required DateTime receivedAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -3084,6 +3122,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
     Expression<int>? taskPriority,
     Expression<DateTime>? taskDueDate,
     Expression<String>? status,
+    Expression<String>? syncState,
     Expression<DateTime>? receivedAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -3097,6 +3136,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
       if (taskPriority != null) 'task_priority': taskPriority,
       if (taskDueDate != null) 'task_due_date': taskDueDate,
       if (status != null) 'status': status,
+      if (syncState != null) 'sync_state': syncState,
       if (receivedAt != null) 'received_at': receivedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -3112,6 +3152,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
     Value<int>? taskPriority,
     Value<DateTime?>? taskDueDate,
     Value<String>? status,
+    Value<String>? syncState,
     Value<DateTime>? receivedAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -3125,6 +3166,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
       taskPriority: taskPriority ?? this.taskPriority,
       taskDueDate: taskDueDate ?? this.taskDueDate,
       status: status ?? this.status,
+      syncState: syncState ?? this.syncState,
       receivedAt: receivedAt ?? this.receivedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -3158,6 +3200,9 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
     if (receivedAt.present) {
       map['received_at'] = Variable<DateTime>(receivedAt.value);
     }
@@ -3181,6 +3226,7 @@ class PartnerProposalsCompanion extends UpdateCompanion<PartnerProposalRow> {
           ..write('taskPriority: $taskPriority, ')
           ..write('taskDueDate: $taskDueDate, ')
           ..write('status: $status, ')
+          ..write('syncState: $syncState, ')
           ..write('receivedAt: $receivedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -4929,6 +4975,7 @@ typedef $$PartnerProposalsTableCreateCompanionBuilder =
       Value<int> taskPriority,
       Value<DateTime?> taskDueDate,
       Value<String> status,
+      Value<String> syncState,
       required DateTime receivedAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -4943,6 +4990,7 @@ typedef $$PartnerProposalsTableUpdateCompanionBuilder =
       Value<int> taskPriority,
       Value<DateTime?> taskDueDate,
       Value<String> status,
+      Value<String> syncState,
       Value<DateTime> receivedAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -4994,6 +5042,11 @@ class $$PartnerProposalsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+    column: $table.syncState,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5057,6 +5110,11 @@ class $$PartnerProposalsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get receivedAt => $composableBuilder(
     column: $table.receivedAt,
     builder: (column) => ColumnOrderings(column),
@@ -5108,6 +5166,9 @@ class $$PartnerProposalsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
 
   GeneratedColumn<DateTime> get receivedAt => $composableBuilder(
     column: $table.receivedAt,
@@ -5163,6 +5224,7 @@ class $$PartnerProposalsTableTableManager
                 Value<int> taskPriority = const Value.absent(),
                 Value<DateTime?> taskDueDate = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
                 Value<DateTime> receivedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5175,6 +5237,7 @@ class $$PartnerProposalsTableTableManager
                 taskPriority: taskPriority,
                 taskDueDate: taskDueDate,
                 status: status,
+                syncState: syncState,
                 receivedAt: receivedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -5189,6 +5252,7 @@ class $$PartnerProposalsTableTableManager
                 Value<int> taskPriority = const Value.absent(),
                 Value<DateTime?> taskDueDate = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
                 required DateTime receivedAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -5201,6 +5265,7 @@ class $$PartnerProposalsTableTableManager
                 taskPriority: taskPriority,
                 taskDueDate: taskDueDate,
                 status: status,
+                syncState: syncState,
                 receivedAt: receivedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

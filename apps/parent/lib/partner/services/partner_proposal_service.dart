@@ -1,0 +1,230 @@
+import 'package:drift/drift.dart';
+
+import '../../db/app_database.dart';
+import '../../todo/models/enums.dart';
+import '../../todo/models/personal_task.dart';
+import '../../todo/services/todo_repository.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
+
+/// PartnerProposalService — manages proposal sync via WebDAV.
+///
+/// Proposals represent tasks proposed by another parent (parent→parent communication).
+/// Each proposal is stored as encrypted JSON in `/kinetic/shared/proposals/`.
+class PartnerProposalService {
+  final WebDavSyncService service;
+  final AppDatabase db;
+  final TodoRepository todoRepository;
+
+  PartnerProposalService({
+    required this.service,
+    required this.db,
+    required this.todoRepository,
+  });
+
+  /// Pulls remote proposals, merges with local using LWW on updatedAt.
+  Future<void> syncProposals(String fromParentId) async {
+    // Pull remote proposals
+    final remote = await service.pullProposals();
+    final remoteProposals = _jsonListToProposals(remote);
+
+    // Get local proposals
+    final local = await db.select(db.partnerProposals).get();
+
+    // LWW merge
+    final merged = _mergeProposals(
+      local.map(_rowToProposal).toList(),
+      remoteProposals,
+    );
+
+    // Write to local DB
+    for (final proposal in merged) {
+      await db
+          .into(db.partnerProposals)
+          .insertOnConflictUpdate(_proposalToCompanion(proposal));
+    }
+  }
+
+  /// Push a newly created/updated proposal to the server.
+  /// The proposal must have syncState='dirty' — this will set it to 'clean'.
+  Future<void> pushProposal(PartnerProposal proposal) async {
+    final json = _proposalToJson(proposal);
+    await service.pushProposal(json);
+
+    // Mark as clean in local DB
+    await (db.update(
+      db.partnerProposals,
+    )..where((p) => p.id.equals(proposal.id))).write(
+      PartnerProposalsCompanion(
+        syncState: const Value('clean'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  /// Delete a proposal (hard delete from server, soft delete locally).
+  Future<void> deleteProposal(String proposalId) async {
+    // Soft delete locally
+    await (db.update(
+      db.partnerProposals,
+    )..where((p) => p.id.equals(proposalId))).write(
+      PartnerProposalsCompanion(
+        syncState: const Value('deleted'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+
+    // Try to delete from server (may not exist if newly created)
+    try {
+      await service.deleteProposal(proposalId);
+    } catch (e) {
+      // Ignore "file not found" errors
+      if (!e.toString().contains('404')) rethrow;
+    }
+  }
+
+  /// Stream pending proposals (status='pending') ordered by receivedAt.
+  Stream<List<PartnerProposal>> watchPendingProposals() {
+    return (db.select(db.partnerProposals)
+          ..where((p) => p.status.equals('pending'))
+          ..orderBy([(p) => OrderingTerm.desc(p.receivedAt)]))
+        .watch()
+        .map((rows) => rows.map(_rowToProposal).toList());
+  }
+
+  /// Update proposal status (pending → accepted/snoozed/dismissed).
+  Future<void> updateProposalStatus(String id, String newStatus) async {
+    await (db.update(db.partnerProposals)..where((p) => p.id.equals(id))).write(
+      PartnerProposalsCompanion(
+        status: Value(newStatus),
+        updatedAt: Value(DateTime.now().toUtc()),
+        syncState: const Value('dirty'),
+      ),
+    );
+  }
+
+  /// Accept a proposal: update status to 'accepted' and create a task.
+  Future<void> acceptProposal(PartnerProposal proposal) async {
+    // Create task from proposal
+    await todoRepository.createTask(
+      title: proposal.taskTitle,
+      notes: proposal.taskNotes,
+      category: proposal.taskCategory,
+      priority: proposal.taskPriority,
+      dueDate: proposal.taskDueDate,
+      isPrivate: true, // Inherited proposals are private by default
+    );
+
+    // Update proposal status
+    await updateProposalStatus(proposal.id, 'accepted');
+  }
+
+  /// Dismiss a proposal: update status to 'dismissed'.
+  Future<void> dismissProposal(String proposalId) async {
+    await updateProposalStatus(proposalId, 'dismissed');
+  }
+
+  /// Snooze a proposal: update status to 'snoozed'.
+  Future<void> snoozeProposal(String proposalId) async {
+    await updateProposalStatus(proposalId, 'snoozed');
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  PartnerProposal _rowToProposal(PartnerProposalRow row) {
+    return PartnerProposal(
+      id: row.id,
+      fromParentId: row.fromParentId,
+      taskTitle: row.taskTitle,
+      taskNotes: row.taskNotes,
+      taskCategory: TaskCategory.values.firstWhere(
+        (e) => e.name == row.taskCategory,
+      ),
+      taskPriority: TaskPriority.values[row.taskPriority],
+      taskDueDate: row.taskDueDate,
+      status: ProposalStatus.values.firstWhere((e) => e.name == row.status),
+      receivedAt: row.receivedAt,
+      updatedAt: row.updatedAt,
+    );
+  }
+
+  PartnerProposalsCompanion _proposalToCompanion(PartnerProposal p) {
+    return PartnerProposalsCompanion(
+      id: Value(p.id),
+      fromParentId: Value(p.fromParentId),
+      taskTitle: Value(p.taskTitle),
+      taskNotes: Value(p.taskNotes),
+      taskCategory: Value(p.taskCategory.name),
+      taskPriority: Value(p.taskPriority.index),
+      taskDueDate: Value(p.taskDueDate),
+      status: Value(p.status.name),
+      receivedAt: Value(p.receivedAt),
+      updatedAt: Value(p.updatedAt),
+      syncState: const Value('clean'),
+    );
+  }
+
+  Map<String, dynamic> _proposalToJson(PartnerProposal p) {
+    return {
+      'id': p.id,
+      'fromParentId': p.fromParentId,
+      'taskTitle': p.taskTitle,
+      'taskNotes': p.taskNotes,
+      'taskCategory': p.taskCategory.name,
+      'taskPriority': p.taskPriority.index,
+      'taskDueDate': p.taskDueDate?.toIso8601String(),
+      'status': p.status.name,
+      'receivedAt': p.receivedAt.toIso8601String(),
+      'updatedAt': p.updatedAt.toIso8601String(),
+    };
+  }
+
+  PartnerProposal _jsonToProposal(Map<String, dynamic> json) {
+    return PartnerProposal(
+      id: json['id'] as String,
+      fromParentId: json['fromParentId'] as String,
+      taskTitle: json['taskTitle'] as String,
+      taskNotes: json['taskNotes'] as String?,
+      taskCategory: TaskCategory.values.firstWhere(
+        (e) => e.name == json['taskCategory'],
+      ),
+      taskPriority: TaskPriority.values[json['taskPriority'] as int],
+      taskDueDate: json['taskDueDate'] != null
+          ? DateTime.parse(json['taskDueDate'] as String)
+          : null,
+      status: ProposalStatus.values.firstWhere((e) => e.name == json['status']),
+      receivedAt: DateTime.parse(json['receivedAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  List<PartnerProposal> _jsonListToProposals(List<Map<String, dynamic>> jsons) {
+    return jsons.map(_jsonToProposal).toList();
+  }
+
+  /// LWW merge: remote wins if newer, local wins if older (and needs push).
+  List<PartnerProposal> _mergeProposals(
+    List<PartnerProposal> local,
+    List<PartnerProposal> remote,
+  ) {
+    final remoteById = {for (final p in remote) p.id: p};
+    final localById = {for (final p in local) p.id: p};
+
+    final merged = <PartnerProposal>[];
+
+    for (final id in {...remoteById.keys, ...localById.keys}) {
+      final r = remoteById[id];
+      final l = localById[id];
+
+      if (r == null) {
+        merged.add(l!);
+      } else if (l == null) {
+        merged.add(r);
+      } else if (!r.updatedAt.isBefore(l.updatedAt)) {
+        merged.add(r);
+      } else {
+        merged.add(l);
+      }
+    }
+    return merged;
+  }
+}

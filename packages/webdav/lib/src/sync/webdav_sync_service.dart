@@ -185,4 +185,103 @@ class WebDavSyncService {
       rethrow;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Proposals (JSON-based)
+  // ---------------------------------------------------------------------------
+
+  String get _proposalsPath => '/kinetic/shared/proposals';
+
+  /// Pulls all proposals from the shared folder (encrypted with family key).
+  /// Returns a list of JSON-decoded proposal maps.
+  Future<List<Map<String, dynamic>>> pullProposals() async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return []; // No family key, no proposals to pull
+
+    final entries = await _listJsonFiles(_proposalsPath);
+    final proposals = <Map<String, dynamic>>[];
+
+    for (final entry in entries) {
+      try {
+        final blob = await client.get(entry.href);
+        final plain = await KineticEncryption.decrypt(blob, familyKey);
+        final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+        proposals.add(json);
+      } catch (e) {
+        continue; // Skip corrupted files
+      }
+    }
+    return proposals;
+  }
+
+  /// Encrypts [proposalJson] and PUTs it to `/kinetic/shared/proposals/{id}.json`.
+  Future<void> pushProposal(Map<String, dynamic> proposalJson) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null)
+      throw StateError('Family key required to push proposals');
+
+    final id = proposalJson['id'] as String;
+    final plain = Uint8List.fromList(utf8.encode(jsonEncode(proposalJson)));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+    await client.put('$_proposalsPath/$id.json', blob);
+  }
+
+  /// Deletes a proposal file from the server.
+  Future<void> deleteProposal(String id) =>
+      client.delete('$_proposalsPath/$id.json');
+
+  // ---------------------------------------------------------------------------
+  // Load Metrics (JSON-based)
+  // ---------------------------------------------------------------------------
+
+  String get _loadPath => '/kinetic/shared/load';
+
+  /// Pulls all family members' load metrics (encrypted with family key).
+  /// Returns a list of JSON-decoded load metrics maps.
+  Future<List<Map<String, dynamic>>> pullLoadMetrics() async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return []; // No family key, no metrics to pull
+
+    final entries = await _listJsonFiles(_loadPath);
+    final metrics = <Map<String, dynamic>>[];
+
+    for (final entry in entries) {
+      try {
+        final blob = await client.get(entry.href);
+        final plain = await KineticEncryption.decrypt(blob, familyKey);
+        final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+        metrics.add(json);
+      } catch (e) {
+        continue;
+      }
+    }
+    return metrics;
+  }
+
+  /// Encrypts and PUTs load metrics to `/kinetic/shared/load/{parentId}.json`.
+  Future<void> pushLoadMetrics(Map<String, dynamic> metricsJson) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null)
+      throw StateError('Family key required to push load metrics');
+
+    final parentId = metricsJson['parentId'] as String;
+    final plain = Uint8List.fromList(utf8.encode(jsonEncode(metricsJson)));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+    await client.put('$_loadPath/$parentId.json', blob);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  /// Returns PROPFIND entries whose href ends with `.json`.
+  Future<List<WebDavEntry>> _listJsonFiles(String path) async {
+    try {
+      final entries = await client.propfind(path);
+      return entries.where((e) => e.href.endsWith('.json')).toList();
+    } on WebDavException catch (e) {
+      if (e.message.contains('404')) return [];
+      rethrow;
+    }
+  }
 }

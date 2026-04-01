@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
+import '../todo/models/enums.dart';
+import '../todo/models/personal_task.dart';
 
 /// Drives a full sync cycle against the WebDAV server.
 ///
@@ -24,6 +26,7 @@ class SyncOrchestrator {
     try {
       await _syncTasks(service);
       await _syncNotes(service);
+      await _syncProposals(service);
     } finally {
       client.dispose();
     }
@@ -260,4 +263,111 @@ class SyncOrchestrator {
     9 => 1,
     _ => 0,
   };
+
+  // ---------------------------------------------------------------------------
+  // Proposals
+  // ---------------------------------------------------------------------------
+
+  Future<void> _syncProposals(WebDavSyncService service) async {
+    // 1. Pull remote proposals.
+    final remotes = await service.pullProposals();
+    final remoteProposals = _jsonListToProposals(remotes);
+
+    // 2. Get local proposals and merge.
+    final localRows = await _db.select(_db.partnerProposals).get();
+    final locals = localRows.map(_proposalRowToProposal).toList();
+
+    // 3. LWW merge on updatedAt.
+    final merged = _mergeProposals(locals, remoteProposals);
+
+    // 4. Write merged proposals to local DB.
+    for (final proposal in merged) {
+      await _db
+          .into(_db.partnerProposals)
+          .insertOnConflictUpdate(_proposalToCompanion(proposal));
+    }
+  }
+
+  PartnerProposal _proposalRowToProposal(PartnerProposalRow row) {
+    return PartnerProposal(
+      id: row.id,
+      fromParentId: row.fromParentId,
+      taskTitle: row.taskTitle,
+      taskNotes: row.taskNotes,
+      taskCategory: TaskCategory.values.firstWhere(
+        (e) => e.name == row.taskCategory,
+      ),
+      taskPriority: TaskPriority.values[row.taskPriority],
+      taskDueDate: row.taskDueDate,
+      status: ProposalStatus.values.firstWhere((e) => e.name == row.status),
+      receivedAt: row.receivedAt,
+      updatedAt: row.updatedAt,
+    );
+  }
+
+  PartnerProposal _jsonToProposal(Map<String, dynamic> json) {
+    return PartnerProposal(
+      id: json['id'] as String,
+      fromParentId: json['fromParentId'] as String,
+      taskTitle: json['taskTitle'] as String,
+      taskNotes: json['taskNotes'] as String?,
+      taskCategory: TaskCategory.values.firstWhere(
+        (e) => e.name == json['taskCategory'],
+      ),
+      taskPriority: TaskPriority.values[json['taskPriority'] as int],
+      taskDueDate: json['taskDueDate'] != null
+          ? DateTime.parse(json['taskDueDate'] as String)
+          : null,
+      status: ProposalStatus.values.firstWhere((e) => e.name == json['status']),
+      receivedAt: DateTime.parse(json['receivedAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  List<PartnerProposal> _jsonListToProposals(List<Map<String, dynamic>> jsons) {
+    return jsons.map(_jsonToProposal).toList();
+  }
+
+  PartnerProposalsCompanion _proposalToCompanion(PartnerProposal p) {
+    return PartnerProposalsCompanion(
+      id: Value(p.id),
+      fromParentId: Value(p.fromParentId),
+      taskTitle: Value(p.taskTitle),
+      taskNotes: Value(p.taskNotes),
+      taskCategory: Value(p.taskCategory.name),
+      taskPriority: Value(p.taskPriority.index),
+      taskDueDate: Value(p.taskDueDate),
+      status: Value(p.status.name),
+      receivedAt: Value(p.receivedAt),
+      updatedAt: Value(p.updatedAt),
+      syncState: const Value('clean'),
+    );
+  }
+
+  /// LWW merge: remote wins if newer, local wins if older.
+  List<PartnerProposal> _mergeProposals(
+    List<PartnerProposal> local,
+    List<PartnerProposal> remote,
+  ) {
+    final remoteById = {for (final p in remote) p.id: p};
+    final localById = {for (final p in local) p.id: p};
+
+    final merged = <PartnerProposal>[];
+
+    for (final id in {...remoteById.keys, ...localById.keys}) {
+      final r = remoteById[id];
+      final l = localById[id];
+
+      if (r == null) {
+        merged.add(l!);
+      } else if (l == null) {
+        merged.add(r);
+      } else if (!r.updatedAt.isBefore(l.updatedAt)) {
+        merged.add(r);
+      } else {
+        merged.add(l);
+      }
+    }
+    return merged;
+  }
 }
