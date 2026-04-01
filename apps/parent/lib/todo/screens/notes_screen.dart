@@ -27,6 +27,34 @@ class _NotesScreenState extends State<NotesScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Fout bij laden notities',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           final notes = snapshot.data ?? [];
 
           if (notes.isEmpty) {
@@ -167,13 +195,26 @@ class _NoteTile extends StatelessWidget {
                     child: const Text('Annuleren'),
                   ),
                   FilledButton(
-                    onPressed: () {
-                      repo.delete(note.id);
-                      Navigator.of(ctx).pop();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Notitie verwijderd')),
-                        );
+                    onPressed: () async {
+                      try {
+                        await repo.delete(note.id);
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Notitie verwijderd')),
+                          );
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Fout bij verwijderen: $e')),
+                          );
+                        }
                       }
                     },
                     child: const Text('Verwijderen'),

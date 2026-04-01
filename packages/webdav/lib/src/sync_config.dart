@@ -8,14 +8,15 @@ class SyncConfig {
   /// WebDAV username.
   final String username;
 
-  /// WebDAV password (also the input for family key derivation).
+  /// WebDAV password for HTTP Basic auth.
   final String password;
 
   /// 32-byte AES-256-GCM key for personal (private) data.
   final Uint8List personalKeyBytes;
 
-  /// 32-byte AES-256-GCM key for shared family data (derived via PBKDF2 from
-  /// [password]).  Absent until the key has been derived at least once.
+  /// 32-byte AES-256-GCM key for shared family data.  Generated randomly on
+  /// first enrollment and explicitly shared between parents.  Absent until
+  /// the key has been set at least once.
   final Uint8List? familyKeyBytes;
 
   const SyncConfig({

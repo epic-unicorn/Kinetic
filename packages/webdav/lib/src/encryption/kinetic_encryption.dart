@@ -26,11 +26,25 @@ class KineticEncryption {
     return Uint8List.fromList(List.generate(32, (_) => rng.nextInt(256)));
   }
 
+  /// Generates a cryptographically random 32-byte family key.
+  ///
+  /// The returned key must be explicitly shared with every family member
+  /// (e.g. via [exportFamilyKeyJson] / [importFamilyKeyJson]).  Each parent
+  /// has their own WebDAV credentials; the family key is the *only* thing
+  /// they need to share.
+  static Uint8List generateFamilyKey() {
+    final rng = Random.secure();
+    return Uint8List.fromList(List.generate(32, (_) => rng.nextInt(256)));
+  }
+
   // ---------------------------------------------------------------------------
-  // Family key derivation
+  // Family key derivation (legacy / migration only)
   // ---------------------------------------------------------------------------
 
   /// Derives a 32-byte family key from a WebDAV [password] via PBKDF2-HMAC-SHA-256.
+  ///
+  /// Kept for backward-compatibility and migration only.
+  /// New code should use [generateFamilyKey] instead.
   ///
   /// The salt is the constant string `kinetic-family-key` encoded as UTF-8.
   /// Iterations: 100 000.
@@ -142,6 +156,56 @@ class KineticEncryption {
     if (bytes.length != 32) {
       throw FormatException(
           'personalKey must be 32 bytes, got ${bytes.length}');
+    }
+    return Uint8List.fromList(bytes);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Family key export / import
+  // ---------------------------------------------------------------------------
+
+  /// Serialises [familyKey] to a JSON string suitable for sharing with a
+  /// partner parent.
+  ///
+  /// Format:
+  /// ```json
+  /// {
+  ///   "version": 1,
+  ///   "usernameHint": "<username of the exporting parent>",
+  ///   "familyKey": "<base64-encoded 32 bytes>"
+  /// }
+  /// ```
+  static String exportFamilyKeyJson(Uint8List familyKey, String usernameHint) {
+    return const JsonEncoder.withIndent('  ').convert({
+      'version': 1,
+      'usernameHint': usernameHint,
+      'familyKey': base64.encode(familyKey),
+    });
+  }
+
+  /// Parses a family key JSON string produced by [exportFamilyKeyJson] and
+  /// returns the 32-byte family key.
+  ///
+  /// Throws [FormatException] if the JSON is malformed or the version is
+  /// unsupported.
+  static Uint8List importFamilyKeyJson(String json) {
+    final Map<String, dynamic> map;
+    try {
+      map = jsonDecode(json) as Map<String, dynamic>;
+    } catch (e) {
+      throw FormatException('Invalid family key JSON: $e');
+    }
+    if (map['version'] != 1) {
+      throw FormatException(
+          'Unsupported family key JSON version: ${map["version"]}');
+    }
+    final keyBase64 = map['familyKey'] as String?;
+    if (keyBase64 == null) {
+      throw const FormatException('Missing familyKey field');
+    }
+    final bytes = base64.decode(keyBase64);
+    if (bytes.length != 32) {
+      throw FormatException('familyKey must be 32 bytes, got ${bytes.length}');
     }
     return Uint8List.fromList(bytes);
   }

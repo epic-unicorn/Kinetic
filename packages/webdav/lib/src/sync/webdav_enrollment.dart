@@ -70,15 +70,14 @@ class WebDavEnrollment {
   // Key generation
   // ---------------------------------------------------------------------------
 
-  /// Generates a fresh personal key and derives the family key from [password].
+  /// Generates fresh personal and family keys for a new account.
   ///
-  /// Both keys are returned as a named record so the caller can persist them
-  /// to secure storage.
-  static Future<({Uint8List personalKey, Uint8List familyKey})> generateKeys(
-    String password,
-  ) async {
+  /// Both keys are randomly generated and independent of the WebDAV password.
+  /// The family key must be explicitly shared with other parents via
+  /// [KineticEncryption.exportFamilyKeyJson] / [KineticEncryption.importFamilyKeyJson].
+  static ({Uint8List personalKey, Uint8List familyKey}) generateKeys() {
     final personalKey = KineticEncryption.generatePersonalKey();
-    final familyKey = await KineticEncryption.deriveFamilyKey(password);
+    final familyKey = KineticEncryption.generateFamilyKey();
     return (personalKey: personalKey, familyKey: familyKey);
   }
 
@@ -113,7 +112,7 @@ class WebDavEnrollment {
       client.dispose();
     }
 
-    final keys = await generateKeys(password);
+    final keys = generateKeys();
     return SyncConfig(
       serverUrl: serverUrl,
       username: username,

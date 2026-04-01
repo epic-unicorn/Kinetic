@@ -173,17 +173,20 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       final username = _userCtrl.text.trim();
       final password = _passCtrl.text;
 
-      // Only generate keys the first time; preserve existing personal key on
-      // an edit. Re-derive family key whenever the password changes.
+      // Only generate keys the first time; preserve existing keys on an edit.
       final Uint8List personalKey;
+      final Uint8List familyKey;
       if (_existing != null &&
           _existing!.username == username &&
           _existing!.serverUrl == serverUrl) {
-        // Reuse existing personal key.
+        // Reuse existing keys.
         personalKey = _existing!.personalKeyBytes;
+        familyKey =
+            _existing!.familyKeyBytes ?? KineticEncryption.generateFamilyKey();
       } else {
-        // New account — generate a fresh personal key.
+        // New account — generate fresh keys.
         personalKey = KineticEncryption.generatePersonalKey();
+        familyKey = KineticEncryption.generateFamilyKey();
         // Also provision the directory tree for a new account.
         final client = WebDavClient(
           baseUrl: serverUrl,
@@ -196,8 +199,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           client.dispose();
         }
       }
-
-      final familyKey = await KineticEncryption.deriveFamilyKey(password);
 
       await widget.configRepo.save(
         SyncConfig(
@@ -252,6 +253,117 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportFamilyKey() async {
+    if (_existing == null) return;
+    final familyKey = _existing!.familyKeyBytes;
+    if (familyKey == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nog geen familiesleutel ingesteld.')),
+      );
+      return;
+    }
+    final json = KineticEncryption.exportFamilyKeyJson(
+      familyKey,
+      _existing!.username,
+    );
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Familiesleutel'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Deel deze sleutel met je partner. '
+                'Bewaar hem veilig — iedereen met deze sleutel kan '
+                'gedeelde taken en notities lezen.',
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                json,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Sluiten'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importFamilyKey() async {
+    if (_existing == null) return;
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Familiesleutel importeren'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Plak hier de familiesleutel-JSON die je partner heeft geëxporteerd.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLines: 8,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '{\n  "version": 1,\n  ...\n}',
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Importeren'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final familyKey = KineticEncryption.importFamilyKeyJson(
+        controller.text.trim(),
+      );
+      await widget.configRepo.saveFamilyKey(familyKey);
+      // Update in-memory config.
+      setState(() {
+        _existing = _existing!.withFamilyKey(familyKey);
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Familiesleutel geïmporteerd.')),
+      );
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Ongeldige sleutel: $e')));
+    }
   }
 
   @override
@@ -366,6 +478,26 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                   'je data te herstellen als je dit apparaat kwijtraakt.',
                 ),
                 onTap: _exportRecoveryKey,
+              ),
+              ListTile(
+                leading: const Icon(Icons.people_outline, color: kColorTeal),
+                title: const Text('Familiesleutel exporteren'),
+                subtitle: const Text(
+                  'Deel deze sleutel met je partner zodat jullie elkaars '
+                  'gedeelde taken en notities kunnen lezen.',
+                ),
+                onTap: _exportFamilyKey,
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.file_download_outlined,
+                  color: kColorTeal,
+                ),
+                title: const Text('Familiesleutel importeren'),
+                subtitle: const Text(
+                  'Plak de familiesleutel die je van je partner hebt ontvangen.',
+                ),
+                onTap: _importFamilyKey,
               ),
             ],
           ],

@@ -97,5 +97,76 @@ void main() {
         );
       });
     });
+
+    group('generateFamilyKey', () {
+      test('returns 32 bytes', () {
+        final key = KineticEncryption.generateFamilyKey();
+        expect(key.length, equals(32));
+      });
+
+      test('returns different values each call', () {
+        final a = KineticEncryption.generateFamilyKey();
+        final b = KineticEncryption.generateFamilyKey();
+        expect(a, isNot(equals(b)));
+      });
+    });
+
+    group('family key JSON', () {
+      test('export + import round-trips correctly', () {
+        final key = KineticEncryption.generateFamilyKey();
+        final json = KineticEncryption.exportFamilyKeyJson(key, 'alice');
+        final recovered = KineticEncryption.importFamilyKeyJson(json);
+        expect(recovered, equals(key));
+      });
+
+      test('exported JSON contains usernameHint', () {
+        final key = KineticEncryption.generateFamilyKey();
+        final json = KineticEncryption.exportFamilyKeyJson(key, 'bob');
+        expect(json, contains('bob'));
+      });
+
+      test('exported JSON contains familyKey field', () {
+        final key = KineticEncryption.generateFamilyKey();
+        final json = KineticEncryption.exportFamilyKeyJson(key, 'carol');
+        expect(json, contains('familyKey'));
+      });
+
+      test('importFamilyKeyJson throws on bad JSON', () {
+        expect(
+          () => KineticEncryption.importFamilyKeyJson('not-json'),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('importFamilyKeyJson throws on wrong version', () {
+        expect(
+          () => KineticEncryption.importFamilyKeyJson(
+            '{"version":99,"usernameHint":"x","familyKey":"aGVsbG8="}',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('importFamilyKeyJson throws when familyKey field is missing', () {
+        expect(
+          () => KineticEncryption.importFamilyKeyJson(
+            '{"version":1,"usernameHint":"x"}',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('two parents sharing family key can both encrypt/decrypt', () async {
+        final familyKey = KineticEncryption.generateFamilyKey();
+        final json =
+            KineticEncryption.exportFamilyKeyJson(familyKey, 'parent1');
+        final importedKey = KineticEncryption.importFamilyKeyJson(json);
+
+        final plaintext = Uint8List.fromList([10, 20, 30]);
+        final blob = await KineticEncryption.encrypt(plaintext, familyKey);
+        final recovered = await KineticEncryption.decrypt(blob, importedKey);
+        expect(recovered, equals(plaintext));
+      });
+    });
   });
 }

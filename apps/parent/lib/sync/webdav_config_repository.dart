@@ -77,10 +77,18 @@ class WebDavConfigRepository {
     }
   }
 
-  /// Updates only the password and re-derives + stores the family key.
+  /// Updates only the password in secure storage.
+  ///
+  /// The family key is intentionally left unchanged — it is independent of
+  /// the WebDAV password and is shared explicitly between parents.
   Future<void> updatePassword(String newPassword) async {
     await _store.write(key: _kPassword, value: newPassword);
-    final familyKey = await KineticEncryption.deriveFamilyKey(newPassword);
+  }
+
+  /// Stores a new family key without touching any other config fields.
+  ///
+  /// Use this after importing a family key from a partner parent.
+  Future<void> saveFamilyKey(Uint8List familyKey) async {
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
   }
 

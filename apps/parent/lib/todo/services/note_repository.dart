@@ -14,8 +14,10 @@ class NoteRepository {
       _notifications = notifications;
 
   /// All notes, ordered by creation date (newest first).
+  /// Excludes soft-deleted notes (syncState='deleted').
   Stream<List<PersonalNote>> watchAll() {
     return (_db.select(_db.personalNotes)
+          ..where((t) => t.syncState.equals('deleted').not())
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch()
         .map((rows) => rows.map(_noteFromRow).toList());
@@ -35,36 +37,50 @@ class NoteRepository {
     bool isShared = false,
     DateTime? remindAt,
   }) async {
-    final note = PersonalNote.create(
-      title: title,
-      body: body,
-      isShared: isShared,
-      remindAt: remindAt,
-    );
-    await _db.into(_db.personalNotes).insert(_noteToCompanion(note));
-    await _scheduleReminderFor(note);
-    return note;
+    try {
+      final note = PersonalNote.create(
+        title: title,
+        body: body,
+        isShared: isShared,
+        remindAt: remindAt,
+      );
+      await _db.into(_db.personalNotes).insert(_noteToCompanion(note));
+      await _scheduleReminderFor(note);
+      return note;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Update an existing note.
   Future<void> update(PersonalNote note) async {
-    await (_db.update(
-      _db.personalNotes,
-    )..where((t) => t.id.equals(note.id))).write(_noteToCompanion(note));
-    // Cancel old reminder, schedule new one.
-    await _notifications?.cancelReminder(_notifId(note.id));
-    await _scheduleReminderFor(note);
+    try {
+      await (_db.update(
+        _db.personalNotes,
+      )..where((t) => t.id.equals(note.id))).write(_noteToCompanion(note));
+      // Cancel old reminder, schedule new one.
+      await _notifications?.cancelReminder(_notifId(note.id));
+      await _scheduleReminderFor(note);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Soft-delete a note by marking syncState='deleted'.
   Future<void> delete(String id) async {
-    await _notifications?.cancelReminder(_notifId(id));
-    await (_db.update(_db.personalNotes)..where((t) => t.id.equals(id))).write(
-      PersonalNotesCompanion(
-        syncState: const Value('deleted'),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
+    try {
+      await _notifications?.cancelReminder(_notifId(id));
+      await (_db.update(
+        _db.personalNotes,
+      )..where((t) => t.id.equals(id))).write(
+        PersonalNotesCompanion(
+          syncState: const Value('deleted'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
