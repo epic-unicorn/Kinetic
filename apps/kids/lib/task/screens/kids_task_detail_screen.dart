@@ -41,9 +41,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
         final scheme = Theme.of(context).colorScheme;
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Taakdetails'),
-          ),
+          appBar: AppBar(title: const Text('Taakdetails')),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -72,9 +70,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                             children: [
                               Text(
                                 task.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
+                                style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       decoration: task.isCompleted
                                           ? TextDecoration.lineThrough

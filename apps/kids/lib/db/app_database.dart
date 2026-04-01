@@ -27,8 +27,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get a single task by ID
   Future<KidsTaskRow?> getTask(String id) {
-    return (select(kidsTasks)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(kidsTasks)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert or replace a task

@@ -39,8 +39,7 @@ class KidsTaskRepository {
 
   /// Mark a task as complete (sets isCompleted=true, completedAt=now, syncState=dirty)
   Future<void> markComplete(String taskId) async {
-    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId)))
-        .write(
+    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId))).write(
       KidsTasksCompanion(
         isCompleted: const Value(true),
         completedAt: Value(DateTime.now().toUtc()),
@@ -52,8 +51,7 @@ class KidsTaskRepository {
 
   /// Undo completion (sets isCompleted=false, completedAt=null, syncState=dirty)
   Future<void> markIncomplete(String taskId) async {
-    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId)))
-        .write(
+    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId))).write(
       KidsTasksCompanion(
         isCompleted: const Value(false),
         completedAt: const Value(null),
@@ -65,8 +63,7 @@ class KidsTaskRepository {
 
   /// Soft-delete a task (marks syncState=deleted for sync to push tombstone)
   Future<void> delete(String taskId) async {
-    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId)))
-        .write(
+    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId))).write(
       KidsTasksCompanion(
         syncState: const Value('deleted'),
         updatedAt: Value(DateTime.now().toUtc()),
@@ -81,30 +78,31 @@ class KidsTaskRepository {
 
   /// Get dirty tasks (local changes to push)
   Future<List<KidsTaskRow>> getDirtyRows() {
-    return (_db.select(_db.kidsTasks)
-          ..where((t) => t.syncState.equals('dirty')))
-        .get();
+    return (_db.select(
+      _db.kidsTasks,
+    )..where((t) => t.syncState.equals('dirty'))).get();
   }
 
   /// Get deleted tasks (tombstones to push)
   Future<List<KidsTaskRow>> getDeletedRows() {
-    return (_db.select(_db.kidsTasks)
-          ..where((t) => t.syncState.equals('deleted')))
-        .get();
+    return (_db.select(
+      _db.kidsTasks,
+    )..where((t) => t.syncState.equals('deleted'))).get();
   }
 
   /// Insert or update a task (from sync)
   Future<void> upsertTask(KidsTask task) async {
-    await _db.into(_db.kidsTasks).insert(
-      _taskToCompanion(task),
-      onConflict: DoUpdate((_) => _taskToCompanion(task)),
-    );
+    await _db
+        .into(_db.kidsTasks)
+        .insert(
+          _taskToCompanion(task),
+          onConflict: DoUpdate((_) => _taskToCompanion(task)),
+        );
   }
 
   /// Mark a task as synced (sets syncState=clean and updates etag)
   Future<void> markSynced(String taskId, String? etag) async {
-    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId)))
-        .write(
+    await (_db.update(_db.kidsTasks)..where((t) => t.id.equals(taskId))).write(
       KidsTasksCompanion(
         syncState: const Value('clean'),
         webdavEtag: Value(etag),

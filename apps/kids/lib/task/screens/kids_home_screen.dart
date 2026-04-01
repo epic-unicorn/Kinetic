@@ -68,9 +68,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen>
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Fout: ${snapshot.error}'),
-            );
+            return Center(child: Text('Fout: ${snapshot.error}'));
           }
 
           final tasks = snapshot.data ?? [];
@@ -84,17 +82,16 @@ class _KidsHomeScreenState extends State<KidsHomeScreen>
                   const SizedBox(height: 16),
                   Text(
                     'Alles klaar!',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(color: scheme.onSurface),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: scheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Geen opdrachten op dit moment.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

@@ -22,9 +22,9 @@ class KidsSyncOrchestrator {
     required AppDatabase db,
     required KidsTaskRepository repo,
     required SyncConfig config,
-  })  : _db = db,
-        _repo = repo,
-        _config = config;
+  }) : _db = db,
+       _repo = repo,
+       _config = config;
 
   /// Main sync cycle: pull remote tasks, push local changes
   Future<void> sync() async {
@@ -107,7 +107,8 @@ class KidsSyncOrchestrator {
   KidsTask _iCalToKidsTask(ICalTask ical) {
     return KidsTask(
       id: ical.uid,
-      parentId: _extractCustomProperty(ical.description, 'xKineticParentId') ?? '',
+      parentId:
+          _extractCustomProperty(ical.description, 'xKineticParentId') ?? '',
       title: ical.summary,
       notes: _extractBasicDescription(ical.description),
       category: _parseCategory(
@@ -116,9 +117,11 @@ class KidsSyncOrchestrator {
       priority: _parsePriority(ical.priority),
       dueDate: ical.dueAt,
       isCompleted: ical.status == ICalTaskStatus.completed,
-      completedAt:
-          ical.status == ICalTaskStatus.completed ? ical.updatedAt : null,
-      xpReward: int.tryParse(
+      completedAt: ical.status == ICalTaskStatus.completed
+          ? ical.updatedAt
+          : null,
+      xpReward:
+          int.tryParse(
             _extractCustomProperty(ical.description, 'xKineticXpReward') ?? '',
           ) ??
           10,

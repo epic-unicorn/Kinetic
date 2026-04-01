@@ -1,20 +1,8 @@
 /// Task category — matches parent app TaskCategory
-enum TaskCategory {
-  household,
-  school,
-  health,
-  shopping,
-  entertainment,
-  other,
-}
+enum TaskCategory { household, school, health, shopping, entertainment, other }
 
 /// Task priority — matches parent app TaskPriority
-enum TaskPriority {
-  low,
-  normal,
-  high,
-  urgent,
-}
+enum TaskPriority { low, normal, high, urgent }
 
 /// KidsTask — a task assigned by a parent to this child
 ///
@@ -147,9 +135,7 @@ class KidsTask {
     if (dueDate == null || isCompleted) return false;
     final today = DateTime.now();
     final d = dueDate!.toLocal();
-    return d.year <= today.year &&
-        d.month <= today.month &&
-        d.day <= today.day;
+    return d.year <= today.year && d.month <= today.month && d.day <= today.day;
   }
 
   /// Check if task is overdue
