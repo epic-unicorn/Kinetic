@@ -183,113 +183,32 @@ In the app, use:
 - Check internet connection
 - Manually trigger sync from Settings > WebDAV Configuration
 
-### First-time setup
+---
 
-**1. Copy the repo's hub folder to Unraid**
+## First-time user experience
 
-From your dev machine (or directly on the Unraid bash terminal):
-```bash
-# Option A — copy over the network (from your dev machine)
-scp -r hub/ root@<unraid-ip>:/mnt/user/appdata/kinetic/
+When parents first open the app, it works fully offline:
 
-# Option B — clone the whole repo on Unraid
-ssh root@<unraid-ip>
-git clone <repo-url> /mnt/user/appdata/kinetic/kinetic
-cd /mnt/user/appdata/kinetic/kinetic/hub
-```
+1. **Tasks tab** — manage personal tasks (SQLite local storage)
+2. **Notes tab** — create and edit notes (local only)
+3. **Settings tab** → **WebDAV Configuration** — optionally connect to a WebDAV server for family sync
 
-**2. Set up the environment file**
-```bash
-cd /mnt/user/appdata/kinetic/hub   # or wherever you placed hub/
-cp .env.example .env
-nano .env
-# Set:
-#   COUCHDB_USER      — admin username
-#   COUCHDB_PASSWORD  — admin password (not the mesh key)
-#   HUB_ID            — e.g. "the-smiths-hub"
-#   MESH_KEY_HEX      — output of: python3 -c "import secrets; print(secrets.token_hex(32))"
-#   COUCH_PORT        — leave as 5984 unless you have a conflict
-```
+No account signup required. No enrollment QR codes. Users own their data from day one.
 
-**3. Add the stack in Compose Manager**
+### Enabling family sync
 
-- Go to Unraid UI → **Docker** tab → **Compose** (top menu).
-- Click **Add Stack**, give it a name (e.g. `kinetic-hub`).
-- Set the **Compose file path** to the `docker-compose.yml` inside your hub folder, e.g.:
-  `/mnt/user/appdata/kinetic/hub/docker-compose.yml`
-- Set the **Environment file** to the `.env` you just edited.
-- Click **Compose Up**.
+Once two parents configure the **same WebDAV server** with **the same username/password**:
 
-Compose Manager will pull the images and start all four services (`couchdb`, `couch_init`, `advertiser`, `enroll`).
-
-**4. Verify**
-
-In the Unraid terminal:
-```bash
-curl -s http://localhost:5984/ | python3 -m json.tool
-# Should return CouchDB welcome JSON
-
-docker ps
-# couchdb, advertiser and enroll should show "Up"; couch_init "Exited (0)"
-```
-
-### Persistent data
-
-CouchDB stores its data in the named volume `couch_data`. On Unraid, Docker named volumes live under `/var/lib/docker/volumes/`. If you want the data in your array instead (recommended for backup), map it explicitly in `docker-compose.yml`:
-
-```yaml
-volumes:
-  - /mnt/user/appdata/kinetic/couch_data:/opt/couchdb/data
-```
-
-### Auto-start on boot
-
-Compose Manager automatically restarts stacks that were running before a reboot — no extra configuration needed.
-
-### Checking logs
-
-Either use the Unraid Docker tab → click the container → **Logs**, or from the terminal:
-```bash
-docker compose -f /mnt/user/appdata/kinetic/hub/docker-compose.yml logs -f
-```
+1. Their personal tasks/notes remain in private, personal-only folders
+2. Shared tasks and notes are synced to `/kinetic/shared/` (encrypted with family key)
+3. Partner proposals and workload metrics appear in the **Partner** tab
+4. Kids app can be pushed tasks from parent app (future phase)
 
 ---
 
-## 3. Enrolling devices
+## Building app releases
 
-Enrollment replaces the old `--dart-define` build-time key distribution.  **Apps downloaded from an app store work without a custom build.**
-
-### Enrollment flow
-
-```
-1. Hub starts → enroll service serves QR at http://<hub-ip>:8765/enroll
-2. Parent opens parent app (first launch) → scans hub QR
-   → mesh key + CouchDB credentials stored in Android Keystore / iOS Keychain
-3. Parent opens Settings → "Kindertoestel toevoegen"
-   → shows a new QR containing the stored mesh key + credentials
-4. Child device opens kids app (first launch) → scans parent QR
-   → key + credentials stored in the device's secure enclave
-```
-
-After step 4, both apps connect to the hub via mDNS and sync automatically.
-
-### Enrolling additional parent devices
-
-Open **Instellingen → Verbinden met hub** on the new device and scan the hub QR again.
-
-### Enrolling additional child devices
-
-Open **Instellingen → Kindertoestel toevoegen** on any enrolled parent device and scan from the new child device.
-
-### Standalone mode (no hub)
-
-During first launch the parent app offers **"Overslaan — zonder hub gebruiken"**.  Personal task management (the Tasks tab) works fully offline.  Family sync features (Approvals, XP, help tickets) are disabled until the parent enrolls via Settings later.
-
----
-
-## 4. Building app releases
-
-No secrets are embedded in the binary.  A plain release build works for any family.
+No secrets are embedded in the binary. A plain release build works for any family (with or without WebDAV).
 
 ```bash
 # Parent app
@@ -320,33 +239,32 @@ adb install build/app/outputs/flutter-apk/app-release.apk
 
 Or transfer the APK via email / Google Drive and install from Files.
 
-> **Dev builds** (plain `flutter run` without any extra arguments) use a
-> built-in dev key and `kinetic`/`changeme` credentials (`kDebugMode` guard).
-> This matches `hub/.env.example` defaults for local development and is safe
-> because the guard is stripped in release builds.
-
 ---
 
-## 5. Running the hub locally (development)
+## Local development with WebDAV
 
-For local development, start the hub using the default dev credentials and then run the Flutter app with `flutter run` (no enrollment needed — `kDebugMode` uses the built-in dev key):
+For local testing of WebDAV features, run a simple WebDAV server in Docker:
 
 ```bash
-# Terminal 1 — start hub
-cd hub
-cp .env.example .env   # defaults are fine for dev
-docker compose up
-
-# Terminal 2 — run parent app against the dev hub
-cd apps/parent
-flutter run
+docker run -d \
+  --name webdav-test \
+  -p 8080:80 \
+  -e USERNAME=devuser \
+  -e PASSWORD=devpass \
+  -v webdav-test-data:/data \
+  bytemark/webdav
 ```
 
-The dev mesh key `de10de10de10de10...` is used automatically in `kDebugMode` — no scanning or enrollment step is needed during development.
+Then in the app (Settings > WebDAV Configuration):
+- Server URL: `http://<your-machine-ip>:8080`
+- Username: `devuser`
+- Password: `devpass`
+
+All data will be stored in that local WebDAV server (encrypted on-device).
 
 ---
 
-## 6. Melos build scripts
+## Melos build scripts
 
 Two Melos scripts are defined for convenience:
 
@@ -355,7 +273,7 @@ melos run build_parent   # flutter build apk --release for apps/parent
 melos run build_kids     # flutter build apk --release for apps/kids
 ```
 
-Because enrollment is now runtime-based, these produce fully functional release APKs with no extra arguments needed.
+These produce fully functional release APKs ready for distribution.
 
 ---
 

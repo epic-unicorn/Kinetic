@@ -148,6 +148,67 @@ Currently a placeholder. Task pushing from parent app is planned for a future ph
 
 ---
 
+## Partner Communication (Phase 11)
+
+The Partner screen enables inter-parent task proposal and family workload management. All communication is encrypted and synced via WebDAV.
+
+### How proposals work
+
+1. **Parent A proposes a task** to Parent B via the Partner screen
+2. **Task is sent to WebDAV** at `/kinetic/shared/proposals/{taskId}.ics` (encrypted with family key)
+3. **Parent B sees proposal** in Partner screen with options to: **Accept** (creates task in their list), **Snooze** (marked for later), or **Dismiss**
+4. **Status changes sync** back to WebDAV, updating both parents' views
+
+### Proposal lifecycle
+
+- **pending** — newly received, awaiting action
+- **accepted** — parent accepted; task created in their personal list
+- **snoozed** — temporarily deferred; will resurface after configured time
+- **dismissed** — explicitly rejected; won't resurface
+
+### Family load metrics  
+
+The Partner screen also displays **family workload metrics**:
+
+- Task count per family member (total non-completed tasks)
+- Urgent task count (due within 7 days, not completed)
+- Tasks by category breakdown
+- Last calculated timestamp
+
+This helps with fair task distribution — you can see if your co-parent is already overloaded before proposing more tasks.
+
+### Services involved
+
+| Service | File | Purpose |
+|---|---|---|
+| `PartnerProposalRepository` | `lib/partner/services/partner_proposal_repository.dart` | Database CRUD for proposals |
+| `PartnerProposalService` | `lib/partner/services/partner_proposal_service.dart` | WebDAV sync of proposals |
+| `PartnerLoadRepository` | `lib/partner/services/partner_load_repository.dart` | Workload metrics display |
+| `LoadSyncService` | `lib/partner/services/load_sync_service.dart` | WebDAV sync of load metrics |
+| `LoadAnalyzer` | `lib/partner/services/load_analyzer.dart` | Calculates own workload |
+| `PartnerScreen` | `lib/partner/screens/partner_screen.dart` | UI for proposals + metrics |
+
+### WebDAV file structure
+
+```
+/kinetic/shared/
+├── proposals/
+│   ├── {proposalId}.ics          (VJOURNAL format, family key encrypted)
+│   └── ...
+└── load/
+    ├── {parentId1}.json          (FamilyLoadMetrics, family key encrypted)
+    └── {parentId2}.json
+```
+
+### Testing proposals locally
+
+1. Run the parent app in development
+2. Navigate to **Partner** tab
+3. Without a configured WebDAV server, the UI loads with empty proposals
+4. With WebDAV configured, proposals sync from `/kinetic/shared/proposals/`
+
+---
+
 ## Package dependency graph
 
 ```

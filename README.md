@@ -93,8 +93,9 @@ Kinetic/
 - ✅ **Notes** — markdown-capable, shared/personal, local or WebDAV-synced
 - ✅ **Optional WebDAV sync** — Nextcloud, Apache, or any RFC 4918 server
 - ✅ **Encryption** — AES-256-GCM per-device + family-shared encryption
-- ✅ **Partner data** — placeholder for task sharing and proposal system (Phase 13+)
-- ⏳ **Kids task conversion** — planned for Phase 13+
+- ✅ **Partner communication** — task proposals, snooze/accept/dismiss workflow
+- ✅ **Family load metrics** — workload tracking for fair task distribution
+- ⏳ **Kids task conversion** — planned for Phase 14+
 
 ### Kids App 🚀
 
@@ -144,9 +145,9 @@ See [docs/deployment.md](docs/deployment.md) for:
 | Phase | Feature | Status |
 |---|---|---|
 | 1–6 | Foundation (pairing, sync, approvals, kids app, enrollment, docker hub) | ✅ Archived (v1) |
-| 7–11 | WebDAV migration, encryption, WebDAV sync, partner proposals | ✅ Complete |
+| 7–11 | WebDAV migration, encryption, WebDAV sync, partner proposals, notes | ✅ Complete |
 | 12 | Material 3 re-theme | ✅ Complete |
-| 13+ | Partner sharing, kids task sync, XP system, approvals | 📋 Backlog |
+| 13+ | Kids task sync, XP system, advanced approvals | 📋 Backlog |
 
 ---
 

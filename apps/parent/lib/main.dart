@@ -4,6 +4,10 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
 import 'partner/screens/partner_screen.dart';
+import 'partner/services/partner_load_repository.dart';
+import 'partner/services/partner_proposal_repository.dart';
+import 'partner/services/load_analyzer.dart';
+import 'partner/services/load_sync_service.dart';
 import 'settings/settings_repository.dart';
 import 'settings/settings_screen.dart';
 import 'support/parent_notification_service.dart';
@@ -74,6 +78,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final NotificationService _notifSvc;
   late final TodoRepository _todoRepository;
   late final NoteRepository _noteRepository;
+  late final PartnerProposalRepository _proposalRepository;
+  late final PartnerLoadRepository _loadRepository;
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
 
@@ -86,7 +92,12 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _notifSvc = ParentNotificationService();
     _todoRepository = TodoRepository(db: widget.db, notifications: _notifSvc);
     _noteRepository = NoteRepository(db: widget.db, notifications: _notifSvc);
+    _proposalRepository = PartnerProposalRepository(db: widget.db);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
+    
+    // Initialize load repository (service will be set later in _initSync)
+    _loadRepository = PartnerLoadRepository(db: widget.db);
+    
     _initSync();
   }
 
@@ -94,6 +105,20 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     final config = await _webDavConfig.load();
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
+      
+      // Initialize partner load service using the same config
+      final client = WebDavClient(
+        baseUrl: config.baseUrl,
+        username: config.username,
+        password: config.password,
+      );
+      final webdavService = WebDavSyncService(client: client, config: config);
+      final analyzer = LoadAnalyzer(db: widget.db);
+      final loadService = LoadSyncService(service: webdavService, analyzer: analyzer);
+      _loadRepository.setLoadService(loadService);
+      // Note: client is kept alive for the duration of the app lifecycle
+      // It will be cleaned up when the app terminates
+      
       _syncOrchestrator!.sync(); // fire-and-forget initial sync
     }
   }
@@ -117,7 +142,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final screens = [
       TasksScreen(repo: _todoRepository),
-      const PartnerScreen(),
+      PartnerScreen(
+        proposalRepository: _proposalRepository,
+        loadRepository: _loadRepository,
+      ),
       NotesScreen(repo: _noteRepository),
       SettingsScreen(
         configRepo: _webDavConfig,
