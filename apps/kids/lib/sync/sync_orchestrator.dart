@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
@@ -104,6 +105,13 @@ class KidsSyncOrchestrator {
   // ── Converters ─────────────────────────────────────────────────────────────
 
   /// Convert iCal task to domain model
+  @visibleForTesting
+  KidsTask iCalToKidsTask(ICalTask ical) => _iCalToKidsTask(ical);
+
+  /// Convert Drift row to iCal task
+  @visibleForTesting
+  ICalTask taskRowToICal(KidsTaskRow row) => _taskRowToICal(row);
+
   KidsTask _iCalToKidsTask(ICalTask ical) {
     return KidsTask(
       id: ical.uid,

@@ -1,48 +1,45 @@
 import 'package:flutter/material.dart';
 
 import '../../db/app_database.dart';
+import '../../sync/sync_orchestrator.dart';
 import '../models/kids_task.dart';
 import '../services/kids_task_repository.dart';
 import 'kids_task_detail_screen.dart';
 
 class KidsHomeScreen extends StatefulWidget {
   final AppDatabase appDb;
+  final KidsTaskRepository? repository;
+  final KidsSyncOrchestrator? orchestrator;
 
-  const KidsHomeScreen({super.key, required this.appDb});
+  const KidsHomeScreen({
+    super.key,
+    required this.appDb,
+    this.repository,
+    this.orchestrator,
+  });
 
   @override
   State<KidsHomeScreen> createState() => _KidsHomeScreenState();
 }
 
-class _KidsHomeScreenState extends State<KidsHomeScreen>
-    with WidgetsBindingObserver {
+class _KidsHomeScreenState extends State<KidsHomeScreen> {
   late KidsTaskRepository _taskRepository;
+  bool _syncing = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _taskRepository = KidsTaskRepository(db: widget.appDb);
+    _taskRepository = widget.repository ?? KidsTaskRepository(db: widget.appDb);
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Sync when app comes to foreground
-    if (state == AppLifecycleState.resumed) {
-      _sync();
+  Future<void> _sync() async {
+    if (_syncing || widget.orchestrator == null) return;
+    setState(() => _syncing = true);
+    try {
+      await widget.orchestrator!.sync();
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
-  }
-
-  void _sync() {
-    // TODO: Implement sync via KidsSyncOrchestrator when sync config is initialized
-    // For now, just trigger a rebuild which will refresh the StreamBuilder
-    setState(() {});
   }
 
   @override
@@ -53,11 +50,21 @@ class _KidsHomeScreenState extends State<KidsHomeScreen>
       appBar: AppBar(
         title: const Text('Mijn Opdrachten'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _sync,
-            tooltip: 'Vernieuwen',
-          ),
+          if (_syncing)
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: widget.orchestrator != null ? _sync : null,
+              tooltip: 'Synchroniseren',
+            ),
         ],
       ),
       body: StreamBuilder<List<KidsTask>>(
