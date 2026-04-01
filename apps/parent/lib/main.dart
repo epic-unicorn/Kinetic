@@ -4,35 +4,54 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
 import 'partner/screens/partner_screen.dart';
+import 'settings/settings_repository.dart';
 import 'settings/settings_screen.dart';
 import 'support/parent_notification_service.dart';
 import 'sync/sync_orchestrator.dart';
 import 'sync/webdav_config_repository.dart';
+import 'theme/app_themes.dart';
 import 'todo/screens/notes_screen.dart';
 import 'todo/screens/tasks_screen.dart';
 import 'todo/services/note_repository.dart';
 import 'todo/services/todo_repository.dart';
 
+// Global theme notifier — allows theme changes from anywhere in the app
+final themeNotifier = ValueNotifier<AppTheme>(AppTheme.dark);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const KineticParentApp());
+
+  // Load persisted theme preference
+  final db = AppDatabase();
+  final settingsRepo = SettingsRepository(db: db);
+  final savedTheme = await settingsRepo.loadTheme();
+  themeNotifier.value = savedTheme;
+
+  runApp(KineticParentApp(db: db, settingsRepo: settingsRepo));
 }
 
 class KineticParentApp extends StatelessWidget {
-  const KineticParentApp({super.key});
+  final AppDatabase db;
+  final SettingsRepository settingsRepo;
+
+  const KineticParentApp({
+    super.key,
+    required this.db,
+    required this.settingsRepo,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kinetic Link',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF44BBA4),
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: const _RootShell(),
+    return ValueListenableBuilder<AppTheme>(
+      valueListenable: themeNotifier,
+      builder: (context, theme, _) {
+        return MaterialApp(
+          title: 'Kinetic Link',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(theme),
+          home: _RootShell(db: db, settingsRepo: settingsRepo),
+        );
+      },
     );
   }
 }
@@ -42,14 +61,16 @@ class KineticParentApp extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _RootShell extends StatefulWidget {
-  const _RootShell();
+  final AppDatabase db;
+  final SettingsRepository settingsRepo;
+
+  const _RootShell({required this.db, required this.settingsRepo});
 
   @override
   State<_RootShell> createState() => _RootShellState();
 }
 
 class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
-  late final AppDatabase _db;
   late final NotificationService _notifSvc;
   late final TodoRepository _todoRepository;
   late final NoteRepository _noteRepository;
@@ -62,10 +83,9 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _db = AppDatabase();
     _notifSvc = ParentNotificationService();
-    _todoRepository = TodoRepository(db: _db, notifications: _notifSvc);
-    _noteRepository = NoteRepository(db: _db, notifications: _notifSvc);
+    _todoRepository = TodoRepository(db: widget.db, notifications: _notifSvc);
+    _noteRepository = NoteRepository(db: widget.db, notifications: _notifSvc);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
     _initSync();
   }
@@ -73,7 +93,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   Future<void> _initSync() async {
     final config = await _webDavConfig.load();
     if (config != null) {
-      _syncOrchestrator = SyncOrchestrator(db: _db, config: config);
+      _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
       _syncOrchestrator!.sync(); // fire-and-forget initial sync
     }
   }
@@ -89,7 +109,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _db.close();
+    widget.db.close();
     super.dispose();
   }
 
@@ -99,7 +119,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       TasksScreen(repo: _todoRepository),
       const PartnerScreen(),
       NotesScreen(repo: _noteRepository),
-      SettingsScreen(configRepo: _webDavConfig),
+      SettingsScreen(
+        configRepo: _webDavConfig,
+        settingsRepo: widget.settingsRepo,
+      ),
     ];
 
     return Scaffold(

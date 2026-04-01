@@ -4,12 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../sync/webdav_config_repository.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_themes.dart';
+import '../main.dart';
+import 'settings_repository.dart';
 
 class SettingsScreen extends StatelessWidget {
   final WebDavConfigRepository configRepo;
+  final SettingsRepository settingsRepo;
 
-  const SettingsScreen({super.key, required this.configRepo});
+  const SettingsScreen({
+    super.key,
+    required this.configRepo,
+    required this.settingsRepo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +24,14 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Instellingen'), centerTitle: false),
       body: ListView(
         children: [
+          const _SectionHeader(label: 'Uiterlijk'),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined, color: kColorTeal),
+            title: const Text('Thema'),
+            subtitle: const Text('Kies een kleurschema'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showThemeSelector(context),
+          ),
           const _SectionHeader(label: 'Synchronisatie'),
           ListTile(
             leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
@@ -36,6 +51,35 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text('Versie 2.0.0'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showThemeSelector(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Thema kiezen'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final theme in AppTheme.values)
+              RadioListTile<AppTheme>(
+                title: Text(theme.label),
+                value: theme,
+                groupValue: themeNotifier.value,
+                onChanged: (newTheme) async {
+                  if (newTheme != null) {
+                    themeNotifier.value = newTheme;
+                    await settingsRepo.saveTheme(newTheme);
+                    if (context.mounted) {
+                      Navigator.pop(dialogContext);
+                    }
+                  }
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -366,9 +410,8 @@ class _TestResultBanner extends StatelessWidget {
           Expanded(
             child: Text(
               isOk ? 'Verbinding geslaagd' : result,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: isOk ? Colors.green : Colors.redAccent,
-                fontSize: 13,
               ),
             ),
           ),
@@ -393,10 +436,9 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.8,
         ),
       ),

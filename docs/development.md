@@ -11,10 +11,9 @@ This document covers setting up a local development environment, running tests, 
 | Flutter | ≥ 3.19.3 | [flutter.dev/docs/get-started/install](https://docs.flutter.dev/get-started/install) |
 | Dart | ≥ 3.3.0 (bundled with Flutter) | — |
 | Melos | ≥ 7.4.1 | `dart pub global activate melos` |
-| Docker + Compose | any recent | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) — needed only for the hub |
 | Android SDK | API 24+ | bundled with Android Studio |
 
-> **iOS builds** additionally require Xcode ≥ 15 and a macOS host (parent app only).
+> **iOS builds** (parent app only) additionally require Xcode ≥ 15 and a macOS host.
 
 ---
 
@@ -28,6 +27,9 @@ cd Kinetic
 # Install all package dependencies in one shot
 melos bootstrap
 # Equivalent to running `flutter pub get` in every package and app.
+
+# Run tests to verify setup
+melos run test
 ```
 
 ---
@@ -35,32 +37,40 @@ melos bootstrap
 ## Project structure
 
 ```
-packages/core     — identity, models, pairing
-packages/sync     — mDNS, AES-256-GCM, CouchDB replication
-packages/support  — approvals, XP ledger, help tickets
-apps/parent       — parent Flutter app
+packages/webdav   — WebDAV client, iCal serializer, encryption, sync service
+apps/parent       — parent Flutter app (Android + iOS)
   lib/
-  ├── db/         — Drift AppDatabase (personal task tables + DAOs)
-  ├── enrollment/ — HubEnrollmentScreen (QR scan, first-launch gate)
-  ├── todo/
-  │   ├── models/    — PersonalTask, TaskList, enums (local-only types)
-  │   ├── services/  — TodoRepository, MissionConverterService
-  │   ├── screens/   — TasksScreen
-  │   └── widgets/   — TaskTile, TaskDetailSheet, ConvertToMissionSheet, QuickAddBar
-  ├── partner/    — LoadAnalyzer, LoadSyncService, PartnerScreen
-  ├── settings/   — SettingsScreen (hub re-enroll + child QR)
-  └── support/    — CouchDocumentStore wrapper
-apps/kids         — kids Flutter app
+  ├── db/           — Drift AppDatabase (personal tasks, notes)
+  ├── todo/         — task & note models, repositories, screens, widgets
+  ├── partner/      — partner communication & proposal sync
+  ├── settings/     — app settings, WebDAV configuration, theme
+  ├── sync/         — WebDAV synchronization orchestrator
+  ├── theme/        — Material 3 design system, colors, typography
+  ├── support/      — notification service
+  └── main.dart     — app entry point
+apps/kids         — kids Flutter app (Android)
   lib/
-  ├── enrollment/ — ChildEnrollmentScreen (QR scan, first-launch gate)
-  └── ...
-hub/              — Docker Compose sync hub
-  ├── advertise/  — mDNS advertiser
-  ├── enroll/     — QR enrollment server (port 8765)
-  └── init/       — CouchDB one-time setup
+  ├── secure/       — secure key-value storage (from kinetic_webdav)
+  └── main.dart     — simple home screen, placeholder
 ```
 
-> **Personal tasks vs shared tasks** — `PersonalTask` is stored in the device-local Drift SQLite database and never syncs. When a parent promotes a personal task to a kids mission via *Convert to Mission*, `MissionConverterService` creates a `kinetic_core.Task` and upserts it into `CouchDocumentStore`, from where it syncs to child devices on the next heartbeat. The `PersonalTask.kidsTaskId` field stores the backlink.
+### Architecture (Kinetic v2 — WebDAV-first)
+
+**Local-first, offline-capable:**
+- Parent app: local SQLite database (Drift) for personal tasks and notes
+- Kids app: placeholder (tasks pushed from parent in future phases)
+- All data stored encrypted locally on device
+
+**Optional remote sync:**
+- Parent app can optionally connect to a WebDAV server (Nextcloud, Apache, etc.)
+- Sync is user-initiated (no automatic cloud agent)
+- All encryption/decryption happens on-device; server never sees plaintext
+
+**No centralized hub:**
+- No CouchDB
+- No mDNS discovery
+- No enrollment system
+- Pure WebDAV for family-shared data
 
 ---
 
@@ -72,72 +82,25 @@ hub/              — Docker Compose sync hub
 melos run test
 ```
 
-Melos executes `flutter test` in every package/app directory that contains a `test/` folder and prints a combined summary.
-
 ### Single package
 
 ```bash
-cd packages/core
+cd packages/webdav
 flutter test
 
-cd packages/sync
+cd apps/parent
 flutter test
 
-cd packages/support
+cd apps/kids
 flutter test
 ```
 
 ### With expanded output
 
 ```bash
-cd packages/core
+cd packages/webdav
 flutter test --reporter=expanded
 ```
-
-### Expected results
-
-| Package | Tests | Notes |
-|---|---|---|
-| `packages/core` | 29 | identity, pairing, models |
-| `packages/sync` | 33 | HTTP client, sync service, codec, orchestrator |
-| `packages/support` | 38 | approvals, XP ledger, tickets |
-
----
-
-## Test organisation
-
-```
-packages/core/test/
-├── helpers/
-│   └── in_memory_key_store.dart   ← SecureKeyValueStore stub
-├── identity/
-│   ├── identity_service_test.dart
-│   └── pairing_service_test.dart
-└── models/
-    └── models_test.dart
-
-packages/sync/test/
-├── couch/
-│   ├── couch_http_client_test.dart
-│   └── couch_sync_service_test.dart
-├── crypto/
-│   └── document_codec_test.dart
-└── helpers/
-    ├── fake_mdns_service.dart      ← MdnsDiscoveryService stub
-    └── mock_http_client.dart       ← http.Client mock (mocktail)
-
-packages/support/test/
-├── models/
-│   ├── support_ticket_test.dart
-│   └── xp_ledger_test.dart
-└── services/
-    ├── approval_service_test.dart
-    └── ticket_service_test.dart
-```
-
-Test helpers follow the convention:
-- `helpers/fake_*.dart` — simple manual fakes, no mocking library
-- `helpers/mock_*.dart` — mocktail-generated mocks (only in `packages/sync`)
 
 ---
 
@@ -152,51 +115,63 @@ melos run analyze
 ### Single package / app
 
 ```bash
-cd packages/core && flutter analyze --no-fatal-infos
-cd apps/parent   && flutter analyze --no-fatal-infos
-cd apps/kids     && flutter analyze --no-fatal-infos
+cd packages/webdav && flutter analyze
+cd apps/parent && flutter analyze
+cd apps/kids && flutter analyze
 ```
 
-All three packages and both apps should report **No issues found**.
+All should report **No issues found**.
 
 ---
 
 ## Running the apps locally
 
-Both apps use `kDebugMode` to bypass enrollment and connect to the hub automatically — no QR scanning needed during development.
+Both apps run standalone without any server dependency.
 
-1. Start the hub (see [deployment.md § Running the hub locally](deployment.md#4-running-the-hub-locally-development)).
-2. Run the app directly:
+### Parent app
 
 ```bash
-# Parent app
 cd apps/parent
 flutter run
+```
 
-# Kids app
+The app starts in a state where WebDAV is unconfigured. Navigate to Settings > WebDAV Configuration to optionally connect to a test server.
+
+### Kids app
+
+```bash
 cd apps/kids
 flutter run
 ```
 
-In `kDebugMode` both apps skip secure-storage lookup and use the built-in dev key `de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10de10` plus `kinetic`/`changeme` credentials — matching the defaults in `hub/.env.example`.  In a release build this guard is stripped and the app requires proper enrollment.
+Currently a placeholder. Task pushing from parent app is planned for a future phase.
 
 ---
 
 ## Package dependency graph
 
 ```
-apps/parent ──► packages/core
-            ──► packages/sync ──► packages/core
-            ──► packages/support ──► packages/core
-
-apps/kids   ──► packages/core
-            ──► packages/sync
-            ──► packages/support
+apps/parent ──► packages/webdav
+apps/kids   ──► packages/webdav
 ```
 
-There are no circular dependencies. `packages/core` has no internal package dependencies.
+No circular dependencies.
 
 ---
+
+## Code conventions
+
+- **Imports:** All imports use relative paths from the package root.
+- **Naming:** Classes use PascalCase, methods/variables use camelCase.
+- **State management:** Simple `ValueNotifier` for theme switching; streams (Drift) for database changes.
+- **Error handling:** Exceptions logged to stderr; user-facing errors shown via `SnackBar` or `AlertDialog`.
+- **Testing:** Unit tests for services; widget tests for screens when feasible.
+
+---
+
+## Build & deployment
+
+See [deployment.md](deployment.md) for building release APKs and distributing to users.
 
 ## Adding a new package
 

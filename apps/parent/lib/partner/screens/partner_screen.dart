@@ -7,21 +7,30 @@ class PartnerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_outline, size: 56, color: Colors.white24),
-            SizedBox(height: 16),
+            Icon(
+              Icons.people_outline,
+              size: 56,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
             Text(
               'Partner',
-              style: TextStyle(color: Colors.white38, fontSize: 20),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Beschikbaar nadat WebDAV is geconfigureerd.',
-              style: TextStyle(color: Colors.white24),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),

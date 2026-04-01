@@ -13,13 +13,14 @@ part 'app_database.drift.dart';
     PersonalNotes,
     PersonalSubtasks,
     PartnerProposals,
+    AppSettings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -31,6 +32,9 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(personalTasks, personalTasks.webdavEtag);
         await m.addColumn(personalTasks, personalTasks.syncState);
         await m.createTable(personalNotes);
+      }
+      if (from < 4) {
+        await m.createTable(appSettings);
       }
     },
   );

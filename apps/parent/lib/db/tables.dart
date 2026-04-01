@@ -155,3 +155,22 @@ class PartnerProposals extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+// ---------------------------------------------------------------------------
+// AppSettings — singleton preferences table (only one row at a time)
+// ---------------------------------------------------------------------------
+
+@DataClassName('AppSettingsRow')
+class AppSettings extends Table {
+  // Always use 'default' as the single key
+  TextColumn get key =>
+      text().withDefault(const Constant('default')).unique()();
+
+  // Theme preference: 'light', 'dark', 'custom'
+  TextColumn get theme => text().withDefault(const Constant('dark'))();
+
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {key};
+}

@@ -1,122 +1,187 @@
 # Deployment guide
 
-This document covers building release APKs, running the hub, managing secrets, and updating a live deployment.
+This document covers building release APKs for distribution and optional WebDAV server setup.
 
 ---
 
 ## Overview
 
-A complete Kinetic Link deployment consists of:
+Kinetic Link is a **local-first** family app with **optional** remote sync.
 
-1. **Hub** — a Linux machine on the family LAN (Raspberry Pi 4 or Unraid server are ideal) running the Docker Compose stack.
-2. **Parent app** — installed on one or more Android/iOS devices belonging to parents.
-3. **Kids app** — installed on Android devices used by children.
+- **Parent app** (Android + iOS) — stores personal tasks & notes locally, optionally syncs with WebDAV
+- **Kids app** (Android) — currently a placeholder; future phases will push tasks from parent
+- **WebDAV server** (optional) — any server (Nextcloud, Apache, etc.) for shared storage
 
-All three components must share the same **mesh key**.  The hub holds the key and distributes it to apps at enrollment time via a QR code — the key is never baked into the app binary.
-
----
-
-## 1. Generating a mesh key
-
-Generate a random 32-byte (256-bit) key once per family and never change it (doing so invalidates all synced data):
-
-```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
-# example output: a3f1c09e4b782d56...  (64 hex chars)
-```
-
-Paste this value as `MESH_KEY_HEX` in `hub/.env`.  **Keep the `.env` file secret** — treat it like a password manager vault file.
-
-The key is distributed to each app at enrollment time via a QR code served by the hub; you never need to pass it to a build tool.
+There is **no centralized hub**. Users control where their data is stored.
 
 ---
 
-## 2. Running the hub
+## Building release APKs
 
 ### Prerequisites
 
-- Linux host (bare metal or VM) on the same LAN as all devices.
-- Docker Engine ≥ 24 and Docker Compose v2.
-- Port 5984 reachable from all devices (no extra firewall rule needed if they are on the same subnet).
+- Flutter ≥ 3.19.3
+- Android SDK with API 24+ build-tools
+- A valid Android signing key (follow [Android docs](https://developer.android.com/studio/publish/app-signing))
 
-> **macOS / Windows Docker Desktop** — `network_mode: host` is not supported.  The mDNS advertiser sidecar will not work inside the container.  Run `advertise.py` directly on the host instead (see [mDNS on macOS/Windows](#mdns-on-macoswindows)).
+### Step 1: Prepare signing configuration
 
-### First-time setup
+Store your signing key in a safe location and create `android/key.properties`:
 
-```bash
-cd hub
-
-# 1. Copy and edit the environment file
-cp .env.example .env
-# Edit .env — uncomment and fill in all four values:
-#   COUCHDB_USER        — admin username (anything, never shown in the app)
-#   COUCHDB_PASSWORD    — admin password (not the mesh key)
-#   HUB_ID              — a stable name for this hub, e.g. "the-smiths-hub"
-#   MESH_KEY_HEX        — output of: python3 -c "import secrets; print(secrets.token_hex(32))"
-#   COUCH_PORT          — leave as 5984 unless you remap
-
-# 2. Start the stack
-docker compose up -d
+```properties
+storeFile=/path/to/release-keystore.jks
+storePassword=<keystore_password>
+keyAlias=release
+keyPassword=<key_password>
 ```
 
-On first start, the `couch_init` container:
-- Completes CouchDB single-node cluster setup.
-- Creates the `_users` and `_replicator` system databases.
-- Creates the `kinetic_family` application database.
+Update `android/app/build.gradle` if not already configured:
 
-Verify everything is running:
-
-```bash
-docker compose ps
-# All four services should show "running" / "exited 0"
-# (couchdb, couch_init, advertiser, enroll)
-
-curl -s http://localhost:5984/ | python3 -m json.tool
-# Should return CouchDB welcome JSON
+```gradle
+signingConfigs {
+    release {
+        keyAlias keystoreProperties['keyAlias']
+        keyPassword keystoreProperties['keyPassword']
+        storeFile file(keystoreProperties['storeFile'])
+        storePassword keystoreProperties['storePassword']
+    }
+}
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+    }
+}
 ```
 
-### Checking hub logs
+### Step 2: Build parent app
 
 ```bash
-docker compose logs couchdb      # CouchDB
-docker compose logs advertiser   # mDNS advertiser
-docker compose logs enroll       # enrollment QR server
-docker compose logs couch_init   # one-shot init (already exited)
+cd apps/parent
+flutter clean
+flutter pub get
+flutter build apk --release
+# Output: build/app/outputs/flutter-app.apk
 ```
 
-### Stopping and restarting
+### Step 3: Build kids app
 
 ```bash
-docker compose down       # stop (data volume is preserved)
-docker compose down -v    # stop AND delete all stored data
-docker compose restart    # restart all services
+cd apps/kids
+flutter clean
+flutter pub get
+flutter build apk --release
+# Output: build/app/outputs/flutter-app.apk
 ```
 
-### mDNS on macOS/Windows
+### Step 4: Distribute
 
-When running Docker Desktop, run the advertiser directly on the host:
-
-```bash
-cd hub/advertise
-pip install -r requirements.txt
-
-# Set the same values as in your .env
-COUCH_PORT=5984 HUB_ID=the-smiths-hub python advertise.py
-```
-
-Use a `launchd` plist (macOS) or a Scheduled Task / NSSM service (Windows) to keep this running at startup.
+- **Parent app**: Share `apps/parent/build/app/outputs/flutter-app.apk` with parents
+- **Kids app**: Sideload or share APK with guardians for installation on kids' devices
 
 ---
 
-## 2b. Running the hub on Unraid
+## Optional: WebDAV server setup
 
-Unraid is Linux-based, so `network_mode: host` works correctly — mDNS broadcast works inside the container without any workaround.
+Users can optionally configure WebDAV sync in the parent app settings. The app will create the necessary folder structure automatically.
 
-### Prerequisites
+### Recommended WebDAV servers
 
-- Unraid 6.10 or later.
-- **Compose Manager** plugin installed from Community Applications (search "Compose Manager").
-- The `hub/` folder from this repo accessible on your Unraid server (e.g. via a share or git clone to `/mnt/user/appdata/kinetic/`).
+**Nextcloud** (easiest for non-technical users)
+- Built-in WebDAV server at `/remote.php/dav`
+- No additional configuration needed
+- Self-hosted or third-party providers available
+
+**Apache with mod_dav**
+- More lightweight
+- Requires manual setup:
+
+```apache
+<Location /kinetic>
+  DAV on
+  AuthType Basic
+  AuthName "Kinetic"
+  AuthUserFile /etc/apache2/.htpasswd
+  Require valid-user
+</Location>
+```
+
+Then create a user:
+```bash
+htpasswd -c /etc/apache2/.htpasswd myusername
+```
+
+### Storage structure (created automatically)
+
+Once a parent configures WebDAV, the app creates:
+
+```
+/kinetic/{username}/
+├── tasks/
+│   ├── personal.ics    — parent's personal tasks (encrypted with personal key)
+│   └── shared.ics      — shared/family tasks (encrypted with family key)
+├── notes/
+│   ├── personal.ics    — parent's personal notes (encrypted with personal key)
+│   └── shared.ics      — shared/family notes (encrypted with family key)
+└── shared/
+    ├── load/{username}.json    — workload metrics (family key)
+    └── proposals/{id}.json     — partner proposals (family key)
+```
+
+**Security:**
+- Personal key: random 32 bytes per device, exportable as recovery JSON
+- Family key: derived from WebDAV password using PBKDF2(password, "kinetic-family-key", 100000 rounds)
+- Server sees only AES-256-GCM ciphertext; decryption keys never transmitted
+
+---
+
+## Running a development WebDAV server (Docker)
+
+For testing, you can run a local WebDAV server with Docker:
+
+```bash
+docker run -d \
+  --name webdav \
+  -p 8080:80 \
+  -e USERNAME=testuser \
+  -e PASSWORD=testpass \
+  -v webdav-data:/data \
+  bytemark/webdav
+```
+
+Access via `http://localhost:8080` with credentials `testuser:testpass`.
+
+In the app, use:
+- Server URL: `http://<your-machine-ip>:8080`
+- Username: `testuser`
+- Password: `testpass`
+
+---
+
+## Notes for production deployment
+
+1. **Use HTTPS** — production WebDAV servers must use TLS (e.g. with Let's Encrypt)
+2. **Secure credentials** — users should use strong passwords; the family key derives from this
+3. **Backups** — users remain responsible for backing up their WebDAV server
+4. **Data recovery** — if a user loses their personal key recovery JSON, they cannot decrypt that device's personal tasks; recommend exporting early and storing securely
+5. **No cloud backup** — Kinetic does NOT send data to any cloud service; all storage is user-controlled
+
+---
+
+## Troubleshooting
+
+**App won't connect to WebDAV server**
+- Verify server URL is correct and accessible: open it in a browser or test with `curl -I <url>`
+- Check username and password
+- Ensure server is not blocking the app's HTTP client
+
+**WebDAV folder structure not created**
+- The app auto-creates on first sync attempt
+- Check that your WebDAV user has write permission
+
+**Tasks not syncing**
+- WebDAV must be configured in Settings
+- Check internet connection
+- Manually trigger sync from Settings > WebDAV Configuration
 
 ### First-time setup
 

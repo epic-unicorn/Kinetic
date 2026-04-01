@@ -1,56 +1,41 @@
 # Kinetic Link
 
-Local-first family task management. Parents manage their own to-do lists, promote tasks to kids missions with an XP reward, balance workloads with their partner, and approve completed tasks — all over an encrypted peer-to-peer sync layer with no cloud dependency.
+**Local-first family task management.** Parents maintain encrypted personal to-do lists on their devices, with optional syncing to a WebDAV server (Nextcloud, Apache, etc.) for shared family data. No cloud lock-in, no account sign-up, no data sent to third parties.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Kinetic Link monorepo                 │
-│                                                         │
-│  apps/parent          apps/kids                         │
-│  ┌──────────┐         ┌──────────┐                      │
-│  │ Flutter  │         │ Flutter  │                      │
-│  │ Parent   │◄───────►│  Kids   │                      │
-│  │   App    │  mDNS + │   App   │                      │
-│  └────┬─────┘  CouchDB└────┬─────┘                      │
-│       │         sync       │                            │
-│       └──────┬─────────────┘                            │
-│              │                                          │
-│         hub/ (Docker Compose)                           │
-│         ┌────────────┐                                  │
-│         │  CouchDB 3 │ ← encrypted blobs only           │
-│         │  + mDNS    │   hub never sees plaintext        │
-│         │  advertiser│                                  │
-│         └────────────┘                                  │
-│                                                         │
-│  packages/                                              │
-│  ├── core     — Ed25519 identity, models, pairing       │
-│  ├── sync     — mDNS discovery, AES-256-GCM, CouchDB    │
-│  └── support  — approvals, XP ledger, help tickets      │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│           Kinetic Link v2 (WebDAV-first)                │
+│                                                          │
+│  apps/parent (Android + iOS)                             │
+│  ├── Personal tasks/notes (SQLite, local-only)           │
+│  ├── Optional WebDAV sync (encrypted)                    │
+│  └── Material 3 UI, dark/light/custom themes             │
+│                                                          │
+│  apps/kids (Android) — placeholder, future sync          │
+│                                                          │
+│  packages/webdav (shared)                                │
+│  ├── WebDAV client (HTTP)                                │
+│  ├── iCal serializer (RFC 5545)                          │
+│  ├── AES-256-GCM encryption (per-user + family key)      │
+│  └── SecureKeyValueStore (platform-specific)             │
+│                                                          │
+│  (Optional) WebDAV server — user-controlled              │
+│  └── No dependency — app works fully offline             │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### Package responsibilities
+### Design philosophy
 
-| Package | What it does |
-|---|---|
-| `packages/core` | Ed25519 device identity, QR pairing, `Task` / `FamilyPlan` models |
-| `packages/sync` | mDNS discovery (Bonsoir), AES-256-GCM document encryption, CouchDB push/pull, `SyncOrchestrator` |
-| `packages/support` | `ApprovalService`, `XpLedger`, `TicketService`, `DocumentStore` interface |
-| `apps/parent` | Parent dashboard — personal task manager, convert tasks to kids missions, partner load balancing, approve tasks, pair devices, view help tickets |
-| `apps/kids` | Child home screen — view missions, mark tasks done, ask for help |
-| `hub/` | Docker Compose: CouchDB 3 + one-shot init + mDNS advertiser sidecar |
-
-### Key design choices
-
-- **Local-first** — all data lives on-device; the hub is a dumb encrypted relay.  The app works offline and syncs opportunistically.
-- **Encrypted at rest and in transit** — AES-256-GCM with a family mesh key baked in at build time.  The hub stores only ciphertext and never holds the key.
-- **No account / cloud sign-up** — devices pair via QR code over the local network.  The mesh key is distributed as a `--dart-define` build flag.
-- **CRDT merge** — `Task` conflicts resolve by `updatedAt` (last-write-wins); `FamilyPlan` conflicts by `crdtVersion`.
-- **Personal task layer** — the parent app embeds a local-only SQLite task manager (Drift) for the parent's own to-dos.  Personal tasks never leave the device unless promoted to a kids mission via **Convert to Mission**, at which point they are written into the shared CouchDB store and gain an XP reward and optional child assignment.
+- **Local-first** — all data stored locally by default. Users control whether to opt into remote sync.
+- **Zero cloud** — no cloud service, no telemetry, no accounts. Sync is to user-selected WebDAV server only.
+- **Encrypted everywhere** — AES-256-GCM encryption on-device before any network transmission.
+- **Simple credentials** — family sharing uses WebDAV username/password; family encryption key derived via PBKDF2.
+- **Offline-capable** — full app functionality works with no internet connection.
+- **Material 3 design** — modern Flutter UI with light/dark/custom theme support.
 
 ---
 
@@ -58,67 +43,120 @@ Local-first family task management. Parents manage their own to-do lists, promot
 
 ```
 Kinetic/
-├── melos.yaml               ← Melos monorepo config
 ├── README.md                ← this file
+├── melos.yaml               ← Melos monorepo config
 ├── docs/
-│   ├── development.md       ← local dev setup, testing, linting
-│   └── deployment.md        ← building APKs, running the hub, key management
+│   ├── development.md       ← setup, testing, running locally
+│   └── deployment.md        ← building release APKs, WebDAV setup
 ├── apps/
-│   ├── parent/              ← Flutter parent app (Android + iOS)
-│   └── kids/                ← Flutter kids app (Android)
-├── hub/
-│   ├── docker-compose.yml   ← CouchDB + mDNS advertiser
-│   ├── .env.example         ← credential and key templates
-│   ├── init/
-│   │   └── setup-couch.sh   ← one-shot DB initialisation script
-│   └── advertise/
-│       ├── advertise.py     ← Python/zeroconf mDNS advertiser
-│       ├── Dockerfile
-│       └── requirements.txt
+│   ├── parent/
+│   │   ├── lib/
+│   │   │   ├── db/          ← Drift schema (personal tasks/notes)
+│   │   │   ├── todo/        ← task & note models, repos, screens
+│   │   │   ├── partner/     ← partner communication (future)
+│   │   │   ├── settings/    ← app prefs, WebDAV config, theme
+│   │   │   ├── sync/        ← WebDAV orchestrator
+│   │   │   ├── theme/       ← Material 3 design system
+│   │   │   └── main.dart
+│   │   ├── test/            ← widget tests
+│   │   └── pubspec.yaml
+│   │
+│   └── kids/
+│       ├── lib/
+│       │   ├── secure/      ← platform-specific key storage
+│       │   └── main.dart    ← placeholder home screen
+│       ├── test/
+│       └── pubspec.yaml
+│
 └── packages/
-    ├── core/
-    ├── sync/
-    └── support/
+    └── webdav/
+        ├── lib/
+        │   ├── src/
+        │   │   ├── client/      ← HTTP WebDAV client
+        │   │   ├── ical/        ← RFC 5545 serializer
+        │   │   ├── crypto/      ← AES-256-GCM + PBKDF2
+        │   │   ├── sync/        ← sync service
+        │   │   └── models/
+        │   └── kinetic_webdav.dart
+        ├── test/
+        └── pubspec.yaml
 ```
+
+---
+
+## Features
+
+### Parent App ✅
+
+- ✅ **Local task storage** — SQLite via Drift, organized by list/category
+- ✅ **Material 3 UI** — light mode, dark mode, custom theming
+- ✅ **Notes** — markdown-capable, shared/personal, local or WebDAV-synced
+- ✅ **Optional WebDAV sync** — Nextcloud, Apache, or any RFC 4918 server
+- ✅ **Encryption** — AES-256-GCM per-device + family-shared encryption
+- ✅ **Partner data** — placeholder for task sharing and proposal system (Phase 13+)
+- ⏳ **Kids task conversion** — planned for Phase 13+
+
+### Kids App 🚀
+
+- ✅ **Placeholder UI** — Material 3 compatible
+- ⏳ **Task list from parent** — synced via WebDAV (planned)
+- ⏳ **Task completion** — XP rewards + parent approval (planned)
 
 ---
 
 ## Quick start
 
-Full instructions are in [docs/development.md](docs/development.md).  The short version:
+Full instructions in [docs/development.md](docs/development.md). Short version:
 
 ```bash
-# 1. Prerequisites: Flutter ≥3.19, Dart ≥3.3, Melos, Docker
+# 1. Prerequisites
 dart pub global activate melos
+# (Flutter 3.19+, Dart 3.3+, Android SDK)
 
-# 2. Bootstrap all packages
+# 2. Bootstrap
 melos bootstrap
 
-# 3. Run all tests
+# 3. Test (optional)
 melos run test
+melos run analyze
 
-# 4. Start the hub (Linux / Raspberry Pi)
-cd hub
-cp .env.example .env   # edit credentials
-docker compose up -d
+# 4. Run
+cd apps/parent && flutter run
+# or
+cd apps/kids && flutter run
 ```
+
+**No server required** — the app works fully offline. Optionally configure WebDAV in Settings to enable syncing.
 
 ---
 
-## Test coverage summary
+## Building for release
 
-| Package | Tests |
-|---|---|
-| `packages/core` | 29 |
-| `packages/sync` | 33 |
-| `packages/support` | 38 |
-| **Total** | **100** |
+See [docs/deployment.md](docs/deployment.md) for:
+- Building signed APKs
+- Optional WebDAV server setup (Nextcloud, Apache, etc.)
+- Security & privacy notes
 
-Run `melos run test` from the repo root to execute all 100 tests.
+---
+
+## Project status
+
+| Phase | Feature | Status |
+|---|---|---|
+| 1–6 | Foundation (pairing, sync, approvals, kids app, enrollment, docker hub) | ✅ Archived (v1) |
+| 7–11 | WebDAV migration, encryption, WebDAV sync, partner proposals | ✅ Complete |
+| 12 | Material 3 re-theme | ✅ Complete |
+| 13+ | Partner sharing, kids task sync, XP system, approvals | 📋 Backlog |
 
 ---
 
 ## Further reading
 
-- [Development guide](docs/development.md) — setup, testing, adding a new package
-- [Deployment guide](docs/deployment.md) — building release APKs, running the hub, key rotation
+- [Development guide](docs/development.md) — setting up locally, running tests
+- [Deployment guide](docs/deployment.md) — building releases, WebDAV server guide
+
+---
+
+## License
+
+TBD

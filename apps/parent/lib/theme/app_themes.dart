@@ -1,0 +1,387 @@
+import 'package:flutter/material.dart';
+
+import '../todo/models/enums.dart';
+
+// ---------------------------------------------------------------------------
+// Brand Palette
+// ---------------------------------------------------------------------------
+
+const kColorTeal = Color(0xFF44BBA4);
+const kColorGold = Color(0xFFE7BB41);
+const kColorCharcoal = Color(0xFF393E41);
+const kColorWarmGrey = Color(0xFFD3D0CB);
+const kColorOffWhite = Color(0xFFE7E5DF);
+
+// Custom theme colors (user-provided)
+const kColorCustomDark = Color(0xFF2c363f);
+const kColorCustomAccent = Color(0xFFe75a7c);
+const kColorCustomLight = Color(0xFFF2F5EA);
+const kColorCustomGray = Color(0xFFd6dbd2);
+const kColorCustomMuted = Color(0xFFbbc7a4);
+
+// ---------------------------------------------------------------------------
+// Priority colours + labels
+// ---------------------------------------------------------------------------
+
+Color priorityColor(TaskPriority p) => switch (p) {
+  TaskPriority.high => Colors.redAccent,
+  TaskPriority.medium => kColorGold,
+  TaskPriority.low => Colors.blueAccent,
+  TaskPriority.none => Colors.transparent,
+};
+
+String priorityLabel(TaskPriority p) => switch (p) {
+  TaskPriority.high => '!!!',
+  TaskPriority.medium => '!!',
+  TaskPriority.low => '!',
+  TaskPriority.none => '',
+};
+
+// ---------------------------------------------------------------------------
+// Category icon
+// ---------------------------------------------------------------------------
+
+IconData categoryIcon(TaskCategory c) => switch (c) {
+  TaskCategory.household => Icons.home_outlined,
+  TaskCategory.health => Icons.favorite_border,
+  TaskCategory.admin => Icons.description_outlined,
+  TaskCategory.school => Icons.school_outlined,
+  TaskCategory.finance => Icons.euro_outlined,
+  TaskCategory.other => Icons.circle_outlined,
+};
+
+// ---------------------------------------------------------------------------
+// Due date formatting helpers
+// ---------------------------------------------------------------------------
+
+String formatDueDate(DateTime due, {bool allDay = true}) {
+  final now = DateTime.now();
+  final d = due.toLocal();
+  final diff = DateTime(
+    d.year,
+    d.month,
+    d.day,
+  ).difference(DateTime(now.year, now.month, now.day)).inDays;
+
+  final datePart = switch (diff) {
+    0 => 'Vandaag',
+    1 => 'Morgen',
+    -1 => 'Gisteren',
+    _ when diff < 0 => '${diff.abs()}d te laat',
+    _ when diff < 7 => _weekday(d.weekday),
+    _ => '${d.day} ${_month(d.month)}',
+  };
+
+  if (allDay) return datePart;
+  final h = d.hour.toString().padLeft(2, '0');
+  final m = d.minute.toString().padLeft(2, '0');
+  return '$datePart $h:$m';
+}
+
+bool isOverdue(DateTime due) {
+  final now = DateTime.now();
+  final d = due.toLocal();
+  return DateTime(
+    d.year,
+    d.month,
+    d.day,
+  ).isBefore(DateTime(now.year, now.month, now.day));
+}
+
+String _weekday(int w) => const [
+  '',
+  'Maandag',
+  'Dinsdag',
+  'Woensdag',
+  'Donderdag',
+  'Vrijdag',
+  'Zaterdag',
+  'Zondag',
+][w];
+
+String _month(int m) => const [
+  '',
+  'jan',
+  'feb',
+  'mrt',
+  'apr',
+  'mei',
+  'jun',
+  'jul',
+  'aug',
+  'sep',
+  'okt',
+  'nov',
+  'dec',
+][m];
+
+// ---------------------------------------------------------------------------
+// Theme definitions
+// ---------------------------------------------------------------------------
+
+enum AppTheme { light, dark, custom }
+
+extension AppThemeLabel on AppTheme {
+  String get label => switch (this) {
+    AppTheme.light => 'Licht',
+    AppTheme.dark => 'Donker',
+    AppTheme.custom => 'Aangepast',
+  };
+}
+
+ThemeData buildTheme(AppTheme theme) {
+  return switch (theme) {
+    AppTheme.light => _buildLightTheme(),
+    AppTheme.dark => _buildDarkTheme(),
+    AppTheme.custom => _buildCustomTheme(),
+  };
+}
+
+ThemeData _buildLightTheme() {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: kColorTeal,
+    brightness: Brightness.light,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: colorScheme.surface,
+    appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      elevation: 0,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainerLow,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    listTileTheme: ListTileThemeData(
+      tileColor: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundColor: colorScheme.onPrimaryContainer,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    textTheme: _buildTextTheme(colorScheme.onSurface),
+    tabBarTheme: TabBarThemeData(
+      labelColor: colorScheme.primary,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: colorScheme.primary, width: 3),
+      ),
+    ),
+  );
+}
+
+ThemeData _buildDarkTheme() {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: kColorTeal,
+    brightness: Brightness.dark,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: colorScheme.surface,
+    appBarTheme: AppBarTheme(
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      elevation: 0,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainerLow,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    listTileTheme: ListTileThemeData(
+      tileColor: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundColor: colorScheme.onPrimaryContainer,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    textTheme: _buildTextTheme(colorScheme.onSurface),
+    tabBarTheme: TabBarThemeData(
+      labelColor: colorScheme.primary,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: colorScheme.primary, width: 3),
+      ),
+    ),
+  );
+}
+
+ThemeData _buildCustomTheme() {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: kColorCustomAccent,
+    brightness: Brightness.dark,
+    surface: kColorCustomDark,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: kColorCustomDark,
+    appBarTheme: AppBarTheme(
+      backgroundColor: kColorCustomDark,
+      foregroundColor: colorScheme.onSurface,
+      elevation: 0,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: colorScheme.surfaceContainerLow,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    listTileTheme: ListTileThemeData(
+      tileColor: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundColor: colorScheme.onPrimaryContainer,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    textTheme: _buildTextTheme(colorScheme.onSurface),
+    tabBarTheme: TabBarThemeData(
+      labelColor: colorScheme.primary,
+      unselectedLabelColor: colorScheme.onSurfaceVariant,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: colorScheme.primary, width: 3),
+      ),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// M3 Typography Scale
+// ---------------------------------------------------------------------------
+
+TextTheme _buildTextTheme(Color textColor) {
+  return TextTheme(
+    // Display styles
+    displayLarge: TextStyle(
+      fontSize: 57,
+      fontWeight: FontWeight.w400,
+      height: 1.12,
+      color: textColor,
+      letterSpacing: -0.25,
+    ),
+    displayMedium: TextStyle(
+      fontSize: 45,
+      fontWeight: FontWeight.w400,
+      height: 1.16,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    displaySmall: TextStyle(
+      fontSize: 36,
+      fontWeight: FontWeight.w400,
+      height: 1.22,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    // Headline styles
+    headlineLarge: TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.w400,
+      height: 1.25,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w400,
+      height: 1.29,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    headlineSmall: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w400,
+      height: 1.33,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    // Title styles
+    titleLarge: TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w500,
+      height: 1.27,
+      color: textColor,
+      letterSpacing: 0,
+    ),
+    titleMedium: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      height: 1.5,
+      color: textColor,
+      letterSpacing: 0.15,
+    ),
+    titleSmall: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      height: 1.43,
+      color: textColor,
+      letterSpacing: 0.1,
+    ),
+    // Body styles
+    bodyLarge: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      height: 1.5,
+      color: textColor,
+      letterSpacing: 0.15,
+    ),
+    bodyMedium: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w400,
+      height: 1.43,
+      color: textColor,
+      letterSpacing: 0.25,
+    ),
+    bodySmall: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w400,
+      height: 1.33,
+      color: textColor,
+      letterSpacing: 0.4,
+    ),
+    // Label styles
+    labelLarge: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      height: 1.43,
+      color: textColor,
+      letterSpacing: 0.1,
+    ),
+    labelMedium: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      height: 1.33,
+      color: textColor,
+      letterSpacing: 0.5,
+    ),
+    labelSmall: TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      height: 1.45,
+      color: textColor,
+      letterSpacing: 0.5,
+    ),
+  );
+}

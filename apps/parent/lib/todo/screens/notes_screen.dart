@@ -30,20 +30,29 @@ class _NotesScreenState extends State<NotesScreen> {
           final notes = snapshot.data ?? [];
 
           if (notes.isEmpty) {
+            final scheme = Theme.of(context).colorScheme;
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.note_outlined, size: 56, color: Colors.white24),
+                  Icon(
+                    Icons.note_outlined,
+                    size: 56,
+                    color: scheme.onSurfaceVariant,
+                  ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Geen notities',
-                    style: TextStyle(color: Colors.white38, fontSize: 18),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: scheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Maak je eerste notitie aan',
-                    style: TextStyle(color: Colors.white24),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -99,7 +108,7 @@ class _NoteTile extends StatelessWidget {
             preview,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 6),
           Row(
@@ -109,16 +118,20 @@ class _NoteTile extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   formatDueDate(note.remindAt!),
-                  style: const TextStyle(fontSize: 12, color: kColorGold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: kColorGold),
                 ),
                 const SizedBox(width: 12),
               ],
               if (note.isShared) ...[
                 Icon(Icons.lock, size: 14, color: kColorTeal),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'Gedeeld',
-                  style: TextStyle(fontSize: 12, color: kColorTeal),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: kColorTeal),
                 ),
               ],
             ],
