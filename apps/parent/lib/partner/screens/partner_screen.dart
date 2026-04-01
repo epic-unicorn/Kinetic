@@ -32,9 +32,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
         title: const Text('Partner'),
         actions: [
           IconButton(
-            icon: Icon(_showLoadMetrics
-                ? Icons.assessment
-                : Icons.assessment_outlined),
+            icon: Icon(
+              _showLoadMetrics ? Icons.assessment : Icons.assessment_outlined,
+            ),
             onPressed: _toggleLoadMetrics,
             tooltip: 'Family workload metrics',
           ),
@@ -92,8 +92,8 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 Text(
                   'Your partner hasn\'t suggested any tasks yet.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -115,7 +115,8 @@ class _PartnerScreenState extends State<PartnerScreen> {
   Widget _buildProposalCard(BuildContext context, PartnerProposal proposal) {
     final scheme = Theme.of(context).colorScheme;
     final priorityColor = _priorityColor(proposal.taskPriority, scheme);
-    final dueSoon = proposal.taskDueDate != null &&
+    final dueSoon =
+        proposal.taskDueDate != null &&
         proposal.taskDueDate!.isBefore(DateTime.now().add(Duration(days: 3)));
 
     return Card(
@@ -143,12 +144,8 @@ class _PartnerScreenState extends State<PartnerScreen> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             proposal.taskNotes!,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -157,17 +154,19 @@ class _PartnerScreenState extends State<PartnerScreen> {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: priorityColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     proposal.taskPriority.name,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: priorityColor,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: priorityColor),
                   ),
                 ),
               ],
@@ -292,10 +291,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
                 Text(
                   '${metric.taskCount} tasks',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(color: scheme.primary),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(color: scheme.primary),
                 ),
               ],
             ),
@@ -307,9 +305,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                     children: [
                       Text(
                         '${metric.urgentCount}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
+                        style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: scheme.error),
                       ),
                       Text(
@@ -324,9 +320,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                     children: [
                       Text(
                         '${(metric.tasksByCategory?.length ?? 0)}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
+                        style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: scheme.primary),
                       ),
                       Text(
@@ -343,8 +337,8 @@ class _PartnerScreenState extends State<PartnerScreen> {
               Text(
                 'By Category',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -376,27 +370,27 @@ class _PartnerScreenState extends State<PartnerScreen> {
   Future<void> _acceptProposal(String proposalId) async {
     await widget.proposalRepository.accept(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proposal accepted')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Proposal accepted')));
     }
   }
 
   Future<void> _snoozeProposal(String proposalId) async {
     await widget.proposalRepository.snooze(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proposal snoozed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Proposal snoozed')));
     }
   }
 
   Future<void> _dismissProposal(String proposalId) async {
     await widget.proposalRepository.dismiss(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proposal dismissed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Proposal dismissed')));
     }
   }
 

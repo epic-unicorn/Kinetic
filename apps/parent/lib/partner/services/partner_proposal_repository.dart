@@ -38,9 +38,9 @@ class PartnerProposalRepository {
 
   /// Accept a proposal (creates task in parent's list and updates proposal status).
   Future<void> accept(String proposalId) async {
-    await (_db.update(_db.partnerProposals)
-          ..where((t) => t.id.equals(proposalId)))
-        .write(
+    await (_db.update(
+      _db.partnerProposals,
+    )..where((t) => t.id.equals(proposalId))).write(
       PartnerProposalsCompanion(
         status: const Value('accepted'),
         syncState: const Value('dirty'),
@@ -51,9 +51,9 @@ class PartnerProposalRepository {
 
   /// Snooze a proposal (change status to snoozed, will resurface later).
   Future<void> snooze(String proposalId) async {
-    await (_db.update(_db.partnerProposals)
-          ..where((t) => t.id.equals(proposalId)))
-        .write(
+    await (_db.update(
+      _db.partnerProposals,
+    )..where((t) => t.id.equals(proposalId))).write(
       PartnerProposalsCompanion(
         status: const Value('snoozed'),
         syncState: const Value('dirty'),
@@ -64,9 +64,9 @@ class PartnerProposalRepository {
 
   /// Dismiss a proposal (change status to dismissed, no action).
   Future<void> dismiss(String proposalId) async {
-    await (_db.update(_db.partnerProposals)
-          ..where((t) => t.id.equals(proposalId)))
-        .write(
+    await (_db.update(
+      _db.partnerProposals,
+    )..where((t) => t.id.equals(proposalId))).write(
       PartnerProposalsCompanion(
         status: const Value('dismissed'),
         syncState: const Value('dirty'),
@@ -77,9 +77,9 @@ class PartnerProposalRepository {
 
   /// Soft-delete a proposal by marking syncState='deleted'.
   Future<void> delete(String proposalId) async {
-    await (_db.update(_db.partnerProposals)
-          ..where((t) => t.id.equals(proposalId)))
-        .write(
+    await (_db.update(
+      _db.partnerProposals,
+    )..where((t) => t.id.equals(proposalId))).write(
       PartnerProposalsCompanion(
         syncState: const Value('deleted'),
         updatedAt: Value(DateTime.now().toUtc()),

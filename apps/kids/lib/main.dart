@@ -1,12 +1,18 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+
+import 'db/app_database.dart';
+import 'task/screens/kids_home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const KineticKidsApp());
+  final appDb = AppDatabase();
+  runApp(KineticKidsApp(appDb: appDb));
 }
 
 class KineticKidsApp extends StatelessWidget {
-  const KineticKidsApp({super.key});
+  final AppDatabase appDb;
+
+  const KineticKidsApp({super.key, required this.appDb});
 
   @override
   Widget build(BuildContext context) {
@@ -50,46 +56,7 @@ class KineticKidsApp extends StatelessWidget {
           backgroundColor: colorScheme.surface,
         ),
       ),
-      home: const KidsHomeScreen(),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Kids home screen � standalone mode (no sync in v2).
-// Tasks will be pushed from the parent app in a future phase.
-// ---------------------------------------------------------------------------
-
-class KidsHomeScreen extends StatelessWidget {
-  const KidsHomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mijn Opdrachten')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.celebration, size: 64, color: scheme.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Alles klaar!',
-              style: textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Geen opdrachten op dit moment.',
-              style: textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: KidsHomeScreen(appDb: appDb),
     );
   }
 }

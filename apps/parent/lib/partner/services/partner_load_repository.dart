@@ -15,10 +15,8 @@ class PartnerLoadRepository extends ChangeNotifier {
 
   List<FamilyLoadMetrics> _familyLoad = [];
 
-  PartnerLoadRepository({
-    required AppDatabase db,
-    LoadSyncService? loadService,
-  })  : _loadService = loadService {
+  PartnerLoadRepository({required AppDatabase db, LoadSyncService? loadService})
+    : _loadService = loadService {
     _analyzer = LoadAnalyzer(db: db);
   }
 

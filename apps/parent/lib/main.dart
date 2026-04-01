@@ -94,10 +94,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _noteRepository = NoteRepository(db: widget.db, notifications: _notifSvc);
     _proposalRepository = PartnerProposalRepository(db: widget.db);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
-    
+
     // Initialize load repository (service will be set later in _initSync)
     _loadRepository = PartnerLoadRepository(db: widget.db);
-    
+
     _initSync();
   }
 
@@ -105,7 +105,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     final config = await _webDavConfig.load();
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
-      
+
       // Initialize partner load service using the same config
       final client = WebDavClient(
         baseUrl: config.baseUrl,
@@ -114,11 +114,14 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       );
       final webdavService = WebDavSyncService(client: client, config: config);
       final analyzer = LoadAnalyzer(db: widget.db);
-      final loadService = LoadSyncService(service: webdavService, analyzer: analyzer);
+      final loadService = LoadSyncService(
+        service: webdavService,
+        analyzer: analyzer,
+      );
       _loadRepository.setLoadService(loadService);
       // Note: client is kept alive for the duration of the app lifecycle
       // It will be cleaned up when the app terminates
-      
+
       _syncOrchestrator!.sync(); // fire-and-forget initial sync
     }
   }
