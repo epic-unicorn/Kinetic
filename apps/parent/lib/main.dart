@@ -8,7 +8,9 @@ import 'settings/settings_screen.dart';
 import 'support/parent_notification_service.dart';
 import 'sync/sync_orchestrator.dart';
 import 'sync/webdav_config_repository.dart';
+import 'todo/screens/notes_screen.dart';
 import 'todo/screens/tasks_screen.dart';
+import 'todo/services/note_repository.dart';
 import 'todo/services/todo_repository.dart';
 
 Future<void> main() async {
@@ -50,6 +52,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final AppDatabase _db;
   late final NotificationService _notifSvc;
   late final TodoRepository _todoRepository;
+  late final NoteRepository _noteRepository;
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
 
@@ -62,6 +65,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _db = AppDatabase();
     _notifSvc = ParentNotificationService();
     _todoRepository = TodoRepository(db: _db, notifications: _notifSvc);
+    _noteRepository = NoteRepository(db: _db, notifications: _notifSvc);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
     _initSync();
   }
@@ -94,7 +98,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     final screens = [
       TasksScreen(repo: _todoRepository),
       const PartnerScreen(),
-      const _NotesPlaceholder(),
+      NotesScreen(repo: _noteRepository),
       SettingsScreen(configRepo: _webDavConfig),
     ];
 
@@ -125,38 +129,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
             label: 'Instellingen',
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Notes placeholder — replaced in Phase 10.
-// ---------------------------------------------------------------------------
-
-class _NotesPlaceholder extends StatelessWidget {
-  const _NotesPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.note_outlined, size: 56, color: Colors.white24),
-            SizedBox(height: 16),
-            Text(
-              'Notities',
-              style: TextStyle(color: Colors.white38, fontSize: 20),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Komt binnenkort beschikbaar.',
-              style: TextStyle(color: Colors.white24),
-            ),
-          ],
-        ),
       ),
     );
   }

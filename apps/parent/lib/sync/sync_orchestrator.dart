@@ -23,6 +23,7 @@ class SyncOrchestrator {
     final service = WebDavSyncService(client: client, config: _config);
     try {
       await _syncTasks(service);
+      await _syncNotes(service);
     } finally {
       client.dispose();
     }
@@ -104,8 +105,101 @@ class SyncOrchestrator {
   }
 
   // ---------------------------------------------------------------------------
+  // Notes
+  // ---------------------------------------------------------------------------
+
+  Future<void> _syncNotes(WebDavSyncService service) async {
+    // 1. Push dirty local notes.
+    final dirtyRows = await (_db.select(
+      _db.personalNotes,
+    )..where((t) => t.syncState.equals('dirty'))).get();
+
+    for (final row in dirtyRows) {
+      final icalNote = _rowToICalNote(row);
+      try {
+        await service.pushNote(icalNote);
+        await (_db.update(
+          _db.personalNotes,
+        )..where((t) => t.id.equals(row.id))).write(
+          PersonalNotesCompanion(
+            syncState: const Value('clean'),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+      } catch (_) {
+        // Leave dirty for next cycle.
+      }
+    }
+
+    // 2. Push locally-deleted notes (tombstones stored with syncState='deleted').
+    final deletedRows = await (_db.select(
+      _db.personalNotes,
+    )..where((t) => t.syncState.equals('deleted'))).get();
+
+    for (final row in deletedRows) {
+      try {
+        await service.deleteNote(row.id, isShared: row.isShared);
+        await (_db.delete(
+          _db.personalNotes,
+        )..where((t) => t.id.equals(row.id))).go();
+      } catch (_) {}
+    }
+
+    // 3. Pull from server.
+    final remoteList = await service.pullNotes();
+    if (remoteList.isEmpty) return;
+
+    final localList = await _db.select(_db.personalNotes).get();
+
+    // 4. Apply merged result using Last-Write-Wins.
+    for (final note in remoteList) {
+      final existing = localList.where((r) => r.id == note.uid).firstOrNull;
+      if (existing == null) {
+        // New from server — insert.
+        await _db
+            .into(_db.personalNotes)
+            .insertOnConflictUpdate(_icalNoteToCompanion(note, etag: null));
+      } else if (!existing.updatedAt.isAtSameMomentAs(note.updatedAt)) {
+        // Remote is different — update.
+        await (_db.update(_db.personalNotes)
+              ..where((t) => t.id.equals(note.uid)))
+            .write(_icalNoteToCompanion(note, etag: existing.webdavEtag));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Conversion helpers
   // ---------------------------------------------------------------------------
+
+  static ICalNote _rowToICalNote(PersonalNoteRow row) {
+    return ICalNote(
+      uid: row.id,
+      summary: row.title,
+      description: row.body,
+      isShared: row.isShared,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      remindAt: row.remindAt,
+    );
+  }
+
+  static PersonalNotesCompanion _icalNoteToCompanion(
+    ICalNote note, {
+    required String? etag,
+  }) {
+    return PersonalNotesCompanion(
+      id: Value(note.uid),
+      title: Value(note.summary),
+      body: Value(note.description ?? ''),
+      isShared: Value(note.isShared),
+      createdAt: Value(note.createdAt),
+      updatedAt: Value(note.updatedAt),
+      remindAt: Value(note.remindAt),
+      syncState: const Value('clean'),
+      webdavEtag: Value(etag),
+    );
+  }
 
   static ICalTask _rowToICalTask(PersonalTaskRow row) {
     return ICalTask(
