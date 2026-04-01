@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../partner/services/load_sync_service.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
-import '../../todo/services/mission_converter_service.dart';
 import '../../todo/services/todo_repository.dart';
-import 'convert_to_mission_sheet.dart';
 import 'task_detail_sheet.dart';
 
 // ---------------------------------------------------------------------------
@@ -21,16 +18,8 @@ import 'task_detail_sheet.dart';
 class TaskTile extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
-  final MissionConverterService? converter;
-  final LoadSyncService? syncService;
 
-  const TaskTile({
-    super.key,
-    required this.task,
-    required this.repo,
-    this.converter,
-    this.syncService,
-  });
+  const TaskTile({super.key, required this.task, required this.repo});
 
   @override
   Widget build(BuildContext context) {
@@ -86,12 +75,7 @@ class TaskTile extends StatelessWidget {
           ),
         );
       },
-      child: _TaskTileContent(
-        task: task,
-        repo: repo,
-        converter: converter,
-        syncService: syncService,
-      ),
+      child: _TaskTileContent(task: task, repo: repo),
     );
   }
 }
@@ -99,15 +83,8 @@ class TaskTile extends StatelessWidget {
 class _TaskTileContent extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
-  final MissionConverterService? converter;
-  final LoadSyncService? syncService;
 
-  const _TaskTileContent({
-    required this.task,
-    required this.repo,
-    this.converter,
-    this.syncService,
-  });
+  const _TaskTileContent({required this.task, required this.repo});
 
   @override
   Widget build(BuildContext context) {
@@ -235,11 +212,9 @@ class _TaskTileContent extends StatelessWidget {
                   ),
                 // ── Mission badge ──────────────────────────────────────────
                 if (task.kidsTaskId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: _MissionBadge(
-                      onTap: () => _openMissionSheet(context),
-                    ),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 6),
+                    child: _MissionBadge(),
                   ),
               ],
             ),
@@ -254,18 +229,7 @@ class _TaskTileContent extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) =>
-          TaskDetailSheet(task: task, repo: repo, converter: converter),
-    );
-  }
-
-  void _openMissionSheet(BuildContext context) {
-    if (converter == null) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => ConvertToMissionSheet(task: task, converter: converter!),
+      builder: (_) => TaskDetailSheet(task: task, repo: repo),
     );
   }
 
@@ -309,39 +273,21 @@ class _TaskTileContent extends StatelessWidget {
                 repo.deleteTask(task.id);
               },
             ),
-            if (syncService != null)
-              ListTile(
-                leading: const Icon(Icons.share_outlined, color: kColorTeal),
-                title: const Text('Voorstel sturen naar partner'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _sendProposalToPartner(context);
-                },
+            // Greyed-out placeholder — restored in Phase 11.
+            ListTile(
+              leading: const Icon(Icons.send_outlined, color: Colors.white24),
+              title: const Text(
+                'Stuur naar kinderen',
+                style: TextStyle(color: Colors.white24),
               ),
+              subtitle: const Text(
+                'Binnenkort beschikbaar',
+                style: TextStyle(color: Colors.white24, fontSize: 12),
+              ),
+              enabled: false,
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _sendProposalToPartner(BuildContext context) {
-    final partnerLoad = syncService?.partnerLoad;
-    if (partnerLoad == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Partner is niet beschikbaar'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    syncService!.sendProposal(toDeviceId: partnerLoad.deviceId, task: task);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('"${task.title}" voorgesteld aan partner'),
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -352,34 +298,29 @@ class _TaskTileContent extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _MissionBadge extends StatelessWidget {
-  final VoidCallback? onTap;
-
-  const _MissionBadge({this.onTap});
+  const _MissionBadge();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: kColorGold.withAlpha(40),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: kColorGold.withAlpha(120)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.bolt, size: 10, color: kColorGold),
-            const SizedBox(width: 2),
-            Text(
-              'Opdracht',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: kColorGold, fontSize: 10),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: kColorGold.withAlpha(40),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kColorGold.withAlpha(120)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.bolt, size: 10, color: kColorGold),
+          const SizedBox(width: 2),
+          Text(
+            'Opdracht',
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: kColorGold, fontSize: 10),
+          ),
+        ],
       ),
     );
   }

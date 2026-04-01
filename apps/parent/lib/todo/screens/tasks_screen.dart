@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../partner/services/load_sync_service.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/personal_task.dart';
-import '../../todo/services/mission_converter_service.dart';
 import '../../todo/services/todo_repository.dart';
 import '../../todo/widgets/quick_add_bar.dart';
 import '../../todo/widgets/task_detail_sheet.dart';
@@ -15,15 +13,8 @@ import '../../todo/widgets/task_tile.dart';
 
 class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
-  final MissionConverterService? converter;
-  final LoadSyncService? syncService;
 
-  const TasksScreen({
-    super.key,
-    required this.repo,
-    this.converter,
-    this.syncService,
-  });
+  const TasksScreen({super.key, required this.repo});
 
   @override
   State<TasksScreen> createState() => _TasksScreenState();
@@ -58,10 +49,7 @@ class _TasksScreenState extends State<TasksScreen>
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
-              builder: (_) => TaskDetailSheet(
-                repo: widget.repo,
-                converter: widget.converter,
-              ),
+              builder: (_) => TaskDetailSheet(repo: widget.repo),
             ),
           ),
         ],
@@ -76,16 +64,8 @@ class _TasksScreenState extends State<TasksScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _OpenTasksTab(
-            repo: widget.repo,
-            converter: widget.converter,
-            syncService: widget.syncService,
-          ),
-          _CompletedTasksTab(
-            repo: widget.repo,
-            converter: widget.converter,
-            syncService: widget.syncService,
-          ),
+          _OpenTasksTab(repo: widget.repo),
+          _CompletedTasksTab(repo: widget.repo),
         ],
       ),
       bottomSheet: QuickAddBar(repo: widget.repo),
@@ -99,10 +79,8 @@ class _TasksScreenState extends State<TasksScreen>
 
 class _OpenTasksTab extends StatelessWidget {
   final TodoRepository repo;
-  final MissionConverterService? converter;
-  final LoadSyncService? syncService;
 
-  const _OpenTasksTab({required this.repo, this.converter, this.syncService});
+  const _OpenTasksTab({required this.repo});
 
   static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
 
@@ -119,14 +97,7 @@ class _OpenTasksTab extends StatelessWidget {
 
         final items = <Widget>[];
         for (var i = 0; i < open.length; i++) {
-          items.add(
-            TaskTile(
-              task: open[i],
-              repo: repo,
-              converter: converter,
-              syncService: syncService,
-            ),
-          );
+          items.add(TaskTile(task: open[i], repo: repo));
           if (i < open.length - 1) items.add(_divider);
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar
@@ -143,14 +114,8 @@ class _OpenTasksTab extends StatelessWidget {
 
 class _CompletedTasksTab extends StatelessWidget {
   final TodoRepository repo;
-  final MissionConverterService? converter;
-  final LoadSyncService? syncService;
 
-  const _CompletedTasksTab({
-    required this.repo,
-    this.converter,
-    this.syncService,
-  });
+  const _CompletedTasksTab({required this.repo});
 
   static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
 
@@ -189,14 +154,7 @@ class _CompletedTasksTab extends StatelessWidget {
 
         // ── Completed task tiles ───────────────────────────────────────────
         for (var i = 0; i < completed.length; i++) {
-          items.add(
-            TaskTile(
-              task: completed[i],
-              repo: repo,
-              converter: converter,
-              syncService: syncService,
-            ),
-          );
+          items.add(TaskTile(task: completed[i], repo: repo));
           if (i < completed.length - 1) items.add(_divider);
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar

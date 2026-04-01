@@ -1,5 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:kinetic_core/kinetic_core.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 /// Wraps [FlutterSecureStorage] as a [SecureKeyValueStore] for the kids app.
 ///

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:kinetic_support/kinetic_support.dart';
+
+import '../../notifications/notification_service.dart';
 
 import '../../db/app_database.dart';
 import '../models/enums.dart';

@@ -1,4 +1,6 @@
-import 'package:kinetic_webdav/kinetic_webdav.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'secure_key_value_store.dart';
 
 /// Production [SecureKeyValueStore] backed by Android Keystore / iOS Keychain.
 ///
@@ -19,10 +21,10 @@ class FlutterSecureKeyValueStore implements SecureKeyValueStore {
   final FlutterSecureStorage _storage;
 
   FlutterSecureKeyValueStore()
-    : _storage = const FlutterSecureStorage(
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
-      );
+      : _storage = const FlutterSecureStorage(
+          aOptions: _androidOptions,
+          iOptions: _iosOptions,
+        );
 
   @override
   Future<String?> read({required String key}) =>
@@ -39,8 +41,8 @@ class FlutterSecureKeyValueStore implements SecureKeyValueStore {
 
   @override
   Future<void> delete({required String key}) => _storage.delete(
-    key: key,
-    aOptions: _androidOptions,
-    iOptions: _iosOptions,
-  );
+        key: key,
+        aOptions: _androidOptions,
+        iOptions: _iosOptions,
+      );
 }

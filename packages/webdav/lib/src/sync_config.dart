@@ -1,0 +1,42 @@
+import 'dart:typed_data';
+
+/// Immutable configuration for a WebDAV sync connection.
+class SyncConfig {
+  /// WebDAV server root, e.g. `https://nextcloud.example.com/remote.php/dav`.
+  final String serverUrl;
+
+  /// WebDAV username.
+  final String username;
+
+  /// WebDAV password (also the input for family key derivation).
+  final String password;
+
+  /// 32-byte AES-256-GCM key for personal (private) data.
+  final Uint8List personalKeyBytes;
+
+  /// 32-byte AES-256-GCM key for shared family data (derived via PBKDF2 from
+  /// [password]).  Absent until the key has been derived at least once.
+  final Uint8List? familyKeyBytes;
+
+  const SyncConfig({
+    required this.serverUrl,
+    required this.username,
+    required this.password,
+    required this.personalKeyBytes,
+    this.familyKeyBytes,
+  });
+
+  /// Normalised server URL — trailing slash stripped.
+  String get baseUrl => serverUrl.endsWith('/')
+      ? serverUrl.substring(0, serverUrl.length - 1)
+      : serverUrl;
+
+  /// Returns a copy with [familyKeyBytes] set.
+  SyncConfig withFamilyKey(Uint8List familyKey) => SyncConfig(
+        serverUrl: serverUrl,
+        username: username,
+        password: password,
+        personalKeyBytes: personalKeyBytes,
+        familyKeyBytes: familyKey,
+      );
+}

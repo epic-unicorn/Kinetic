@@ -1,0 +1,31 @@
+name: kinetic_webdav
+description: WebDAV sync, iCal serialization, and AES-256-GCM encryption for Kinetic Link.
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # AES-256-GCM + PBKDF2
+  cryptography: ^2.9.0
+  cryptography_flutter: ^2.3.2
+
+  # Hardware-backed secure storage
+  flutter_secure_storage: ^9.2.2
+
+  # WebDAV HTTP operations
+  http: ^1.3.0
+
+  # iCal / UUID generation
+  uuid: ^4.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  mockito: ^5.4.5
+  build_runner: ^2.4.15

@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
-import '../../todo/services/mission_converter_service.dart';
 import '../../todo/services/todo_repository.dart';
-import 'convert_to_mission_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // TaskDetailSheet
@@ -18,14 +16,12 @@ class TaskDetailSheet extends StatefulWidget {
   final PersonalTask? task;
   final TodoRepository repo;
   final String? initialListId;
-  final MissionConverterService? converter;
 
   const TaskDetailSheet({
     super.key,
     required this.repo,
     this.task,
     this.initialListId,
-    this.converter,
   });
 
   @override
@@ -218,23 +214,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               onTap: () => _pickRecurrence(context),
             ),
 
-          // ── Convert to Mission (only on existing tasks not yet linked) ────
-          if (widget.task != null &&
-              widget.task!.kidsTaskId == null &&
-              widget.converter != null)
-            _MetaRow(
-              icon: Icons.bolt,
-              label: 'Zet om naar opdracht',
-              color: kColorGold,
-              active: false,
-              onTap: () => _openMissionSheet(context),
-            )
-          else if (widget.task != null && widget.task!.kidsTaskId != null)
-            _MetaRow(
+          // ── Send to Kids — greyed out placeholder (Phase N+1) ─────────────
+          if (widget.task != null && widget.task!.kidsTaskId != null)
+            const _MetaRow(
               icon: Icons.bolt,
               label: 'Opdracht aangemaakt ✓',
               color: kColorTeal,
               active: true,
+              onTap: null,
+            )
+          else if (widget.task != null)
+            const _MetaRow(
+              icon: Icons.bolt,
+              label: 'Stuur naar kinderen (binnenkort)',
+              active: false,
               onTap: null,
             ),
 
@@ -328,19 +321,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _openMissionSheet(BuildContext context) {
-    Navigator.pop(context); // close this sheet first
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => ConvertToMissionSheet(
-        task: widget.task!,
-        converter: widget.converter!,
       ),
     );
   }

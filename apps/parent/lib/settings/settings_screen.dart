@@ -1,32 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kinetic_core/kinetic_core.dart';
-import 'package:kinetic_sync/kinetic_sync.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../enrollment/hub_enrollment_screen.dart';
-import '../../secure/flutter_secure_key_value_store.dart';
-import '../../theme/app_theme.dart';
-
-// ---------------------------------------------------------------------------
-// SettingsScreen — device pairing + app settings.
-// (Pairing is moved here from the old primary tab so the Tasks tab is
-//  the natural landing screen for daily use.)
-// ---------------------------------------------------------------------------
+import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatelessWidget {
-  final IdentityService identityService;
-  final PairingService pairingService;
-  final SyncStatus syncStatus;
-  final void Function(List<int> meshKey, String couchUser, String couchPassword)
-  onReenroll;
-
-  const SettingsScreen({
-    super.key,
-    required this.identityService,
-    required this.pairingService,
-    required this.syncStatus,
-    required this.onReenroll,
-  });
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,103 +11,28 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Instellingen'), centerTitle: false),
       body: ListView(
         children: [
-          // ── Hub enrollment ───────────────────────────────────────────────
-          const _SectionHeader(label: 'Hub'),
-          ListTile(
-            leading: const Icon(Icons.router, color: kColorTeal),
-            title: const Text('Verbinden met hub'),
-            subtitle: const Text('Scan de QR op de hub om verbinding te maken'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => HubEnrollmentScreen(
-                  pairingService: pairingService,
-                  onEnrolled: (mk, u, p) {
-                    onReenroll(mk, u, p);
-                    Navigator.pop(context);
-                  },
-                  onSkip: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-          ),
-
-          // ── Child device ─────────────────────────────────────────────────
-          const _SectionHeader(label: 'Kindertoestel'),
-          ListTile(
-            leading: const Icon(Icons.child_care, color: kColorGold),
-            title: const Text('Kindertoestel toevoegen'),
-            subtitle: const Text(
-              'Toon QR aan het kinderapparaat om het te koppelen',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => _ChildQrPage(pairingService: pairingService),
-              ),
-            ),
-          ),
-
-          // ── Pairing section ──────────────────────────────────────────────
-          const _SectionHeader(label: 'Apparaat koppelen'),
-          ListTile(
-            leading: const Icon(Icons.qr_code, color: kColorTeal),
-            title: const Text('Apparaat koppelen'),
-            subtitle: const Text(
-              'Toon QR-code om een tweede telefoon toe te voegen',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => _PairingPage(
-                  identityService: identityService,
-                  pairingService: pairingService,
-                  syncStatus: syncStatus,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Sync status ──────────────────────────────────────────────────
           const _SectionHeader(label: 'Synchronisatie'),
           ListTile(
-            leading: _syncIcon(syncStatus),
-            title: Text(_syncLabel(syncStatus)),
-            subtitle: const Text('Thuisserver (hub)'),
+            leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
+            title: const Text('WebDAV configureren'),
+            subtitle: const Text(
+              'Verbind met een Nextcloud- of WebDAV-server',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Komt binnenkort beschikbaar.')),
+            ),
           ),
-
-          // ── Over ─────────────────────────────────────────────────────────
           const _SectionHeader(label: 'Over'),
           ListTile(
             leading: const Icon(Icons.info_outline, color: kColorWarmGrey),
             title: const Text('Kinetic Link'),
-            subtitle: const Text('Versie 1.0.0'),
+            subtitle: const Text('Versie 2.0.0'),
           ),
         ],
       ),
     );
   }
-
-  Widget _syncIcon(SyncStatus s) => switch (s.state) {
-    SyncState.syncing => const Icon(Icons.sync, color: Colors.blueAccent),
-    SyncState.error => const Icon(Icons.error_outline, color: Colors.redAccent),
-    SyncState.idle when s.lastResult != null => const Icon(
-      Icons.cloud_done_outlined,
-      color: Colors.greenAccent,
-    ),
-    _ => const Icon(Icons.cloud_off, color: kColorWarmGrey),
-  };
-
-  String _syncLabel(SyncStatus s) => switch (s.state) {
-    SyncState.syncing => 'Synchroniseren…',
-    SyncState.error => s.errorMessage ?? 'Synchronisatiefout',
-    SyncState.idle when s.lastResult != null =>
-      'Gesynchroniseerd ↑${s.lastResult!.pushed} ↓${s.lastResult!.pulled}',
-    _ => 'Wachten op thuisserver',
-  };
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -148,283 +50,6 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 1.2,
         ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Dedicated pairing page (pushed from settings)
-// ---------------------------------------------------------------------------
-
-class _PairingPage extends StatefulWidget {
-  final IdentityService identityService;
-  final PairingService pairingService;
-  final SyncStatus syncStatus;
-
-  const _PairingPage({
-    required this.identityService,
-    required this.pairingService,
-    required this.syncStatus,
-  });
-
-  @override
-  State<_PairingPage> createState() => _PairingPageState();
-}
-
-class _PairingPageState extends State<_PairingPage> {
-  DeviceIdentity? _identity;
-  String? _qrPayload;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _isLoading = true);
-    final identity = await widget.identityService.getOrCreateIdentity();
-    final qr = await widget.pairingService.generatePairingPayload(
-      deviceLabel: 'Parent Phone',
-      role: MemberRole.parent,
-    );
-    if (!mounted) return;
-    setState(() {
-      _identity = identity;
-      _qrPayload = qr;
-      _isLoading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Apparaat koppelen'),
-        centerTitle: false,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Koppel een tweede apparaat',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Toon deze QR-code aan het andere apparaat om het gezinsnetwerk te joinen.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: kColorWarmGrey),
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: kColorOffWhite,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: QrImageView(
-                        data: _qrPayload!,
-                        size: 220,
-                        backgroundColor: kColorOffWhite,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _DeviceBadge(
-                      shortId: _identity!.deviceId
-                          .substring(0, 8)
-                          .toUpperCase(),
-                    ),
-                    const Spacer(),
-                    FilledButton.tonal(
-                      onPressed: _load,
-                      child: const Text('QR opnieuw genereren'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-}
-
-class _DeviceBadge extends StatelessWidget {
-  final String shortId;
-  const _DeviceBadge({required this.shortId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.fingerprint, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            'Device $shortId\u2026',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(fontFamily: 'monospace'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Child enrollment QR page (shown to parent — kids app scans this)
-// ---------------------------------------------------------------------------
-
-class _ChildQrPage extends StatefulWidget {
-  final PairingService pairingService;
-  const _ChildQrPage({required this.pairingService});
-
-  @override
-  State<_ChildQrPage> createState() => _ChildQrPageState();
-}
-
-class _ChildQrPageState extends State<_ChildQrPage> {
-  String? _qrPayload;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final secStore = FlutterSecureKeyValueStore();
-      final hex = await secStore.read(key: kMeshKeyHexKey);
-      if (hex == null) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Geen hub-verbinding. Verbind eerst met de hub.';
-        });
-        return;
-      }
-      final meshKeyBytes = List<int>.generate(
-        32,
-        (i) => int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16),
-      );
-      final couchUser = await secStore.read(key: kCouchUserKey) ?? 'kinetic';
-      final couchPassword =
-          await secStore.read(key: kCouchPasswordKey) ?? 'changeme';
-
-      final qr = await widget.pairingService.generatePairingPayload(
-        deviceLabel: 'Parent Phone',
-        role: MemberRole.parent,
-        meshKeyBytes: meshKeyBytes,
-        couchCredentials: (username: couchUser, password: couchPassword),
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _qrPayload = qr;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Fout: $e';
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kindertoestel toevoegen'),
-        centerTitle: false,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.redAccent,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Scan op het kindertoestel',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Open de Kinetic Kids-app en scan deze code.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: kColorWarmGrey),
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: kColorOffWhite,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: QrImageView(
-                        data: _qrPayload!,
-                        size: 220,
-                        backgroundColor: kColorOffWhite,
-                      ),
-                    ),
-                    const Spacer(),
-                    FilledButton.tonal(
-                      onPressed: _load,
-                      child: const Text('QR opnieuw genereren'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
     );
   }
 }

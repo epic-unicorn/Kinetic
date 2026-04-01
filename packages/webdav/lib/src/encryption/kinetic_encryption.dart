@@ -1,0 +1,148 @@
+import 'dart:convert';
+import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:cryptography/cryptography.dart';
+
+/// AES-256-GCM encryption and PBKDF2 key derivation for Kinetic Link.
+///
+/// Layout of an encrypted blob (all lengths in bytes):
+///   [12 nonce][N ciphertext+mac]
+///
+/// The AES-GCM mac (16 bytes) is appended to the ciphertext by the
+/// cryptography package and is included transparently.
+class KineticEncryption {
+  static final _aesGcm = AesGcm.with256bits();
+  static const _familySalt = 'kinetic-family-key';
+  static const _pbkdf2Iterations = 100000;
+
+  // ---------------------------------------------------------------------------
+  // Key generation
+  // ---------------------------------------------------------------------------
+
+  /// Generates a cryptographically random 32-byte personal key.
+  static Uint8List generatePersonalKey() {
+    final rng = Random.secure();
+    return Uint8List.fromList(List.generate(32, (_) => rng.nextInt(256)));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Family key derivation
+  // ---------------------------------------------------------------------------
+
+  /// Derives a 32-byte family key from a WebDAV [password] via PBKDF2-HMAC-SHA-256.
+  ///
+  /// The salt is the constant string `kinetic-family-key` encoded as UTF-8.
+  /// Iterations: 100 000.
+  static Future<Uint8List> deriveFamilyKey(String password) async {
+    final pbkdf2 = Pbkdf2(
+      macAlgorithm: Hmac.sha256(),
+      iterations: _pbkdf2Iterations,
+      bits: 256,
+    );
+    final secretKey = await pbkdf2.deriveKey(
+      secretKey: SecretKey(utf8.encode(password)),
+      nonce: utf8.encode(_familySalt),
+    );
+    final bytes = await secretKey.extractBytes();
+    return Uint8List.fromList(bytes);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Encrypt / decrypt
+  // ---------------------------------------------------------------------------
+
+  /// Encrypts [plaintext] with [keyBytes] (32 bytes) using AES-256-GCM.
+  ///
+  /// Returns `[12-byte nonce][ciphertext+16-byte MAC]`.
+  static Future<Uint8List> encrypt(
+    Uint8List plaintext,
+    Uint8List keyBytes,
+  ) async {
+    assert(keyBytes.length == 32, 'Key must be 32 bytes');
+    final secretKey = SecretKey(keyBytes);
+    final nonce = _aesGcm.newNonce();
+    final box = await _aesGcm.encrypt(
+      plaintext,
+      secretKey: secretKey,
+      nonce: nonce,
+    );
+    // Concatenate nonce + ciphertext (mac is part of ciphertext in this lib).
+    final result =
+        Uint8List(nonce.length + box.cipherText.length + box.mac.bytes.length);
+    result.setAll(0, nonce);
+    result.setAll(nonce.length, box.cipherText);
+    result.setAll(nonce.length + box.cipherText.length, box.mac.bytes);
+    return result;
+  }
+
+  /// Decrypts a blob produced by [encrypt].
+  ///
+  /// Throws [SecretBoxAuthenticationError] if the MAC is invalid.
+  static Future<Uint8List> decrypt(
+    Uint8List blob,
+    Uint8List keyBytes,
+  ) async {
+    assert(keyBytes.length == 32, 'Key must be 32 bytes');
+    if (blob.length < 12 + 16) throw ArgumentError('Blob too short');
+    const nonceLen = 12;
+    const macLen = 16;
+    final nonce = blob.sublist(0, nonceLen);
+    final mac = Mac(blob.sublist(blob.length - macLen));
+    final cipherText = blob.sublist(nonceLen, blob.length - macLen);
+
+    final secretKey = SecretKey(keyBytes);
+    final box = SecretBox(cipherText, nonce: nonce, mac: mac);
+    final plaintext = await _aesGcm.decrypt(box, secretKey: secretKey);
+    return Uint8List.fromList(plaintext);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Personal key recovery export / import
+  // ---------------------------------------------------------------------------
+
+  /// Serialises [personalKey] to a JSON recovery file string.
+  ///
+  /// Format:
+  /// ```json
+  /// {
+  ///   "version": 1,
+  ///   "usernameHint": "<username>",
+  ///   "personalKey": "<base64-encoded 32 bytes>"
+  /// }
+  /// ```
+  static String exportRecoveryJson(Uint8List personalKey, String usernameHint) {
+    return const JsonEncoder.withIndent('  ').convert({
+      'version': 1,
+      'usernameHint': usernameHint,
+      'personalKey': base64.encode(personalKey),
+    });
+  }
+
+  /// Parses a recovery JSON string produced by [exportRecoveryJson] and
+  /// returns the 32-byte personal key.
+  ///
+  /// Throws [FormatException] if the JSON is malformed or the version is
+  /// unsupported.
+  static Uint8List importRecoveryJson(String json) {
+    final Map<String, dynamic> map;
+    try {
+      map = jsonDecode(json) as Map<String, dynamic>;
+    } catch (e) {
+      throw FormatException('Invalid recovery JSON: $e');
+    }
+    if (map['version'] != 1) {
+      throw FormatException(
+          'Unsupported recovery JSON version: ${map["version"]}');
+    }
+    final keyBase64 = map['personalKey'] as String?;
+    if (keyBase64 == null)
+      throw const FormatException('Missing personalKey field');
+    final bytes = base64.decode(keyBase64);
+    if (bytes.length != 32) {
+      throw FormatException(
+          'personalKey must be 32 bytes, got ${bytes.length}');
+    }
+    return Uint8List.fromList(bytes);
+  }
+}

@@ -31,30 +31,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-  kinetic_core:
-    path: ../../packages/core
-
-  kinetic_sync:
-    path: ../../packages/sync
-
-  kinetic_support:
-    path: ../../packages/support
-
-  # Hardware-backed secure storage (Android Keystore / iOS Keychain)
-  flutter_secure_storage: ^9.2.2
-
-  # Platform-native crypto acceleration (wraps Keystore/Secure Enclave ops)
-  cryptography_flutter: ^2.3.2
-
-  # QR code display for pairing screen
-  qr_flutter: ^4.1.0
-
-  # QR code scanning (hub enrollment + child enrollment)
-  mobile_scanner: ^7.0.0
+  kinetic_webdav:
+    path: ../../packages/webdav
 
   cupertino_icons: ^1.0.8
 
-  # Local SQLite persistence (personal todos + partner proposals)
+  # Local SQLite persistence (personal todos)
   drift: ^2.26.1
   drift_flutter: ^0.2.4
 
