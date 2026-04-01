@@ -154,7 +154,6 @@ void main() {
 
     group('Notes parameter', () {
       test('considers notes in classification when provided', () {
-        final withoutNotes = classifier.classify('some task');
         final withNotes = classifier.classify(
           'some task',
           notes: 'this is a very important medical appointment',

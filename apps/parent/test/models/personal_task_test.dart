@@ -149,7 +149,8 @@ void main() {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
       final tomorrow = DateTime.now().add(const Duration(days: 1));
 
-      final overdue = PersonalTask.create(
+      // Create overdue task (for completeness)
+      PersonalTask.create(
         title: 'Overdue',
         listId: 'inbox',
         dueDate: yesterday,

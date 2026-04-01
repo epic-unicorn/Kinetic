@@ -40,8 +40,8 @@ class _KidsHomeScreenState extends State<KidsHomeScreen>
   }
 
   void _sync() {
-    // TODO: Implement sync when WebDAV config is available
-    // For now, just refresh the UI
+    // TODO: Implement sync via KidsSyncOrchestrator when sync config is initialized
+    // For now, just trigger a rebuild which will refresh the StreamBuilder
     setState(() {});
   }
 
