@@ -50,27 +50,28 @@ apps/parent       — parent Flutter app (Android + iOS)
   └── main.dart     — app entry point
 apps/kids         — kids Flutter app (Android)
   lib/
+  ├── db/           — Drift AppDatabase (assigned tasks)
+  ├── task/         — task models, repository, screens
+  ├── sync/         — WebDAV sync orchestrator, config repository
   ├── secure/       — secure key-value storage (from kinetic_webdav)
-  └── main.dart     — simple home screen, placeholder
+  └── main.dart     — app entry point
 ```
 
 ### Architecture (Kinetic v2 — WebDAV-first)
 
 **Local-first, offline-capable:**
-- Parent app: local SQLite database (Drift) for personal tasks and notes
-- Kids app: placeholder (tasks pushed from parent in future phases)
+- Parent app: local SQLite (Drift) for personal tasks and notes
+- Kids app: local SQLite (Drift) for assigned tasks received from parent
 - All data stored encrypted locally on device
 
 **Optional remote sync:**
 - Parent app can optionally connect to a WebDAV server (Nextcloud, Apache, etc.)
-- Sync is user-initiated (no automatic cloud agent)
+- Sync fires on app resume and can be triggered manually from Settings
 - All encryption/decryption happens on-device; server never sees plaintext
 
 **No centralized hub:**
-- No CouchDB
-- No mDNS discovery
-- No enrollment system
-- Pure WebDAV for family-shared data
+- No CouchDB, no mDNS discovery, no enrollment system
+- Pure WebDAV for all family-shared data
 
 ---
 
@@ -144,11 +145,43 @@ cd apps/kids
 flutter run
 ```
 
-Currently a placeholder. Task pushing from parent app is planned for a future phase.
+The app starts with an empty task list. To receive tasks, the kids device needs WebDAV credentials written into its secure storage — the simplest way is to copy them from a parent device via the Settings screen.
 
 ---
 
-## Partner Communication (Phase 11)
+## Kids Task Sync (Phase 13)
+
+The kids app syncs assigned tasks via WebDAV using the same `kinetic_webdav` package as the parent app.
+
+### How the sync cycle works
+
+1. `_KidsAppShell.initState()` creates `KidsTaskRepository` then calls `_initSync()`
+2. `_initSync()` reads `SyncConfig` from `WebDavConfigRepository` (same secure storage keys the parent writes)
+3. If config is present, `KidsSyncOrchestrator` is instantiated
+4. `KidsSyncOrchestrator.sync()` is called immediately and again on every `AppLifecycleState.resumed`
+5. Sync: pulls files from `/kinetic/shared/tasks/`, decrypts with family key, converts iCal → `KidsTask`, merges (LWW on `updatedAt`), then pushes any dirty rows back
+
+### Sync states
+
+| `syncState` | Meaning |
+|---|---|
+| `clean` | In sync with server |
+| `dirty` | Locally modified (e.g. marked complete), needs push |
+| `deleted` | Soft-deleted tombstone, push DELETE then hard-delete |
+
+### iCal encoding
+
+Custom fields are encoded in the iCal `DESCRIPTION` field:
+
+```
+{notes};xKineticParentId:{id};xKineticCategory:{cat};xKineticXpReward:{n}
+```
+
+Priority maps: `PRIORITY:1` = urgent, `PRIORITY:5` = normal, `PRIORITY:9` = low.
+
+---
+
+
 
 The Partner screen enables inter-parent task proposal and family workload management. All communication is encrypted and synced via WebDAV.
 
@@ -257,31 +290,4 @@ See [deployment.md](deployment.md) for building release APKs and distributing to
 
 ---
 
-## Codec — how document encryption works
-
-`packages/sync/lib/src/crypto/document_codec.dart` wraps AES-256-GCM:
-
-- **Encrypt**: serialise doc to JSON → generate a random 12-byte nonce → `AesGcm.with256bits().encrypt(plaintext, nonce, secretKey)` → store `{nonce, ciphertext, mac}` as a CouchDB document.
-- **Decrypt**: reverse — extract nonce, call `.decrypt()`, parse JSON back to `Map<String,dynamic>`.
-- The `meshKey` (32 bytes) is the AES secret. It never leaves the device and is never sent to CouchDB.
-
-To test the codec in isolation:
-
-```bash
-cd packages/sync
-flutter test test/crypto/document_codec_test.dart --reporter=expanded
-```
-
----
-
-## CRDT merge rules
-
-`CouchSyncService._merge()` (in `packages/sync`) resolves conflicts deterministically:
-
-| Field | Winner |
-|---|---|
-| `crdtVersion` higher | that document wins unconditionally |
-| `crdtVersion` equal | `updatedAt` timestamp — later wins |
-| All equal | local document is kept (safety net) |
-
-This covers `Task` (last-write-wins on `updatedAt`) and `FamilyPlan` (monotonic `crdtVersion`).
+## Package dependency graph

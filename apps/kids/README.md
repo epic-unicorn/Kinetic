@@ -1,14 +1,24 @@
 # Kinetic Link — Kids App
 
-The child-facing Flutter app for Kinetic Link. Children see their assigned missions and habits, mark them done, earn XP, and raise help tickets to their parents.
+The child-facing Flutter app for Kinetic Link. Children see tasks assigned by a parent, mark them done, and earn XP (display coming in Phase 14).
 
-## Screen
+## Screens
 
-| Area | Description |
+| Screen | Description |
 |---|---|
-| **XP header** | Displays the child's current XP balance pulled live from the sync store. |
-| **Mission list** | All tasks assigned to this device that are not yet completed. Habits complete immediately on tap; missions enter `pendingApproval` and show a "Waiting…" chip until a parent approves. |
-| **Ask for help** | FAB opens a dialog to raise a `SupportTicket` with a required title and optional description. Tickets appear in the parent app's Approvals screen. |
+| **Home (KidsHomeScreen)** | Two sections — "Nog te doen" (pending) and "Afgerond" (completed). Each task shows title, category icon, priority badge, and due date. Tap to open detail. Sync button in the app bar triggers a manual WebDAV pull/push. |
+| **Task detail (KidsTaskDetailScreen)** | Full-screen view with category, priority, due date, XP reward, and notes. "Klaar!" button marks the task complete and queues a sync push. |
+
+## How sync works
+
+The kids app reads its WebDAV credentials from the same secure storage that the parent app writes to (assuming the kids device was set up by scanning/copying the parent's configuration). On startup and on every app resume:
+
+1. `WebDavConfigRepository` reads server URL + credentials from secure storage
+2. `KidsSyncOrchestrator` pulls all files from `/kinetic/shared/tasks/` (family-key encrypted)
+3. Assigns tasks are merged into the local SQLite database (Last-Write-Wins on `updatedAt`)
+4. Any locally-completed tasks are pushed back to WebDAV
+
+The local database (`AppDatabase` via Drift) is the source of truth for the UI.
 
 ## Running in development
 
@@ -17,20 +27,21 @@ cd apps/kids
 flutter run
 ```
 
-No `--dart-define` required for dev — fallback credentials and mesh key are baked in and match `hub/.env.example`.
+No `--dart-define` flags required. All secrets are stored at runtime via secure storage (`FlutterSecureKeyValueStore`).
 
 See [docs/development.md](../../docs/development.md) for full setup instructions.
 
 ## Building a release APK
 
 ```bash
-flutter build apk --release \
-  --dart-define=MESH_KEY_HEX=<64-char-hex-key> \
-  --dart-define=COUCH_USER=<username> \
-  --dart-define=COUCH_PASSWORD=<password>
+cd apps/kids
+flutter clean
+flutter pub get
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
 ```
 
-See [docs/deployment.md](../../docs/deployment.md) for key generation and full deployment instructions.
+No secrets are embedded in the binary. See [docs/deployment.md](../../docs/deployment.md) for distribution instructions.
 
 ## Running tests
 
@@ -38,21 +49,34 @@ See [docs/deployment.md](../../docs/deployment.md) for key generation and full d
 flutter test
 ```
 
-## Task submission logic
+34 tests covering: database CRUD, iCal↔task conversion, priority mapping, LWW merge logic, soft-delete tombstones, dirty-row tracking, and widget smoke tests.
 
-The task category determines what happens when a child taps the action button:
+## Data model
 
-| Category | On submit | XP awarded |
+| Field | Type | Notes |
 |---|---|---|
-| `habit` | Status → `completed` immediately | No XP |
-| `mission` | Status → `pendingApproval`; parent must approve | On approval |
+| `id` | String (UUID) | iCal UID, set by parent |
+| `parentId` | String | Identifies which parent assigned it |
+| `title` | String | Task title |
+| `category` | TaskCategory | household / school / health / shopping / entertainment / other |
+| `priority` | TaskPriority | urgent / high / normal / low |
+| `dueDate` | DateTime? | Optional deadline |
+| `isCompleted` | bool | Set locally by child |
+| `xpReward` | int | XP to award on completion (stored; display in Phase 14) |
+| `syncState` | String | clean / dirty / deleted — drives WebDAV push |
+| `webdavEtag` | String? | Server ETag for conflict detection |
 
 ## Dependencies
 
 | Package | Role |
 |---|---|
-| `kinetic_core` | Device identity, Task/FamilyPlan models |
-| `kinetic_sync` | mDNS discovery and encrypted CouchDB sync |
-| `kinetic_support` | TicketService, XpLedger, ApprovalService |
-| `flutter_secure_storage` | Android Keystore-backed identity storage |
-| `cryptography_flutter` | Hardware-accelerated AES-256-GCM |
+| `kinetic_webdav` | WebDAV client, iCal parser, AES-256-GCM encryption, `SecureKeyValueStore` |
+| `drift` / `drift_flutter` | Local SQLite persistence (assigned tasks) |
+| `flutter_secure_storage` | Android Keystore-backed key-value storage |
+
+## Backlog (Phase 14+)
+
+- XP total display in the UI header
+- Parent approval workflow (task stays pending until parent approves)
+- Activity badges and achievement unlocks
+- Family leaderboard

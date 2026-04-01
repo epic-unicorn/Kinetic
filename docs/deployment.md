@@ -9,7 +9,7 @@ This document covers building release APKs for distribution and optional WebDAV 
 Kinetic Link is a **local-first** family app with **optional** remote sync.
 
 - **Parent app** (Android + iOS) — stores personal tasks & notes locally, optionally syncs with WebDAV
-- **Kids app** (Android) — currently a placeholder; future phases will push tasks from parent
+- **Kids app** (Android) — receives and completes tasks assigned by parent via WebDAV
 - **WebDAV server** (optional) — any server (Nextcloud, Apache, etc.) for shared storage
 
 There is **no centralized hub**. Users control where their data is stored.
@@ -274,29 +274,6 @@ melos run build_kids     # flutter build apk --release for apps/kids
 ```
 
 These produce fully functional release APKs ready for distribution.
-
----
-
-## 7. Updating a live deployment
-
-### Hub update
-
-CouchDB upgrades are handled by changing the image tag and restarting:
-
-```bash
-cd hub
-# Edit docker-compose.yml: couchdb image tag (e.g. couchdb:3.5)
-docker compose pull
-docker compose up -d
-```
-
-Data is in the named volume `couch_data` and survives image upgrades.
-
-### App update
-
-1. Rebuild the APK (`flutter build apk --release`).
-2. Distribute via `adb install` or sideload.
-3. The mesh key is stored in the device's secure enclave and survives app updates — no re-enrollment needed.
 
 ---
 

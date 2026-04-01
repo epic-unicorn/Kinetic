@@ -15,7 +15,10 @@
 │  ├── Optional WebDAV sync (encrypted)                    │
 │  └── Material 3 UI, dark/light/custom themes             │
 │                                                          │
-│  apps/kids (Android) — placeholder, future sync          │
+│  apps/kids (Android)                                     │
+│  ├── Assigned task sync via WebDAV (family key)          │
+│  ├── Task completion with XP foundation                  │
+│  └── Material 3 UI, dark theme                          │
 │                                                          │
 │  packages/webdav (shared)                                │
 │  ├── WebDAV client (HTTP)                                │
@@ -63,8 +66,11 @@ Kinetic/
 │   │
 │   └── kids/
 │       ├── lib/
+│       │   ├── db/          ← Drift schema (assigned tasks)
+│       │   ├── task/        ← task models, repository, screens
+│       │   ├── sync/        ← WebDAV sync orchestrator
 │       │   ├── secure/      ← platform-specific key storage
-│       │   └── main.dart    ← placeholder home screen
+│       │   └── main.dart
 │       ├── test/
 │       └── pubspec.yaml
 │
@@ -97,11 +103,12 @@ Kinetic/
 - ✅ **Family load metrics** — workload tracking for fair task distribution
 - ⏳ **Kids task conversion** — planned for Phase 14+
 
-### Kids App 🚀
+### Kids App ✅
 
-- ✅ **Placeholder UI** — Material 3 compatible
-- ⏳ **Task list from parent** — synced via WebDAV (planned)
-- ⏳ **Task completion** — XP rewards + parent approval (planned)
+- ✅ **Task list from parent** — assigned tasks synced via WebDAV (family key encrypted)
+- ✅ **Task completion** — kids mark tasks done, status syncs back to parent
+- ✅ **XP foundation** — XP reward stored per task (display + approval UI in backlog)
+- ✅ **Material 3 UI** — dark theme, task detail screen, sync status indicator
 
 ---
 
@@ -147,7 +154,10 @@ See [docs/deployment.md](docs/deployment.md) for:
 | 1–6 | Foundation (pairing, sync, approvals, kids app, enrollment, docker hub) | ✅ Archived (v1) |
 | 7–11 | WebDAV migration, encryption, WebDAV sync, partner proposals, notes | ✅ Complete |
 | 12 | Material 3 re-theme | ✅ Complete |
-| 13+ | Kids task sync, XP system, advanced approvals | 📋 Backlog |
+| 13 | Kids task sync (WebDAV pull/push, LWW merge, XP foundation) | ✅ Complete |
+| 14 | XP display + gamification UI, parent approval workflow for kids tasks | 📋 Backlog |
+| 15 | "Assign to child" UI in parent task detail | 📋 Backlog |
+| 16 | Activity badges, family leaderboard | 📋 Backlog |
 
 ---
 

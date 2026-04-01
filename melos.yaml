@@ -27,4 +27,4 @@ scripts:
     run: flutter build apk --release
     exec:
       scope: kids
-    description: Build release APK for kids kiosk app
+    description: Build release APK for kids app
