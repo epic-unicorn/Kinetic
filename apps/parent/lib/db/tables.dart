@@ -68,6 +68,40 @@ class PersonalTasks extends Table {
 
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
+  // WebDAV sync metadata
+  /// ETag returned by the server after the last successful PUT/GET.
+  /// Null = never synced.
+  TextColumn get webdavEtag => text().nullable()();
+
+  /// 'clean' | 'dirty' | 'deleted'. 'dirty' = local change not yet pushed.
+  TextColumn get syncState => text().withDefault(const Constant('dirty'))();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// PersonalNotes — parent's own notes (plaintext / markdown)
+// ---------------------------------------------------------------------------
+
+@DataClassName('PersonalNoteRow')
+class PersonalNotes extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get body => text().withDefault(const Constant(''))();
+
+  /// true = encrypted with family key and stored in shared WebDAV folder.
+  BoolColumn get isShared => boolean().withDefault(const Constant(false))();
+
+  DateTimeColumn get remindAt => dateTime().nullable()();
+
+  // WebDAV sync metadata
+  TextColumn get webdavEtag => text().nullable()();
+  TextColumn get syncState => text().withDefault(const Constant('dirty'))();
+
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

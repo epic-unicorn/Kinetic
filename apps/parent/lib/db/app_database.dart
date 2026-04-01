@@ -4,23 +4,33 @@ import 'package:path_provider/path_provider.dart';
 
 import 'tables.dart';
 
-part 'app_database.g.dart';
+part 'app_database.drift.dart';
 
 @DriftDatabase(
-  tables: [PersonalLists, PersonalTasks, PersonalSubtasks, PartnerProposals],
+  tables: [
+    PersonalLists,
+    PersonalTasks,
+    PersonalNotes,
+    PersonalSubtasks,
+    PartnerProposals,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
-        // Add remindAt column (nullable — no default needed).
         await m.addColumn(personalTasks, personalTasks.remindAt);
+      }
+      if (from < 3) {
+        await m.addColumn(personalTasks, personalTasks.webdavEtag);
+        await m.addColumn(personalTasks, personalTasks.syncState);
+        await m.createTable(personalNotes);
       }
     },
   );

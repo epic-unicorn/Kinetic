@@ -1,8 +1,7 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
+// dart format width=80
+// ignore_for_file: type=lint
 part of 'app_database.dart';
 
-// ignore_for_file: type=lint
 class $PersonalListsTable extends PersonalLists
     with TableInfo<$PersonalListsTable, PersonalListRow> {
   @override
@@ -716,6 +715,29 @@ class $PersonalTasksTable extends PersonalTasks
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _webdavEtagMeta = const VerificationMeta(
+    'webdavEtag',
+  );
+  @override
+  late final GeneratedColumn<String> webdavEtag = GeneratedColumn<String>(
+    'webdav_etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStateMeta = const VerificationMeta(
+    'syncState',
+  );
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+    'sync_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('dirty'),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -756,6 +778,8 @@ class $PersonalTasksTable extends PersonalTasks
     category,
     remindAt,
     sortOrder,
+    webdavEtag,
+    syncState,
     createdAt,
     updatedAt,
   ];
@@ -880,6 +904,18 @@ class $PersonalTasksTable extends PersonalTasks
         sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
       );
     }
+    if (data.containsKey('webdav_etag')) {
+      context.handle(
+        _webdavEtagMeta,
+        webdavEtag.isAcceptableOrUnknown(data['webdav_etag']!, _webdavEtagMeta),
+      );
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(
+        _syncStateMeta,
+        syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -969,6 +1005,14 @@ class $PersonalTasksTable extends PersonalTasks
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      webdavEtag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}webdav_etag'],
+      ),
+      syncState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_state'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1005,6 +1049,13 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   /// When to fire a local reminder notification; null = no reminder.
   final DateTime? remindAt;
   final int sortOrder;
+
+  /// ETag returned by the server after the last successful PUT/GET.
+  /// Null = never synced.
+  final String? webdavEtag;
+
+  /// 'clean' | 'dirty' | 'deleted'. 'dirty' = local change not yet pushed.
+  final String syncState;
   final DateTime createdAt;
   final DateTime updatedAt;
   const PersonalTaskRow({
@@ -1024,6 +1075,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     required this.category,
     this.remindAt,
     required this.sortOrder,
+    this.webdavEtag,
+    required this.syncState,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1060,6 +1113,10 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       map['remind_at'] = Variable<DateTime>(remindAt);
     }
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || webdavEtag != null) {
+      map['webdav_etag'] = Variable<String>(webdavEtag);
+    }
+    map['sync_state'] = Variable<String>(syncState);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1097,6 +1154,10 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ? const Value.absent()
           : Value(remindAt),
       sortOrder: Value(sortOrder),
+      webdavEtag: webdavEtag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(webdavEtag),
+      syncState: Value(syncState),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1124,6 +1185,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       category: serializer.fromJson<String>(json['category']),
       remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      webdavEtag: serializer.fromJson<String?>(json['webdavEtag']),
+      syncState: serializer.fromJson<String>(json['syncState']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1148,6 +1211,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       'category': serializer.toJson<String>(category),
       'remindAt': serializer.toJson<DateTime?>(remindAt),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'webdavEtag': serializer.toJson<String?>(webdavEtag),
+      'syncState': serializer.toJson<String>(syncState),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1170,6 +1235,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     String? category,
     Value<DateTime?> remindAt = const Value.absent(),
     int? sortOrder,
+    Value<String?> webdavEtag = const Value.absent(),
+    String? syncState,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => PersonalTaskRow(
@@ -1191,6 +1258,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     category: category ?? this.category,
     remindAt: remindAt.present ? remindAt.value : this.remindAt,
     sortOrder: sortOrder ?? this.sortOrder,
+    webdavEtag: webdavEtag.present ? webdavEtag.value : this.webdavEtag,
+    syncState: syncState ?? this.syncState,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1220,6 +1289,10 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       category: data.category.present ? data.category.value : this.category,
       remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      webdavEtag: data.webdavEtag.present
+          ? data.webdavEtag.value
+          : this.webdavEtag,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1244,6 +1317,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ..write('category: $category, ')
           ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('webdavEtag: $webdavEtag, ')
+          ..write('syncState: $syncState, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1268,6 +1343,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     category,
     remindAt,
     sortOrder,
+    webdavEtag,
+    syncState,
     createdAt,
     updatedAt,
   );
@@ -1291,6 +1368,8 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           other.category == this.category &&
           other.remindAt == this.remindAt &&
           other.sortOrder == this.sortOrder &&
+          other.webdavEtag == this.webdavEtag &&
+          other.syncState == this.syncState &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1312,6 +1391,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
   final Value<String> category;
   final Value<DateTime?> remindAt;
   final Value<int> sortOrder;
+  final Value<String?> webdavEtag;
+  final Value<String> syncState;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1332,6 +1413,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.category = const Value.absent(),
     this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.webdavEtag = const Value.absent(),
+    this.syncState = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1353,6 +1436,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.category = const Value.absent(),
     this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.webdavEtag = const Value.absent(),
+    this.syncState = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1377,6 +1462,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Expression<String>? category,
     Expression<DateTime>? remindAt,
     Expression<int>? sortOrder,
+    Expression<String>? webdavEtag,
+    Expression<String>? syncState,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1398,6 +1485,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       if (category != null) 'category': category,
       if (remindAt != null) 'remind_at': remindAt,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (webdavEtag != null) 'webdav_etag': webdavEtag,
+      if (syncState != null) 'sync_state': syncState,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1421,6 +1510,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Value<String>? category,
     Value<DateTime?>? remindAt,
     Value<int>? sortOrder,
+    Value<String?>? webdavEtag,
+    Value<String>? syncState,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1442,6 +1533,8 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       category: category ?? this.category,
       remindAt: remindAt ?? this.remindAt,
       sortOrder: sortOrder ?? this.sortOrder,
+      webdavEtag: webdavEtag ?? this.webdavEtag,
+      syncState: syncState ?? this.syncState,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1499,6 +1592,12 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (webdavEtag.present) {
+      map['webdav_etag'] = Variable<String>(webdavEtag.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1530,6 +1629,567 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
           ..write('category: $category, ')
           ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('webdavEtag: $webdavEtag, ')
+          ..write('syncState: $syncState, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PersonalNotesTable extends PersonalNotes
+    with TableInfo<$PersonalNotesTable, PersonalNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PersonalNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _isSharedMeta = const VerificationMeta(
+    'isShared',
+  );
+  @override
+  late final GeneratedColumn<bool> isShared = GeneratedColumn<bool>(
+    'is_shared',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_shared" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _remindAtMeta = const VerificationMeta(
+    'remindAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> remindAt = GeneratedColumn<DateTime>(
+    'remind_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _webdavEtagMeta = const VerificationMeta(
+    'webdavEtag',
+  );
+  @override
+  late final GeneratedColumn<String> webdavEtag = GeneratedColumn<String>(
+    'webdav_etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStateMeta = const VerificationMeta(
+    'syncState',
+  );
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+    'sync_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('dirty'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    body,
+    isShared,
+    remindAt,
+    webdavEtag,
+    syncState,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'personal_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PersonalNoteRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    }
+    if (data.containsKey('is_shared')) {
+      context.handle(
+        _isSharedMeta,
+        isShared.isAcceptableOrUnknown(data['is_shared']!, _isSharedMeta),
+      );
+    }
+    if (data.containsKey('remind_at')) {
+      context.handle(
+        _remindAtMeta,
+        remindAt.isAcceptableOrUnknown(data['remind_at']!, _remindAtMeta),
+      );
+    }
+    if (data.containsKey('webdav_etag')) {
+      context.handle(
+        _webdavEtagMeta,
+        webdavEtag.isAcceptableOrUnknown(data['webdav_etag']!, _webdavEtagMeta),
+      );
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(
+        _syncStateMeta,
+        syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PersonalNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PersonalNoteRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      isShared: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_shared'],
+      )!,
+      remindAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}remind_at'],
+      ),
+      webdavEtag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}webdav_etag'],
+      ),
+      syncState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_state'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PersonalNotesTable createAlias(String alias) {
+    return $PersonalNotesTable(attachedDatabase, alias);
+  }
+}
+
+class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
+  final String id;
+  final String title;
+  final String body;
+
+  /// true = encrypted with family key and stored in shared WebDAV folder.
+  final bool isShared;
+  final DateTime? remindAt;
+  final String? webdavEtag;
+  final String syncState;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const PersonalNoteRow({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.isShared,
+    this.remindAt,
+    this.webdavEtag,
+    required this.syncState,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['body'] = Variable<String>(body);
+    map['is_shared'] = Variable<bool>(isShared);
+    if (!nullToAbsent || remindAt != null) {
+      map['remind_at'] = Variable<DateTime>(remindAt);
+    }
+    if (!nullToAbsent || webdavEtag != null) {
+      map['webdav_etag'] = Variable<String>(webdavEtag);
+    }
+    map['sync_state'] = Variable<String>(syncState);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PersonalNotesCompanion toCompanion(bool nullToAbsent) {
+    return PersonalNotesCompanion(
+      id: Value(id),
+      title: Value(title),
+      body: Value(body),
+      isShared: Value(isShared),
+      remindAt: remindAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remindAt),
+      webdavEtag: webdavEtag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(webdavEtag),
+      syncState: Value(syncState),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PersonalNoteRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PersonalNoteRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      body: serializer.fromJson<String>(json['body']),
+      isShared: serializer.fromJson<bool>(json['isShared']),
+      remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
+      webdavEtag: serializer.fromJson<String?>(json['webdavEtag']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'body': serializer.toJson<String>(body),
+      'isShared': serializer.toJson<bool>(isShared),
+      'remindAt': serializer.toJson<DateTime?>(remindAt),
+      'webdavEtag': serializer.toJson<String?>(webdavEtag),
+      'syncState': serializer.toJson<String>(syncState),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PersonalNoteRow copyWith({
+    String? id,
+    String? title,
+    String? body,
+    bool? isShared,
+    Value<DateTime?> remindAt = const Value.absent(),
+    Value<String?> webdavEtag = const Value.absent(),
+    String? syncState,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PersonalNoteRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    body: body ?? this.body,
+    isShared: isShared ?? this.isShared,
+    remindAt: remindAt.present ? remindAt.value : this.remindAt,
+    webdavEtag: webdavEtag.present ? webdavEtag.value : this.webdavEtag,
+    syncState: syncState ?? this.syncState,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PersonalNoteRow copyWithCompanion(PersonalNotesCompanion data) {
+    return PersonalNoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      body: data.body.present ? data.body.value : this.body,
+      isShared: data.isShared.present ? data.isShared.value : this.isShared,
+      remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
+      webdavEtag: data.webdavEtag.present
+          ? data.webdavEtag.value
+          : this.webdavEtag,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalNoteRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('isShared: $isShared, ')
+          ..write('remindAt: $remindAt, ')
+          ..write('webdavEtag: $webdavEtag, ')
+          ..write('syncState: $syncState, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    body,
+    isShared,
+    remindAt,
+    webdavEtag,
+    syncState,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PersonalNoteRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.body == this.body &&
+          other.isShared == this.isShared &&
+          other.remindAt == this.remindAt &&
+          other.webdavEtag == this.webdavEtag &&
+          other.syncState == this.syncState &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> body;
+  final Value<bool> isShared;
+  final Value<DateTime?> remindAt;
+  final Value<String?> webdavEtag;
+  final Value<String> syncState;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PersonalNotesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    this.isShared = const Value.absent(),
+    this.remindAt = const Value.absent(),
+    this.webdavEtag = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PersonalNotesCompanion.insert({
+    required String id,
+    required String title,
+    this.body = const Value.absent(),
+    this.isShared = const Value.absent(),
+    this.remindAt = const Value.absent(),
+    this.webdavEtag = const Value.absent(),
+    this.syncState = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PersonalNoteRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? body,
+    Expression<bool>? isShared,
+    Expression<DateTime>? remindAt,
+    Expression<String>? webdavEtag,
+    Expression<String>? syncState,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (isShared != null) 'is_shared': isShared,
+      if (remindAt != null) 'remind_at': remindAt,
+      if (webdavEtag != null) 'webdav_etag': webdavEtag,
+      if (syncState != null) 'sync_state': syncState,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PersonalNotesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? body,
+    Value<bool>? isShared,
+    Value<DateTime?>? remindAt,
+    Value<String?>? webdavEtag,
+    Value<String>? syncState,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PersonalNotesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      isShared: isShared ?? this.isShared,
+      remindAt: remindAt ?? this.remindAt,
+      webdavEtag: webdavEtag ?? this.webdavEtag,
+      syncState: syncState ?? this.syncState,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (isShared.present) {
+      map['is_shared'] = Variable<bool>(isShared.value);
+    }
+    if (remindAt.present) {
+      map['remind_at'] = Variable<DateTime>(remindAt.value);
+    }
+    if (webdavEtag.present) {
+      map['webdav_etag'] = Variable<String>(webdavEtag.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('isShared: $isShared, ')
+          ..write('remindAt: $remindAt, ')
+          ..write('webdavEtag: $webdavEtag, ')
+          ..write('syncState: $syncState, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2534,6 +3194,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $PersonalListsTable personalLists = $PersonalListsTable(this);
   late final $PersonalTasksTable personalTasks = $PersonalTasksTable(this);
+  late final $PersonalNotesTable personalNotes = $PersonalNotesTable(this);
   late final $PersonalSubtasksTable personalSubtasks = $PersonalSubtasksTable(
     this,
   );
@@ -2547,6 +3208,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     personalLists,
     personalTasks,
+    personalNotes,
     personalSubtasks,
     partnerProposals,
   ];
@@ -2944,6 +3606,8 @@ typedef $$PersonalTasksTableCreateCompanionBuilder =
       Value<String> category,
       Value<DateTime?> remindAt,
       Value<int> sortOrder,
+      Value<String?> webdavEtag,
+      Value<String> syncState,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -2966,6 +3630,8 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<String> category,
       Value<DateTime?> remindAt,
       Value<int> sortOrder,
+      Value<String?> webdavEtag,
+      Value<String> syncState,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -3104,6 +3770,16 @@ class $$PersonalTasksTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+    column: $table.syncState,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3250,6 +3926,16 @@ class $$PersonalTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3345,6 +4031,14 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3445,6 +4139,8 @@ class $$PersonalTasksTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<String?> webdavEtag = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3465,6 +4161,8 @@ class $$PersonalTasksTableTableManager
                 category: category,
                 remindAt: remindAt,
                 sortOrder: sortOrder,
+                webdavEtag: webdavEtag,
+                syncState: syncState,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -3487,6 +4185,8 @@ class $$PersonalTasksTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<String?> webdavEtag = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -3507,6 +4207,8 @@ class $$PersonalTasksTableTableManager
                 category: category,
                 remindAt: remindAt,
                 sortOrder: sortOrder,
+                webdavEtag: webdavEtag,
+                syncState: syncState,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -3604,6 +4306,284 @@ typedef $$PersonalTasksTableProcessedTableManager =
       (PersonalTaskRow, $$PersonalTasksTableReferences),
       PersonalTaskRow,
       PrefetchHooks Function({bool listId, bool personalSubtasksRefs})
+    >;
+typedef $$PersonalNotesTableCreateCompanionBuilder =
+    PersonalNotesCompanion Function({
+      required String id,
+      required String title,
+      Value<String> body,
+      Value<bool> isShared,
+      Value<DateTime?> remindAt,
+      Value<String?> webdavEtag,
+      Value<String> syncState,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PersonalNotesTableUpdateCompanionBuilder =
+    PersonalNotesCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String> body,
+      Value<bool> isShared,
+      Value<DateTime?> remindAt,
+      Value<String?> webdavEtag,
+      Value<String> syncState,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$PersonalNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $PersonalNotesTable> {
+  $$PersonalNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isShared => $composableBuilder(
+    column: $table.isShared,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get remindAt => $composableBuilder(
+    column: $table.remindAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PersonalNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PersonalNotesTable> {
+  $$PersonalNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isShared => $composableBuilder(
+    column: $table.isShared,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get remindAt => $composableBuilder(
+    column: $table.remindAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PersonalNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PersonalNotesTable> {
+  $$PersonalNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<bool> get isShared =>
+      $composableBuilder(column: $table.isShared, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get remindAt =>
+      $composableBuilder(column: $table.remindAt, builder: (column) => column);
+
+  GeneratedColumn<String> get webdavEtag => $composableBuilder(
+    column: $table.webdavEtag,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PersonalNotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PersonalNotesTable,
+          PersonalNoteRow,
+          $$PersonalNotesTableFilterComposer,
+          $$PersonalNotesTableOrderingComposer,
+          $$PersonalNotesTableAnnotationComposer,
+          $$PersonalNotesTableCreateCompanionBuilder,
+          $$PersonalNotesTableUpdateCompanionBuilder,
+          (
+            PersonalNoteRow,
+            BaseReferences<_$AppDatabase, $PersonalNotesTable, PersonalNoteRow>,
+          ),
+          PersonalNoteRow,
+          PrefetchHooks Function()
+        > {
+  $$PersonalNotesTableTableManager(_$AppDatabase db, $PersonalNotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PersonalNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PersonalNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PersonalNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<bool> isShared = const Value.absent(),
+                Value<DateTime?> remindAt = const Value.absent(),
+                Value<String?> webdavEtag = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalNotesCompanion(
+                id: id,
+                title: title,
+                body: body,
+                isShared: isShared,
+                remindAt: remindAt,
+                webdavEtag: webdavEtag,
+                syncState: syncState,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String> body = const Value.absent(),
+                Value<bool> isShared = const Value.absent(),
+                Value<DateTime?> remindAt = const Value.absent(),
+                Value<String?> webdavEtag = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalNotesCompanion.insert(
+                id: id,
+                title: title,
+                body: body,
+                isShared: isShared,
+                remindAt: remindAt,
+                webdavEtag: webdavEtag,
+                syncState: syncState,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PersonalNotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PersonalNotesTable,
+      PersonalNoteRow,
+      $$PersonalNotesTableFilterComposer,
+      $$PersonalNotesTableOrderingComposer,
+      $$PersonalNotesTableAnnotationComposer,
+      $$PersonalNotesTableCreateCompanionBuilder,
+      $$PersonalNotesTableUpdateCompanionBuilder,
+      (
+        PersonalNoteRow,
+        BaseReferences<_$AppDatabase, $PersonalNotesTable, PersonalNoteRow>,
+      ),
+      PersonalNoteRow,
+      PrefetchHooks Function()
     >;
 typedef $$PersonalSubtasksTableCreateCompanionBuilder =
     PersonalSubtasksCompanion Function({
@@ -4262,6 +5242,8 @@ class $AppDatabaseManager {
       $$PersonalListsTableTableManager(_db, _db.personalLists);
   $$PersonalTasksTableTableManager get personalTasks =>
       $$PersonalTasksTableTableManager(_db, _db.personalTasks);
+  $$PersonalNotesTableTableManager get personalNotes =>
+      $$PersonalNotesTableTableManager(_db, _db.personalNotes);
   $$PersonalSubtasksTableTableManager get personalSubtasks =>
       $$PersonalSubtasksTableTableManager(_db, _db.personalSubtasks);
   $$PartnerProposalsTableTableManager get partnerProposals =>

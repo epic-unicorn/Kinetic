@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
 import 'partner/screens/partner_screen.dart';
 import 'settings/settings_screen.dart';
 import 'support/parent_notification_service.dart';
+import 'sync/sync_orchestrator.dart';
+import 'sync/webdav_config_repository.dart';
 import 'todo/screens/tasks_screen.dart';
 import 'todo/services/todo_repository.dart';
 
@@ -43,23 +46,45 @@ class _RootShell extends StatefulWidget {
   State<_RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<_RootShell> {
+class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final AppDatabase _db;
   late final NotificationService _notifSvc;
   late final TodoRepository _todoRepository;
+  late final WebDavConfigRepository _webDavConfig;
+  SyncOrchestrator? _syncOrchestrator;
 
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _db = AppDatabase();
     _notifSvc = ParentNotificationService();
     _todoRepository = TodoRepository(db: _db, notifications: _notifSvc);
+    _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
+    _initSync();
+  }
+
+  Future<void> _initSync() async {
+    final config = await _webDavConfig.load();
+    if (config != null) {
+      _syncOrchestrator = SyncOrchestrator(db: _db, config: config);
+      _syncOrchestrator!.sync(); // fire-and-forget initial sync
+    }
+  }
+
+  /// Trigger a sync whenever the app returns to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncOrchestrator?.sync();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _db.close();
     super.dispose();
   }
@@ -70,7 +95,7 @@ class _RootShellState extends State<_RootShell> {
       TasksScreen(repo: _todoRepository),
       const PartnerScreen(),
       const _NotesPlaceholder(),
-      const SettingsScreen(),
+      SettingsScreen(configRepo: _webDavConfig),
     ];
 
     return Scaffold(

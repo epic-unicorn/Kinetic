@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+ï»¿import 'package:flutter/material.dart';
 
-// Placeholder for Phase 11 — will be replaced with full partner
+// Placeholder for Phase 11 - will be replaced with full partner
 // sync via WebDAV once packages/webdav is implemented.
 class PartnerScreen extends StatelessWidget {
   const PartnerScreen({super.key});

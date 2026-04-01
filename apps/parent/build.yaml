@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      # Use not_shared so that drift generates app_database.drift.dart
+      # directly in source rather than going through source_gen:combining_builder.
+      drift_dev:not_shared:
+        enabled: true
+      # Disable the default shared-part builder to avoid duplicate output.
+      drift_dev:drift_dev:
+        enabled: false
