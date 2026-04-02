@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../main.dart';
+import '../../theme/app_header.dart';
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
 import '../services/note_repository.dart';
@@ -28,7 +29,7 @@ class _NotesScreenState extends State<NotesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notities'),
+        title: AppHeader(title: 'Notities', centerTitle: false),
         centerTitle: false,
         actions: [
           if (widget.syncStatus != null)

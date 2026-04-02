@@ -15,6 +15,7 @@ void main() {
         serverUrl: 'https://dav.example.com',
         username: 'user@example.com',
         password: 'password123',
+        parentId: '',
         personalKeyBytes: Uint8List.fromList(List.filled(32, 0)),
         familyKeyBytes: null,
       );
@@ -34,6 +35,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: personalKey,
         familyKeyBytes: familyKey,
       );
@@ -47,6 +49,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List.fromList(List.filled(32, 0)),
         familyKeyBytes: null,
       );
@@ -59,6 +62,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List.fromList(List.filled(32, 0)),
         familyKeyBytes: Uint8List.fromList(List.filled(32, 1)),
       );

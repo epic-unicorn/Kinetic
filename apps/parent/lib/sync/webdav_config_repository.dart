@@ -9,6 +9,7 @@ const _kUsername = 'kinetic_webdav_username';
 const _kPassword = 'kinetic_webdav_password';
 const _kPersonalKey = 'kinetic_webdav_personal_key';
 const _kFamilyKey = 'kinetic_webdav_family_key';
+const _kParentId = 'kinetic_webdav_parent_id';
 
 /// Persists and loads [SyncConfig] from [SecureKeyValueStore].
 ///
@@ -47,10 +48,15 @@ class WebDavConfigRepository {
         ? Uint8List.fromList(base64.decode(familyKeyBase64))
         : null;
 
+    // parentId may be absent for existing installs — treated as null here;
+    // the setup screen generates and persists one on the next save.
+    final parentId = await _store.read(key: _kParentId) ?? '';
+
     return SyncConfig(
       serverUrl: serverUrl,
       username: username,
       password: password,
+      parentId: parentId,
       personalKeyBytes: personalKeyBytes,
       familyKeyBytes: familyKeyBytes,
     );
@@ -65,6 +71,7 @@ class WebDavConfigRepository {
     await _store.write(key: _kServerUrl, value: config.serverUrl);
     await _store.write(key: _kUsername, value: config.username);
     await _store.write(key: _kPassword, value: config.password);
+    await _store.write(key: _kParentId, value: config.parentId);
     await _store.write(
       key: _kPersonalKey,
       value: base64.encode(config.personalKeyBytes),
@@ -108,6 +115,7 @@ class WebDavConfigRepository {
     await _store.delete(key: _kServerUrl);
     await _store.delete(key: _kUsername);
     await _store.delete(key: _kPassword);
+    await _store.delete(key: _kParentId);
     await _store.delete(key: _kPersonalKey);
     await _store.delete(key: _kFamilyKey);
   }

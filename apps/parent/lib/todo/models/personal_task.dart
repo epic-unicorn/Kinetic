@@ -250,33 +250,3 @@ class PersonalTask {
     return d.year <= today.year && d.month <= today.month && d.day <= today.day;
   }
 }
-
-// ---------------------------------------------------------------------------
-// PartnerProposal — a task proposed by the other parent
-// ---------------------------------------------------------------------------
-
-class PartnerProposal {
-  final String id;
-  final String fromParentId;
-  final String taskTitle;
-  final String? taskNotes;
-  final TaskCategory taskCategory;
-  final TaskPriority taskPriority;
-  final DateTime? taskDueDate;
-  final ProposalStatus status;
-  final DateTime receivedAt;
-  final DateTime updatedAt;
-
-  const PartnerProposal({
-    required this.id,
-    required this.fromParentId,
-    required this.taskTitle,
-    this.taskNotes,
-    required this.taskCategory,
-    required this.taskPriority,
-    this.taskDueDate,
-    required this.status,
-    required this.receivedAt,
-    required this.updatedAt,
-  });
-}

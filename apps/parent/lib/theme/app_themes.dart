@@ -6,7 +6,8 @@ import '../todo/models/enums.dart';
 // Brand Palette
 // ---------------------------------------------------------------------------
 
-const kColorTeal = Color(0xFF44BBA4);
+const kColorKineticBlue = Color(0xFF3B82F6); // Primary blue from app icon
+const kColorTeal = kColorKineticBlue; // Updated to match new app icon theme
 const kColorGold = Color(0xFFE7BB41);
 const kColorCharcoal = Color(0xFF393E41);
 const kColorWarmGrey = Color(0xFFD3D0CB);
@@ -139,7 +140,7 @@ ThemeData buildTheme(AppTheme theme) {
 
 ThemeData _buildLightTheme() {
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: kColorTeal,
+    seedColor: kColorKineticBlue,
     brightness: Brightness.light,
   );
 
@@ -182,7 +183,7 @@ ThemeData _buildLightTheme() {
 
 ThemeData _buildDarkTheme() {
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: kColorTeal,
+    seedColor: kColorKineticBlue,
     brightness: Brightness.dark,
   );
 

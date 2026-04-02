@@ -23,6 +23,7 @@ void main() {
         serverUrl: 'https://example.com/dav',
         username: 'testuser',
         password: 'testpass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
 
@@ -182,22 +183,24 @@ void main() {
     group('KidsTaskRow to iCal conversion', () {
       test('maps id and title', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'row-1',
-          parentId: 'parent-1',
-          title: 'Test task',
-          notes: 'Some notes',
-          category: TaskCategory.school,
-          priority: TaskPriority.high,
-          dueDate: now,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 20,
-          syncState: 'dirty',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'row-1',
+            parentId: 'parent-1',
+            title: 'Test task',
+            notes: 'Some notes',
+            category: TaskCategory.school,
+            priority: TaskPriority.high,
+            dueDate: now,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 20,
+            syncState: 'dirty',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
         final rows = await repository.getAllRows();
 
         final ical = orchestrator.taskRowToICal(rows.first);
@@ -207,22 +210,24 @@ void main() {
 
       test('encodes parentId and category in description', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'row-2',
-          parentId: 'parent-42',
-          title: 'Task',
-          notes: null,
-          category: TaskCategory.health,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'dirty',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'row-2',
+            parentId: 'parent-42',
+            title: 'Task',
+            notes: null,
+            category: TaskCategory.health,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'dirty',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
         final rows = await repository.getAllRows();
 
         final ical = orchestrator.taskRowToICal(rows.first);
@@ -233,22 +238,24 @@ void main() {
 
       test('completed task -> ICalTaskStatus.completed', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'row-3',
-          parentId: 'p',
-          title: 'Done',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: true,
-          completedAt: now,
-          xpReward: 10,
-          syncState: 'dirty',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'row-3',
+            parentId: 'p',
+            title: 'Done',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: true,
+            completedAt: now,
+            xpReward: 10,
+            syncState: 'dirty',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
         final rows = await repository.getAllRows();
 
         final ical = orchestrator.taskRowToICal(rows.first);
@@ -263,22 +270,24 @@ void main() {
         final older = DateTime(2024, 1, 1).toUtc();
         final newer = DateTime(2025, 1, 1).toUtc();
 
-        await repository.upsertTask(KidsTask(
-          id: 'task-lww',
-          parentId: 'p1',
-          title: 'Old Title',
-          notes: null,
-          category: TaskCategory.household,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'clean',
-          webdavEtag: 'etag1',
-          createdAt: older,
-          updatedAt: older,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'task-lww',
+            parentId: 'p1',
+            title: 'Old Title',
+            notes: null,
+            category: TaskCategory.household,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'clean',
+            webdavEtag: 'etag1',
+            createdAt: older,
+            updatedAt: older,
+          ),
+        );
 
         final remoteNewer = KidsTask(
           id: 'task-lww',
@@ -311,22 +320,24 @@ void main() {
         final older = DateTime(2024, 1, 1).toUtc();
         final newer = DateTime(2025, 1, 1).toUtc();
 
-        await repository.upsertTask(KidsTask(
-          id: 'task-local-wins',
-          parentId: 'p1',
-          title: 'Local Title',
-          notes: null,
-          category: TaskCategory.household,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: true,
-          completedAt: newer,
-          xpReward: 10,
-          syncState: 'dirty',
-          webdavEtag: 'etag1',
-          createdAt: older,
-          updatedAt: newer,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'task-local-wins',
+            parentId: 'p1',
+            title: 'Local Title',
+            notes: null,
+            category: TaskCategory.household,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: true,
+            completedAt: newer,
+            xpReward: 10,
+            syncState: 'dirty',
+            webdavEtag: 'etag1',
+            createdAt: older,
+            updatedAt: newer,
+          ),
+        );
 
         final remoteOlder = KidsTask(
           id: 'task-local-wins',
@@ -365,22 +376,24 @@ void main() {
     group('Soft-delete tombstones', () {
       test('delete() sets syncState=deleted, keeps row', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'task-del',
-          parentId: 'p',
-          title: 'To Delete',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'clean',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'task-del',
+            parentId: 'p',
+            title: 'To Delete',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'clean',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         await repository.delete('task-del');
 
@@ -392,38 +405,42 @@ void main() {
 
       test('getDeletedRows() returns only tombstones', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'keep',
-          parentId: 'p',
-          title: 'Keep',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'clean',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
-        await repository.upsertTask(KidsTask(
-          id: 'delete-me',
-          parentId: 'p',
-          title: 'Delete',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'clean',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'keep',
+            parentId: 'p',
+            title: 'Keep',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'clean',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        await repository.upsertTask(
+          KidsTask(
+            id: 'delete-me',
+            parentId: 'p',
+            title: 'Delete',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'clean',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         await repository.delete('delete-me');
 
@@ -434,22 +451,24 @@ void main() {
 
       test('hardDelete() removes row from database entirely', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'hard-del',
-          parentId: 'p',
-          title: 'Hard Delete',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'deleted',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'hard-del',
+            parentId: 'p',
+            title: 'Hard Delete',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'deleted',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         await repository.hardDelete('hard-del');
 
@@ -463,22 +482,24 @@ void main() {
     group('Dirty rows for sync push', () {
       test('markComplete() sets syncState=dirty', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'task-dirty',
-          parentId: 'p',
-          title: 'Task',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: false,
-          completedAt: null,
-          xpReward: 10,
-          syncState: 'clean',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'task-dirty',
+            parentId: 'p',
+            title: 'Task',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: false,
+            completedAt: null,
+            xpReward: 10,
+            syncState: 'clean',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         await repository.markComplete('task-dirty');
 
@@ -490,22 +511,24 @@ void main() {
 
       test('markSynced() clears dirty state and updates etag', () async {
         final now = DateTime.now().toUtc();
-        await repository.upsertTask(KidsTask(
-          id: 'task-sync',
-          parentId: 'p',
-          title: 'Task',
-          notes: null,
-          category: TaskCategory.other,
-          priority: TaskPriority.normal,
-          dueDate: null,
-          isCompleted: true,
-          completedAt: now,
-          xpReward: 10,
-          syncState: 'dirty',
-          webdavEtag: null,
-          createdAt: now,
-          updatedAt: now,
-        ));
+        await repository.upsertTask(
+          KidsTask(
+            id: 'task-sync',
+            parentId: 'p',
+            title: 'Task',
+            notes: null,
+            category: TaskCategory.other,
+            priority: TaskPriority.normal,
+            dueDate: null,
+            isCompleted: true,
+            completedAt: now,
+            xpReward: 10,
+            syncState: 'dirty',
+            webdavEtag: null,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
         await repository.markSynced('task-sync', 'etag-new');
 

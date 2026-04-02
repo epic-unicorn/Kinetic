@@ -3,9 +3,11 @@ import 'dart:typed_data';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
+import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
 import '../sync/webdav_config_repository.dart';
+import '../theme/app_header.dart';
 import '../theme/app_themes.dart';
 import '../main.dart';
 import 'family_screen.dart';
@@ -47,7 +49,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final isConnected = _config != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Instellingen'), centerTitle: false),
+      appBar: AppBar(
+        title: AppHeader(title: 'Instellingen', centerTitle: false),
+        centerTitle: false,
+      ),
       body: ListView(
         children: [
           const _SectionHeader(label: 'Uiterlijk'),
@@ -110,6 +115,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _loadConfig();
               },
             ),
+            const _SectionHeader(label: 'Back-up & Herstel'),
+            ListTile(
+              leading: const Icon(Icons.backup_outlined, color: kColorTeal),
+              title: const Text('Herstelsleutel exporteren'),
+              subtitle: const Text('Bewaar je persoonlijke sleutel veilig'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _exportRecoveryKey(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore_outlined, color: kColorTeal),
+              title: const Text('Herstelsleutel importeren'),
+              subtitle: const Text('Herstel van een ander apparaat'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showImportPersonalKeyDialog(),
+            ),
           ],
           const _SectionHeader(label: 'Over'),
           ListTile(
@@ -149,6 +169,130 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _exportRecoveryKey() async {
+    if (_config == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WebDAV niet geconfigureerd')),
+      );
+      return;
+    }
+    final json = KineticEncryption.exportRecoveryJson(
+      _config!.personalKeyBytes,
+      _config!.username,
+    );
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Herstelsleutel'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            json,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Sluiten'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showImportPersonalKeyDialog() async {
+    if (_config == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WebDAV niet geconfigureerd')),
+      );
+      return;
+    }
+
+    final textCtrl = TextEditingController();
+    final importResult = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Herstelsleutel importeren'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Plak je herstelsleutel JSON hier in:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textCtrl,
+                maxLines: 10,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  hintText: '{"key":"...",..}',
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Importeren'),
+          ),
+        ],
+      ),
+    );
+
+    if (importResult ?? false) {
+      await _importPersonalKey(textCtrl.text.trim());
+    }
+    textCtrl.dispose();
+  }
+
+  Future<void> _importPersonalKey(String jsonString) async {
+    try {
+      final importedKey = KineticEncryption.importRecoveryJson(jsonString);
+      
+      if (_config != null) {
+        // Update the config with the imported personal key
+        await widget.configRepo.save(
+          SyncConfig(
+            serverUrl: _config!.serverUrl,
+            username: _config!.username,
+            password: _config!.password,
+            parentId: _config!.parentId,
+            personalKeyBytes: importedKey,
+            familyKeyBytes: _config!.familyKeyBytes,
+          ),
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Persoonlijke sleutel succesvol geïmporteerd.'),
+            ),
+          );
+          _loadConfig();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij importeren: $e')),
+        );
+      }
+    }
   }
 }
 
@@ -229,6 +373,267 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     }
   }
 
+  Future<void> _handleMigration(
+    String serverUrl,
+    String username,
+    String password,
+    Uint8List personalKey,
+  ) async {
+    try {
+      debugPrint('[Migration] Starting migration check...');
+      
+      final client = WebDavClient(
+        baseUrl: serverUrl,
+        username: username,
+        password: password,
+      );
+
+      try {
+        final config = SyncConfig(
+          serverUrl: serverUrl,
+          username: username,
+          password: password,
+          parentId: '',
+          personalKeyBytes: personalKey,
+          familyKeyBytes: null,
+        );
+
+        final service = WebDavSyncService(client: client, config: config);
+
+        // Check if there are any files on the server (before trying to decrypt)
+        debugPrint('[Migration] Checking for remote files...');
+        final tasksPath = '/kinetic/$username/tasks';
+        final notesPath = '/kinetic/$username/notes';
+        
+        final taskFiles = await _listServerFiles(client, tasksPath);
+        final noteFiles = await _listServerFiles(client, notesPath);
+        
+        debugPrint('[Migration] Found ${taskFiles.length} task files and ${noteFiles.length} note files');
+
+        if (taskFiles.isEmpty && noteFiles.isEmpty) {
+          // No existing data, nothing to migrate
+          debugPrint('[Migration] No existing data found, skipping migration');
+          return;
+        }
+
+        // There are files on the server - ask user what to do
+        debugPrint('[Migration] Found existing files, showing migration dialog');
+        if (!mounted) {
+          debugPrint('[Migration] Widget not mounted, aborting');
+          return;
+        }
+
+        final shouldImport = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Bestaande gegevens gevonden'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Er zijn bestaande taken en notities op de WebDAV-server gevonden:',
+                ),
+                const SizedBox(height: 12),
+                Text('  • Taakbestanden: ${taskFiles.length}'),
+                Text('  • Notitiebstanden: ${noteFiles.length}'),
+                const SizedBox(height: 16),
+                const Text(
+                  'Opmerking: Als je van een ander apparaat komt, kunnen de gegevens niet automatisch worden gedecodeerd met je nieuwe sleutel.',
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Wat wil je doen?',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Opschonen (verwijderen)'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Importeren'),
+              ),
+            ],
+          ),
+        );
+
+        debugPrint('[Migration] User choice: shouldImport=$shouldImport');
+
+        if (shouldImport ?? false) {
+          // Try to import - will only import decryptable items
+          debugPrint('[Migration] User chose to import, attempting to read and decrypt data');
+          try {
+            final remoteTasks = await service.pullTasks();
+            final remoteNotes = await service.pullNotes();
+            debugPrint('[Migration] Successfully decrypted ${remoteTasks.length} tasks and ${remoteNotes.length} notes');
+            
+            if (remoteTasks.isNotEmpty || remoteNotes.isNotEmpty) {
+              await _importRemoteData(remoteTasks, remoteNotes);
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Kon de bestaande gegevens niet decoderen. Ze zijn mogelijk met een ander wachtwoord versleuteld.'),
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            debugPrint('[Migration] Error during import: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Fout bij importeren: $e')),
+              );
+            }
+          }
+        } else {
+          // Clean up: delete remote files
+          debugPrint('[Migration] User chose to clean up, deleting remote files');
+          await _cleanupRemoteFiles(client, taskFiles, noteFiles);
+        }
+      } finally {
+        client.dispose();
+      }
+    } catch (e, st) {
+      // Log error but don't block the configuration save
+      debugPrint('[Migration] Error during migration: $e');
+      debugPrintStack(stackTrace: st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Migratiecontrole mislukt: $e')),
+        );
+      }
+    }
+  }
+
+  Future<List<String>> _listServerFiles(WebDavClient client, String path) async {
+    try {
+      // Use PROPFIND to list files without encryption/decryption
+      final entries = await client.propfind(path);
+      return entries.map((e) => e.href).toList();
+    } catch (e) {
+      debugPrint('[Migration] Error listing $path: $e');
+      return [];
+    }
+  }
+
+  Future<void> _cleanupRemoteFiles(
+    WebDavClient client,
+    List<String> taskFiles,
+    List<String> noteFiles,
+  ) async {
+    try {
+      // Delete task files
+      for (final file in taskFiles) {
+        try {
+          await client.delete(file);
+        } catch (e) {
+          debugPrint('[Migration] Error deleting task file $file: $e');
+        }
+      }
+
+      // Delete note files
+      for (final file in noteFiles) {
+        try {
+          await client.delete(file);
+        } catch (e) {
+          debugPrint('[Migration] Error deleting note file $file: $e');
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${taskFiles.length + noteFiles.length} bestanden verwijderd.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij opschonen: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _importRemoteData(
+    List<ICalTask> remoteTasks,
+    List<ICalNote> remoteNotes,
+  ) async {
+    try {
+      // Import tasks
+      for (final remoteTask in remoteTasks) {
+        final existingTask = await (widget.db.select(widget.db.personalTasks)
+              ..where((t) => t.id.equals(remoteTask.uid)))
+            .getSingleOrNull();
+
+        if (existingTask == null) {
+          // New task from remote
+          final isCompleted = remoteTask.status == ICalTaskStatus.completed;
+          await widget.db.into(widget.db.personalTasks).insert(
+            PersonalTasksCompanion(
+              id: Value(remoteTask.uid),
+              title: Value(remoteTask.summary),
+              notes: Value(remoteTask.description),
+              dueDate: Value(remoteTask.dueAt),
+              isCompleted: Value(isCompleted),
+              completedAt: Value(isCompleted ? DateTime.now() : null),
+              createdAt: Value(remoteTask.createdAt),
+              updatedAt: Value(remoteTask.updatedAt),
+              recurrenceRule: Value(remoteTask.rrule),
+              syncState: const Value('clean'),
+            ),
+          );
+        }
+      }
+
+      // Import notes
+      for (final remoteNote in remoteNotes) {
+        final existingNote = await (widget.db.select(widget.db.personalNotes)
+              ..where((n) => n.id.equals(remoteNote.uid)))
+            .getSingleOrNull();
+
+        if (existingNote == null) {
+          // New note from remote
+          await widget.db.into(widget.db.personalNotes).insert(
+            PersonalNotesCompanion(
+              id: Value(remoteNote.uid),
+              title: Value(remoteNote.summary),
+              body: Value(remoteNote.description ?? ''),
+              isShared: Value(remoteNote.isShared),
+              createdAt: Value(remoteNote.createdAt),
+              updatedAt: Value(remoteNote.updatedAt),
+              remindAt: Value(remoteNote.remindAt),
+              syncState: const Value('clean'),
+            ),
+          );
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('${remoteTasks.length + remoteNotes.length} items geïmporteerd.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij importeren: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_testResult != 'ok') {
@@ -247,11 +652,14 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       final username = _userCtrl.text.trim();
       final password = _passCtrl.text;
 
+      final bool isSameAccount =
+          _existing != null &&
+          _existing!.username == username &&
+          _existing!.serverUrl == serverUrl;
+
       // Only generate keys the first time; preserve existing keys on an edit.
       final Uint8List personalKey;
-      if (_existing != null &&
-          _existing!.username == username &&
-          _existing!.serverUrl == serverUrl) {
+      if (isSameAccount) {
         // Reuse existing personal key. Never overwrite the family key here —
         // it is set exclusively via the QR exchange flow.
         personalKey = _existing!.personalKeyBytes;
@@ -261,13 +669,15 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         personalKey = KineticEncryption.generatePersonalKey();
       }
 
+      // Reuse existing parentId, or generate a stable UUID for a new account.
+      final String parentId = (isSameAccount && _existing!.parentId.isNotEmpty)
+          ? _existing!.parentId
+          : const Uuid().v4();
+
       // Preserve any previously exchanged family key when editing credentials.
-      final existingFamilyKey =
-          (_existing != null &&
-              _existing!.username == username &&
-              _existing!.serverUrl == serverUrl)
+      final existingFamilyKey = isSameAccount
           ? _existing!.familyKeyBytes
-          : null; // new account starts without a family key
+          : null;
 
       // Always ensure directories exist (needed for both new and updated configs)
       final client = WebDavClient(
@@ -286,6 +696,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           serverUrl: serverUrl,
           username: username,
           password: password,
+          parentId: parentId,
           personalKeyBytes: personalKey,
           familyKeyBytes: existingFamilyKey,
         ),
@@ -303,6 +714,16 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
               widget.db.personalNotes,
             )..where((n) => n.syncState.equals('clean') | n.syncState.isNull()))
             .write(PersonalNotesCompanion(syncState: const Value('dirty')));
+
+        // Check for existing remote data and ask user what to do
+        if (mounted) {
+          await _handleMigration(
+            serverUrl,
+            username,
+            password,
+            personalKey,
+          );
+        }
       }
 
       if (mounted) {
@@ -321,34 +742,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  Future<void> _exportRecoveryKey() async {
-    if (_existing == null) return;
-    final json = KineticEncryption.exportRecoveryJson(
-      _existing!.personalKeyBytes,
-      _existing!.username,
-    );
-    // Display in a dialog for the user to manually copy/save.
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Herstelsleutel'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            json,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Sluiten'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -451,20 +844,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                   : const Icon(Icons.save_outlined),
               label: Text(_saving ? 'Opslaan…' : 'Opslaan'),
             ),
-            if (_existing != null) ...[
-              const SizedBox(height: 32),
-              const Divider(),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.key_outlined, color: kColorGold),
-                title: const Text('Herstelsleutel exporteren'),
-                subtitle: const Text(
-                  'Bewaar dit bestand veilig — het is de enige manier om '
-                  'je data te herstellen als je dit apparaat kwijtraakt.',
-                ),
-                onTap: _exportRecoveryKey,
-              ),
-            ],
           ],
         ),
       ),

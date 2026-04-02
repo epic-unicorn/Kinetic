@@ -13,6 +13,7 @@ void main() {
         serverUrl: 'https://nextcloud.example.com/remote.php/dav',
         username: 'testuser',
         password: 'testpass',
+        parentId: 'test-parent-id',
         personalKeyBytes: Uint8List.fromList(List.generate(32, (i) => i)),
         familyKeyBytes: Uint8List.fromList(List.generate(32, (i) => i + 1)),
       );
@@ -29,6 +30,7 @@ void main() {
         serverUrl: 'https://example.com/dav/',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
       expect(configWithSlash.baseUrl, equals('https://example.com/dav'));
@@ -53,6 +55,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
       expect(noFamilyKey.familyKeyBytes, isNull);
@@ -63,6 +66,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
 
@@ -79,6 +83,7 @@ void main() {
         serverUrl: 'https://a.com',
         username: 'user1',
         password: 'pass1',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
 
@@ -86,6 +91,7 @@ void main() {
         serverUrl: 'https://b.com',
         username: 'user2',
         password: 'pass2',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
       );
 
@@ -152,6 +158,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: personalKey,
       );
 
@@ -163,6 +170,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
         familyKeyBytes: null,
       );
@@ -178,6 +186,7 @@ void main() {
         serverUrl: 'https://example.com',
         username: 'user',
         password: 'pass',
+        parentId: '',
         personalKeyBytes: Uint8List(32),
         familyKeyBytes: Uint8List(32),
       );

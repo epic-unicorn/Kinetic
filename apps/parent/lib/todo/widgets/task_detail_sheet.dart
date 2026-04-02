@@ -16,12 +16,14 @@ class TaskDetailSheet extends StatefulWidget {
   final PersonalTask? task;
   final TodoRepository repo;
   final String? initialListId;
+  final bool hasFamilyKey;
 
   const TaskDetailSheet({
     super.key,
     required this.repo,
     this.task,
     this.initialListId,
+    this.hasFamilyKey = false,
   });
 
   @override
@@ -222,22 +224,23 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               onTap: () => _pickRecurrence(context),
             ),
 
-          // ── Send to Kids — greyed out placeholder (Phase N+1) ─────────────
-          if (widget.task != null && widget.task!.kidsTaskId != null)
-            const _MetaRow(
-              icon: Icons.bolt,
-              label: 'Opdracht aangemaakt ✓',
-              color: kColorTeal,
-              active: true,
-              onTap: null,
-            )
-          else if (widget.task != null)
-            const _MetaRow(
-              icon: Icons.bolt,
-              label: 'Stuur naar kinderen (binnenkort)',
-              active: false,
-              onTap: null,
-            ),
+          // ── Send to Kids — only visible when connected to a family ─────────
+          if (widget.hasFamilyKey && widget.task != null)
+            if (widget.task!.kidsTaskId != null)
+              const _MetaRow(
+                icon: Icons.bolt,
+                label: 'Opdracht aangemaakt ✓',
+                color: kColorTeal,
+                active: true,
+                onTap: null,
+              )
+            else
+              const _MetaRow(
+                icon: Icons.bolt,
+                label: 'Stuur naar kinderen (binnenkort)',
+                active: false,
+                onTap: null,
+              ),
 
           const SizedBox(height: 8),
 

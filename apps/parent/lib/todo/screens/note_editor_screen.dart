@@ -194,7 +194,9 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                     : 'Koppel eerst met je partner',
               ),
               value: _isShared,
-              onChanged: widget.hasFamilyKey ? (v) => setState(() => _isShared = v) : null,
+              onChanged: widget.hasFamilyKey
+                  ? (v) => setState(() => _isShared = v)
+                  : null,
               secondary: const Icon(Icons.lock_outlined),
             ),
             const SizedBox(height: 28),

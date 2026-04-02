@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../main.dart';
-import '../../theme/app_theme.dart';
+import '../../theme/app_header.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
 import '../../todo/widgets/quick_add_bar.dart';
@@ -15,8 +15,14 @@ import '../../todo/widgets/task_tile.dart';
 class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
   final ValueNotifier<SyncStatus>? syncStatus;
+  final bool hasFamilyKey;
 
-  const TasksScreen({super.key, required this.repo, this.syncStatus});
+  const TasksScreen({
+    super.key,
+    required this.repo,
+    this.syncStatus,
+    this.hasFamilyKey = false,
+  });
 
   @override
   State<TasksScreen> createState() => _TasksScreenState();
@@ -42,7 +48,7 @@ class _TasksScreenState extends State<TasksScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Taken'),
+        title: AppHeader(title: 'Taken', centerTitle: false),
         centerTitle: false,
         actions: [
           if (widget.syncStatus != null)
@@ -56,7 +62,10 @@ class _TasksScreenState extends State<TasksScreen>
               context: context,
               isScrollControlled: true,
               useSafeArea: true,
-              builder: (_) => TaskDetailSheet(repo: widget.repo),
+              builder: (_) => TaskDetailSheet(
+                repo: widget.repo,
+                hasFamilyKey: widget.hasFamilyKey,
+              ),
             ),
           ),
         ],
@@ -71,8 +80,11 @@ class _TasksScreenState extends State<TasksScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _OpenTasksTab(repo: widget.repo),
-          _CompletedTasksTab(repo: widget.repo),
+          _OpenTasksTab(repo: widget.repo, hasFamilyKey: widget.hasFamilyKey),
+          _CompletedTasksTab(
+            repo: widget.repo,
+            hasFamilyKey: widget.hasFamilyKey,
+          ),
         ],
       ),
       bottomSheet: QuickAddBar(repo: widget.repo),
@@ -111,8 +123,9 @@ class _SyncIcon extends StatelessWidget {
 
 class _OpenTasksTab extends StatelessWidget {
   final TodoRepository repo;
+  final bool hasFamilyKey;
 
-  const _OpenTasksTab({required this.repo});
+  const _OpenTasksTab({required this.repo, this.hasFamilyKey = false});
 
   static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
 
@@ -130,7 +143,9 @@ class _OpenTasksTab extends StatelessWidget {
         final items = <Widget>[];
         items.add(const SizedBox(height: 8));
         for (var i = 0; i < open.length; i++) {
-          items.add(TaskTile(task: open[i], repo: repo));
+          items.add(
+            TaskTile(task: open[i], repo: repo, hasFamilyKey: hasFamilyKey),
+          );
           if (i < open.length - 1) items.add(_divider);
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar
@@ -147,8 +162,9 @@ class _OpenTasksTab extends StatelessWidget {
 
 class _CompletedTasksTab extends StatelessWidget {
   final TodoRepository repo;
+  final bool hasFamilyKey;
 
-  const _CompletedTasksTab({required this.repo});
+  const _CompletedTasksTab({required this.repo, this.hasFamilyKey = false});
 
   static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
 
@@ -190,7 +206,13 @@ class _CompletedTasksTab extends StatelessWidget {
 
         // ── Completed task tiles ───────────────────────────────────────────
         for (var i = 0; i < completed.length; i++) {
-          items.add(TaskTile(task: completed[i], repo: repo));
+          items.add(
+            TaskTile(
+              task: completed[i],
+              repo: repo,
+              hasFamilyKey: hasFamilyKey,
+            ),
+          );
           if (i < completed.length - 1) items.add(_divider);
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar

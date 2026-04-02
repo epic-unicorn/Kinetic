@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../db/app_database.dart';
 import '../../sync/sync_orchestrator.dart';
+import '../../theme/app_header.dart';
 import '../models/kids_task.dart';
 import '../services/kids_task_repository.dart';
 import 'kids_task_detail_screen.dart';
@@ -48,7 +49,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mijn Opdrachten'),
+        title: AppHeaderKids(title: 'Mijn Opdrachten'),
         actions: [
           if (_syncing)
             const Padding(

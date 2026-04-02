@@ -18,8 +18,14 @@ import 'task_detail_sheet.dart';
 class TaskTile extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
+  final bool hasFamilyKey;
 
-  const TaskTile({super.key, required this.task, required this.repo});
+  const TaskTile({
+    super.key,
+    required this.task,
+    required this.repo,
+    this.hasFamilyKey = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,11 @@ class TaskTile extends StatelessWidget {
           ),
         );
       },
-      child: _TaskTileContent(task: task, repo: repo),
+      child: _TaskTileContent(
+        task: task,
+        repo: repo,
+        hasFamilyKey: hasFamilyKey,
+      ),
     );
   }
 }
@@ -83,8 +93,13 @@ class TaskTile extends StatelessWidget {
 class _TaskTileContent extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
+  final bool hasFamilyKey;
 
-  const _TaskTileContent({required this.task, required this.repo});
+  const _TaskTileContent({
+    required this.task,
+    required this.repo,
+    this.hasFamilyKey = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +138,10 @@ class _TaskTileContent extends StatelessWidget {
                   color: task.isCompleted
                       ? kColorTeal
                       : (task.priority != TaskPriority.none
-                          ? priorityColor(task.priority).withAlpha(30)
-                          : Colors.transparent),
-                  boxShadow: task.priority != TaskPriority.none && !task.isCompleted
+                            ? priorityColor(task.priority).withAlpha(30)
+                            : Colors.transparent),
+                  boxShadow:
+                      task.priority != TaskPriority.none && !task.isCompleted
                       ? [
                           BoxShadow(
                             color: priorityColor(task.priority).withAlpha(50),
@@ -253,7 +269,8 @@ class _TaskTileContent extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => TaskDetailSheet(task: task, repo: repo),
+      builder: (_) =>
+          TaskDetailSheet(task: task, repo: repo, hasFamilyKey: hasFamilyKey),
     );
   }
 
@@ -297,19 +314,20 @@ class _TaskTileContent extends StatelessWidget {
                 repo.deleteTask(task.id);
               },
             ),
-            // Greyed-out placeholder — restored in Phase 11.
-            ListTile(
-              leading: const Icon(Icons.send_outlined, color: Colors.white24),
-              title: const Text(
-                'Stuur naar kinderen',
-                style: TextStyle(color: Colors.white24),
+            // Greyed-out placeholder — only shown when connected to a family.
+            if (hasFamilyKey)
+              ListTile(
+                leading: const Icon(Icons.send_outlined, color: Colors.white24),
+                title: const Text(
+                  'Stuur naar kinderen',
+                  style: TextStyle(color: Colors.white24),
+                ),
+                subtitle: const Text(
+                  'Binnenkort beschikbaar',
+                  style: TextStyle(color: Colors.white24, fontSize: 12),
+                ),
+                enabled: false,
               ),
-              subtitle: const Text(
-                'Binnenkort beschikbaar',
-                style: TextStyle(color: Colors.white24, fontSize: 12),
-              ),
-              enabled: false,
-            ),
           ],
         ),
       ),

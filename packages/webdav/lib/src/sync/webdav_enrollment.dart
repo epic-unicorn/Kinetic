@@ -117,6 +117,7 @@ class WebDavEnrollment {
       serverUrl: serverUrl,
       username: username,
       password: password,
+      parentId: '',
       personalKeyBytes: keys.personalKey,
       familyKeyBytes: keys.familyKey,
     );

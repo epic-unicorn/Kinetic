@@ -88,6 +88,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
   final hasFamilyKey = ValueNotifier<bool>(false);
+  final pendingProposalCount = ValueNotifier<int>(0);
+  StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
   int _selectedIndex = 0;
@@ -109,6 +111,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     );
     _proposalRepository = PartnerProposalRepository(db: widget.db);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
+
+    // Subscribe to the pending count so the nav badge stays live.
+    _proposalCountSub = _proposalRepository.watchPendingCount().listen(
+      (count) => pendingProposalCount.value = count,
+    );
 
     // Initialize load repository (service will be set later in _initSync)
     _loadRepository = PartnerLoadRepository(db: widget.db);
@@ -171,6 +178,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _proposalCountSub?.cancel();
     _syncDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     widget.db.close();
@@ -182,60 +190,78 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     return ValueListenableBuilder<bool>(
       valueListenable: hasFamilyKey,
       builder: (context, paired, _) {
-        final screens = <Widget>[
-          TasksScreen(repo: _todoRepository, syncStatus: syncStatus),
-          if (paired)
-            PartnerScreen(
-              proposalRepository: _proposalRepository,
-              loadRepository: _loadRepository,
-            ),
-          NotesScreen(
-            repo: _noteRepository,
-            syncStatus: syncStatus,
-            hasFamilyKey: hasFamilyKey,
-          ),
-          SettingsScreen(
-            db: widget.db,
-            configRepo: _webDavConfig,
-            settingsRepo: widget.settingsRepo,
-            onConfigSaved: _initSync,
-          ),
-        ];
+        return ValueListenableBuilder<int>(
+          valueListenable: pendingProposalCount,
+          builder: (context, pendingCount, _) {
+            final screens = <Widget>[
+              TasksScreen(
+                repo: _todoRepository,
+                syncStatus: syncStatus,
+                hasFamilyKey: paired,
+              ),
+              if (paired)
+                PartnerScreen(
+                  proposalRepository: _proposalRepository,
+                  loadRepository: _loadRepository,
+                ),
+              NotesScreen(
+                repo: _noteRepository,
+                syncStatus: syncStatus,
+                hasFamilyKey: hasFamilyKey,
+              ),
+              SettingsScreen(
+                db: widget.db,
+                configRepo: _webDavConfig,
+                settingsRepo: widget.settingsRepo,
+                onConfigSaved: _initSync,
+              ),
+            ];
 
-        final destinations = <NavigationDestination>[
-          const NavigationDestination(
-            icon: Icon(Icons.check_circle_outline),
-            selectedIcon: Icon(Icons.check_circle),
-            label: 'Taken',
-          ),
-          if (paired)
-            const NavigationDestination(
-              icon: Icon(Icons.people_outline),
-              selectedIcon: Icon(Icons.people),
-              label: 'Partner',
-            ),
-          const NavigationDestination(
-            icon: Icon(Icons.note_outlined),
-            selectedIcon: Icon(Icons.note),
-            label: 'Notities',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Instellingen',
-          ),
-        ];
+            final destinations = <NavigationDestination>[
+              const NavigationDestination(
+                icon: Icon(Icons.check_circle_outline),
+                selectedIcon: Icon(Icons.check_circle),
+                label: 'Taken',
+              ),
+              if (paired)
+                NavigationDestination(
+                  icon: Badge(
+                    isLabelVisible: pendingCount > 0,
+                    label: Text('$pendingCount'),
+                    child: const Icon(Icons.people_outline),
+                  ),
+                  selectedIcon: Badge(
+                    isLabelVisible: pendingCount > 0,
+                    label: Text('$pendingCount'),
+                    child: const Icon(Icons.people),
+                  ),
+                  label: 'Partner',
+                ),
+              const NavigationDestination(
+                icon: Icon(Icons.note_outlined),
+                selectedIcon: Icon(Icons.note),
+                label: 'Notities',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: 'Instellingen',
+              ),
+            ];
 
-        // Clamp selected index in case the partner tab disappears
-        final clampedIndex = _selectedIndex.clamp(0, screens.length - 1);
+            // Clamp selected index in case the partner tab disappears
+            final clampedIndex = _selectedIndex.clamp(0, screens.length - 1);
 
-        return Scaffold(
-          body: IndexedStack(index: clampedIndex, children: screens),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: clampedIndex,
-            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-            destinations: destinations,
-          ),
+            return Scaffold(
+              body: IndexedStack(index: clampedIndex, children: screens),
+              bottomNavigationBar: NavigationBar(
+                selectedIndex: clampedIndex,
+                onDestinationSelected: (i) =>
+                    setState(() => _selectedIndex = i),
+                destinations: destinations,
+              ),
+            );
+          },
         );
       },
     );

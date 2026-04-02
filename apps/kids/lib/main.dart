@@ -20,7 +20,7 @@ class KineticKidsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const seedColor = Color(0xFFE7BB41); // Gold color for kids
+    const seedColor = Color(0xFFF97316); // Orange color from app icon
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
       brightness: Brightness.dark,

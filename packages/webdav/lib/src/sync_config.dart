@@ -11,6 +11,11 @@ class SyncConfig {
   /// WebDAV password for HTTP Basic auth.
   final String password;
 
+  /// Stable UUID identifying this parent device/account.
+  /// Generated once on first setup and stored in secure storage.
+  /// Used as [PartnerProposal.fromParentId] when proposing tasks.
+  final String parentId;
+
   /// 32-byte AES-256-GCM key for personal (private) data.
   final Uint8List personalKeyBytes;
 
@@ -23,6 +28,7 @@ class SyncConfig {
     required this.serverUrl,
     required this.username,
     required this.password,
+    required this.parentId,
     required this.personalKeyBytes,
     this.familyKeyBytes,
   });
@@ -37,6 +43,7 @@ class SyncConfig {
         serverUrl: serverUrl,
         username: username,
         password: password,
+        parentId: parentId,
         personalKeyBytes: personalKeyBytes,
         familyKeyBytes: familyKey,
       );

@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
+import '../../theme/app_header.dart';
 import '../models/partner_proposal.dart';
 import '../services/partner_load_repository.dart';
 import '../services/partner_proposal_repository.dart';
@@ -29,7 +30,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Partner'),
+        title: AppHeader(title: 'Partner'),
         actions: [
           IconButton(
             icon: Icon(
@@ -85,14 +86,14 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Geen voorstellen',
+                  'Geen suggesties',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Je partner heeft nog geen taken voorgesteld.',
+                  'Het systeem heeft nog geen taken automatisch voor jou gesuggereerd.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -198,6 +199,14 @@ class _PartnerScreenState extends State<PartnerScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.thumb_down_outlined),
+                  tooltip: 'Slecht voorstel',
+                  color: Theme.of(context).colorScheme.outline,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _rejectProposal(proposal),
+                ),
+                const Spacer(),
                 TextButton(
                   onPressed: () => _dismissProposal(proposal.id),
                   child: const Text('Afwijzen'),
@@ -393,6 +402,17 @@ class _PartnerScreenState extends State<PartnerScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Voorstel afgewezen')));
+    }
+  }
+
+  Future<void> _rejectProposal(PartnerProposal proposal) async {
+    await widget.proposalRepository.reject(proposal.id, proposal.taskTitle);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gemeld als slecht voorstel — we leren hiervan'),
+        ),
+      );
     }
   }
 

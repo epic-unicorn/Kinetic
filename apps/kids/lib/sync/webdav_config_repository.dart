@@ -47,6 +47,7 @@ class WebDavConfigRepository {
       serverUrl: serverUrl,
       username: username,
       password: password,
+      parentId: '',
       personalKeyBytes: personalKeyBytes,
       familyKeyBytes: familyKeyBytes,
     );
