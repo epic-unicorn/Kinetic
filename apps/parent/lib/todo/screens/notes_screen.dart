@@ -54,6 +54,24 @@ class _NotesScreenState extends State<NotesScreen> {
                 ),
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              final result = await Navigator.of(context).push<PersonalNote?>(
+                MaterialPageRoute(
+                  builder: (_) => NoteEditorScreen(
+                    repo: widget.repo,
+                    hasFamilyKey: widget.hasFamilyKey?.value ?? false,
+                  ),
+                ),
+              );
+              if (context.mounted && result != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notitie opgeslagen')),
+                );
+              }
+            },
+          ),
         ],
       ),
       body: StreamBuilder(

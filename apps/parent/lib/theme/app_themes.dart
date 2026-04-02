@@ -14,11 +14,11 @@ const kColorWarmGrey = Color(0xFFD3D0CB);
 const kColorOffWhite = Color(0xFFE7E5DF);
 
 // Custom theme colors (user-provided)
-const kColorCustomDark = Color(0xFF2c363f);
-const kColorCustomAccent = Color(0xFFe75a7c);
-const kColorCustomLight = Color(0xFFF2F5EA);
-const kColorCustomGray = Color(0xFFd6dbd2);
-const kColorCustomMuted = Color(0xFFbbc7a4);
+const kColorCustomDark = Color(0xFF272727);
+const kColorCustomAccent = Color(0xFFd4aa7d);
+const kColorCustomLight = Color(0xFFefd09e);
+const kColorCustomGray = Color(0xFFd2d8b3);
+const kColorCustomMuted = Color(0xFF90a9b7);
 
 // ---------------------------------------------------------------------------
 // Priority colours + labels
@@ -243,12 +243,12 @@ ThemeData _buildCustomTheme() {
       centerTitle: false,
     ),
     cardTheme: CardThemeData(
-      color: colorScheme.surfaceContainerLow,
+      color: kColorCustomMuted.withOpacity(0.5),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     listTileTheme: ListTileThemeData(
-      tileColor: colorScheme.surfaceContainerLow,
+      tileColor: kColorCustomMuted.withOpacity(0.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
