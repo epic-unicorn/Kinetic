@@ -125,15 +125,27 @@ class _NotesScreenState extends State<NotesScreen> {
 
           return ValueListenableBuilder<bool>(
             valueListenable: widget.hasFamilyKey ?? ValueNotifier(false),
-            builder: (context, paired, _) => ListView.separated(
-              itemCount: notes.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, i) => _NoteTile(
-                note: notes[i],
-                repo: widget.repo,
-                showSharedBadge: paired,
-              ),
-            ),
+            builder: (context, paired, _) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final dividerColor = isDark
+                  ? const Color(0xFF333333)
+                  : const Color(0xFFEEEEEE);
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                itemCount: notes.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  indent: 0,
+                  endIndent: 0,
+                  color: dividerColor,
+                ),
+                itemBuilder: (context, i) => _NoteTile(
+                  note: notes[i],
+                  repo: widget.repo,
+                  showSharedBadge: paired,
+                ),
+              );
+            },
           );
         },
       ),
@@ -177,109 +189,118 @@ class _NoteTile extends StatelessWidget {
         ? '${note.body.substring(0, 100)}…'
         : note.body;
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      title: Text(note.title),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Text(
-            preview,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (note.remindAt != null) ...[
-                Icon(Icons.alarm, size: 14, color: kColorGold),
-                const SizedBox(width: 8),
-                Text(
-                  formatDueDate(note.remindAt!),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: kColorGold),
-                ),
-                const SizedBox(width: 16),
-              ],
-              if (note.isShared && showSharedBadge) ...[
-                Icon(Icons.lock, size: 14, color: kColorTeal),
-                const SizedBox(width: 8),
-                Text(
-                  'Gedeeld',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: kColorTeal),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-      onTap: () async {
-        final result = await Navigator.of(context).push<PersonalNote?>(
-          MaterialPageRoute(
-            builder: (_) => NoteEditorScreen(
-              repo: repo,
-              note: note,
-              hasFamilyKey: showSharedBadge,
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        title: Text(note.title),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              preview,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-          ),
-        );
-        if (context.mounted && result != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Notitie opgeslagen')));
-        }
-      },
-      trailing: PopupMenuButton<String>(
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
-        ],
-        onSelected: (value) {
-          if (value == 'delete') {
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Verwijderen?'),
-                content: const Text('Je kunt dit niet ongedaan maken.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('Annuleren'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (note.remindAt != null) ...[
+                  Icon(Icons.alarm, size: 14, color: kColorGold),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatDueDate(note.remindAt!),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: kColorGold),
                   ),
-                  FilledButton(
-                    onPressed: () async {
-                      try {
-                        await repo.delete(note.id);
-                        if (ctx.mounted) {
-                          Navigator.of(ctx).pop();
-                        }
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Notitie verwijderd')),
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          Navigator.of(ctx).pop();
-                        }
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Fout bij verwijderen: $e')),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text('Verwijderen'),
+                  const SizedBox(width: 16),
+                ],
+                if (note.isShared && showSharedBadge) ...[
+                  Icon(Icons.lock, size: 14, color: kColorTeal),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Gedeeld',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: kColorTeal),
                   ),
                 ],
+              ],
+            ),
+          ],
+        ),
+        onTap: () async {
+          final result = await Navigator.of(context).push<PersonalNote?>(
+            MaterialPageRoute(
+              builder: (_) => NoteEditorScreen(
+                repo: repo,
+                note: note,
+                hasFamilyKey: showSharedBadge,
               ),
-            );
+            ),
+          );
+          if (context.mounted && result != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Notitie opgeslagen')));
           }
         },
+        trailing: PopupMenuButton<String>(
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
+          ],
+          onSelected: (value) {
+            if (value == 'delete') {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Verwijderen?'),
+                  content: const Text('Je kunt dit niet ongedaan maken.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Annuleren'),
+                    ),
+                    FilledButton(
+                      onPressed: () async {
+                        try {
+                          await repo.delete(note.id);
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop();
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Notitie verwijderd'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop();
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Fout bij verwijderen: $e'),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('Verwijderen'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
+        ),
       ),
     );
   }

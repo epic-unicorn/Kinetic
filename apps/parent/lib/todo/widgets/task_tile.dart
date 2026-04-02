@@ -107,158 +107,155 @@ class _TaskTileContent extends StatelessWidget {
     final hasDate = task.dueDate != null;
     final overdue = hasDate && isOverdue(task.dueDate!) && !task.isCompleted;
 
-    return InkWell(
-      onTap: () => _openDetail(context),
-      onLongPress: () => _showContextMenu(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Checkbox ────────────────────────────────────────────────────
-            GestureDetector(
-              onTap: () => task.isCompleted
-                  ? repo.uncompleteTask(task.id)
-                  : repo.completeTask(task.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
-                margin: const EdgeInsets.only(top: 1, right: 12),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: task.isCompleted
-                      ? null
-                      : Border.all(
-                          color: task.priority != TaskPriority.none
-                              ? priorityColor(task.priority)
-                              : kColorWarmGrey,
-                          width: task.priority == TaskPriority.high ? 2.5 : 2,
-                        ),
-                  color: task.isCompleted
-                      ? kColorTeal
-                      : (task.priority != TaskPriority.none
-                            ? priorityColor(task.priority).withAlpha(30)
-                            : Colors.transparent),
-                  boxShadow:
-                      task.priority != TaskPriority.none && !task.isCompleted
-                      ? [
-                          BoxShadow(
-                            color: priorityColor(task.priority).withAlpha(50),
-                            blurRadius: 4,
-                            spreadRadius: 0,
+    return Card(
+      child: InkWell(
+        onTap: () => _openDetail(context),
+        onLongPress: () => _showContextMenu(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Checkbox ────────────────────────────────────────────────────
+              GestureDetector(
+                onTap: () => task.isCompleted
+                    ? repo.uncompleteTask(task.id)
+                    : repo.completeTask(task.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.only(top: 1, right: 12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: task.isCompleted
+                        ? null
+                        : Border.all(
+                            color: task.priority != TaskPriority.none
+                                ? priorityColor(task.priority)
+                                : kColorWarmGrey,
+                            width: task.priority == TaskPriority.high ? 2.5 : 2,
                           ),
-                        ]
+                    color: task.isCompleted
+                        ? kColorTeal
+                        : (task.priority != TaskPriority.none
+                              ? priorityColor(task.priority).withAlpha(30)
+                              : Colors.transparent),
+                    boxShadow:
+                        task.priority != TaskPriority.none && !task.isCompleted
+                        ? [
+                            BoxShadow(
+                              color: priorityColor(task.priority).withAlpha(50),
+                              blurRadius: 4,
+                              spreadRadius: 0,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: task.isCompleted
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
                       : null,
                 ),
-                child: task.isCompleted
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : (task.priority != TaskPriority.none
-                          ? Center(
-                              child: Text(
-                                priorityLabel(task.priority),
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: priorityColor(task.priority),
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            )
-                          : null),
               ),
-            ),
-            // ── Title + metadata ─────────────────────────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: tt.bodyLarge?.copyWith(
-                      decoration: task.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: task.isCompleted
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : null,
+              // ── Title + metadata ─────────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: tt.bodyLarge?.copyWith(
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
+                        color: task.isCompleted
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : null,
+                      ),
                     ),
-                  ),
-                  if (hasDate || task.notes != null) ...[
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        if (hasDate)
-                          Text(
-                            formatDueDate(task.dueDate!, allDay: task.isAllDay),
-                            style: tt.labelSmall?.copyWith(
-                              color: overdue
-                                  ? Colors.redAccent
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        if (hasDate && task.notes != null)
-                          Text(
-                            ' · ',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        if (task.notes != null)
-                          Expanded(
-                            child: Text(
-                              task.notes!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                    if (hasDate || task.notes != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (hasDate)
+                            Text(
+                              formatDueDate(
+                                task.dueDate!,
+                                allDay: task.isAllDay,
+                              ),
                               style: tt.labelSmall?.copyWith(
+                                color: overdue
+                                    ? Colors.redAccent
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          if (hasDate && task.notes != null)
+                            Text(
+                              ' · ',
+                              style: TextStyle(
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          ),
-                      ],
-                    ),
+                          if (task.notes != null)
+                            Expanded(
+                              child: Text(
+                                task.notes!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tt.labelSmall?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
+                ),
+              ),
+              // ── Right icons ──────────────────────────────────────────────────
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (task.isFlagged)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Icon(Icons.flag, size: 16, color: kColorGold),
+                    ),
+                  if (task.isPrivate)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 14,
+                        color: kColorWarmGrey,
+                      ),
+                    ),
+                  if (task.recurrenceRule != null)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.repeat,
+                        size: 14,
+                        color: kColorWarmGrey,
+                      ),
+                    ),
+                  // ── Mission badge ──────────────────────────────────────────
+                  if (task.kidsTaskId != null)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: _MissionBadge(),
+                    ),
                 ],
               ),
-            ),
-            // ── Right icons ──────────────────────────────────────────────────
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (task.isFlagged)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(Icons.flag, size: 16, color: kColorGold),
-                  ),
-                if (task.isPrivate)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(
-                      Icons.lock_outline,
-                      size: 14,
-                      color: kColorWarmGrey,
-                    ),
-                  ),
-                if (task.recurrenceRule != null)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
-                    child: Icon(Icons.repeat, size: 14, color: kColorWarmGrey),
-                  ),
-                // ── Mission badge ──────────────────────────────────────────
-                if (task.kidsTaskId != null)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: _MissionBadge(),
-                  ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

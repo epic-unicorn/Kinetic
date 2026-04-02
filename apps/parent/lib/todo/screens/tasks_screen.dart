@@ -127,8 +127,6 @@ class _OpenTasksTab extends StatelessWidget {
 
   const _OpenTasksTab({required this.repo, this.hasFamilyKey = false});
 
-  static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PersonalTask>>(
@@ -140,13 +138,21 @@ class _OpenTasksTab extends StatelessWidget {
           return const _EmptyOpen();
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dividerColor = isDark
+            ? const Color(0xFF333333)
+            : const Color(0xFFEEEEEE);
+
         final items = <Widget>[];
         items.add(const SizedBox(height: 8));
         for (var i = 0; i < open.length; i++) {
           items.add(
             TaskTile(task: open[i], repo: repo, hasFamilyKey: hasFamilyKey),
           );
-          if (i < open.length - 1) items.add(_divider);
+          if (i < open.length - 1)
+            items.add(
+              Divider(height: 1, indent: 0, endIndent: 0, color: dividerColor),
+            );
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar
 
@@ -166,8 +172,6 @@ class _CompletedTasksTab extends StatelessWidget {
 
   const _CompletedTasksTab({required this.repo, this.hasFamilyKey = false});
 
-  static const _divider = Divider(height: 1, indent: 52, endIndent: 0);
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PersonalTask>>(
@@ -178,6 +182,11 @@ class _CompletedTasksTab extends StatelessWidget {
         if (completed.isEmpty) {
           return const _EmptyCompleted();
         }
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dividerColor = isDark
+            ? const Color(0xFF333333)
+            : const Color(0xFFEEEEEE);
 
         final items = <Widget>[];
 
@@ -213,7 +222,10 @@ class _CompletedTasksTab extends StatelessWidget {
               hasFamilyKey: hasFamilyKey,
             ),
           );
-          if (i < completed.length - 1) items.add(_divider);
+          if (i < completed.length - 1)
+            items.add(
+              Divider(height: 1, indent: 0, endIndent: 0, color: dividerColor),
+            );
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar
 

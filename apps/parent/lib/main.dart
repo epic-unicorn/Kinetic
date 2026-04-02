@@ -88,6 +88,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
   final hasFamilyKey = ValueNotifier<bool>(false);
+  final webDavConfigured = ValueNotifier<bool>(false);
   final pendingProposalCount = ValueNotifier<int>(0);
   StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
@@ -128,6 +129,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     hasFamilyKey.value = config?.familyKeyBytes != null;
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
+      webDavConfigured.value = true;
 
       // Initialize partner load service using the same config
       final client = WebDavClient(
@@ -147,6 +149,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
       _triggerSync(); // fire-and-forget initial sync
     } else {
+      _syncOrchestrator = null;
+      webDavConfigured.value = false;
       syncStatus.value = SyncStatus.idle;
     }
   }
@@ -190,76 +194,84 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     return ValueListenableBuilder<bool>(
       valueListenable: hasFamilyKey,
       builder: (context, paired, _) {
-        return ValueListenableBuilder<int>(
-          valueListenable: pendingProposalCount,
-          builder: (context, pendingCount, _) {
-            final screens = <Widget>[
-              TasksScreen(
-                repo: _todoRepository,
-                syncStatus: syncStatus,
-                hasFamilyKey: paired,
-              ),
-              if (paired)
-                PartnerScreen(
-                  proposalRepository: _proposalRepository,
-                  loadRepository: _loadRepository,
-                ),
-              NotesScreen(
-                repo: _noteRepository,
-                syncStatus: syncStatus,
-                hasFamilyKey: hasFamilyKey,
-              ),
-              SettingsScreen(
-                db: widget.db,
-                configRepo: _webDavConfig,
-                settingsRepo: widget.settingsRepo,
-                onConfigSaved: _initSync,
-              ),
-            ];
-
-            final destinations = <NavigationDestination>[
-              const NavigationDestination(
-                icon: Icon(Icons.check_circle_outline),
-                selectedIcon: Icon(Icons.check_circle),
-                label: 'Taken',
-              ),
-              if (paired)
-                NavigationDestination(
-                  icon: Badge(
-                    isLabelVisible: pendingCount > 0,
-                    label: Text('$pendingCount'),
-                    child: const Icon(Icons.people_outline),
+        return ValueListenableBuilder<bool>(
+          valueListenable: webDavConfigured,
+          builder: (context, hasWebDav, _) {
+            return ValueListenableBuilder<int>(
+              valueListenable: pendingProposalCount,
+              builder: (context, pendingCount, _) {
+                final screens = <Widget>[
+                  TasksScreen(
+                    repo: _todoRepository,
+                    syncStatus: hasWebDav ? syncStatus : null,
+                    hasFamilyKey: paired,
                   ),
-                  selectedIcon: Badge(
-                    isLabelVisible: pendingCount > 0,
-                    label: Text('$pendingCount'),
-                    child: const Icon(Icons.people),
+                  if (paired)
+                    PartnerScreen(
+                      proposalRepository: _proposalRepository,
+                      loadRepository: _loadRepository,
+                    ),
+                  NotesScreen(
+                    repo: _noteRepository,
+                    syncStatus: hasWebDav ? syncStatus : null,
+                    hasFamilyKey: hasFamilyKey,
                   ),
-                  label: 'Partner',
-                ),
-              const NavigationDestination(
-                icon: Icon(Icons.note_outlined),
-                selectedIcon: Icon(Icons.note),
-                label: 'Notities',
-              ),
-              const NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings),
-                label: 'Instellingen',
-              ),
-            ];
+                  SettingsScreen(
+                    db: widget.db,
+                    configRepo: _webDavConfig,
+                    settingsRepo: widget.settingsRepo,
+                    onConfigSaved: _initSync,
+                  ),
+                ];
 
-            // Clamp selected index in case the partner tab disappears
-            final clampedIndex = _selectedIndex.clamp(0, screens.length - 1);
+                final destinations = <NavigationDestination>[
+                  const NavigationDestination(
+                    icon: Icon(Icons.check_circle_outline),
+                    selectedIcon: Icon(Icons.check_circle),
+                    label: 'Taken',
+                  ),
+                  if (paired)
+                    NavigationDestination(
+                      icon: Badge(
+                        isLabelVisible: pendingCount > 0,
+                        label: Text('$pendingCount'),
+                        child: const Icon(Icons.people_outline),
+                      ),
+                      selectedIcon: Badge(
+                        isLabelVisible: pendingCount > 0,
+                        label: Text('$pendingCount'),
+                        child: const Icon(Icons.people),
+                      ),
+                      label: 'Partner',
+                    ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.note_outlined),
+                    selectedIcon: Icon(Icons.note),
+                    label: 'Notities',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
+                    label: 'Instellingen',
+                  ),
+                ];
 
-            return Scaffold(
-              body: IndexedStack(index: clampedIndex, children: screens),
-              bottomNavigationBar: NavigationBar(
-                selectedIndex: clampedIndex,
-                onDestinationSelected: (i) =>
-                    setState(() => _selectedIndex = i),
-                destinations: destinations,
-              ),
+                // Clamp selected index in case the partner tab disappears
+                final clampedIndex = _selectedIndex.clamp(
+                  0,
+                  screens.length - 1,
+                );
+
+                return Scaffold(
+                  body: IndexedStack(index: clampedIndex, children: screens),
+                  bottomNavigationBar: NavigationBar(
+                    selectedIndex: clampedIndex,
+                    onDestinationSelected: (i) =>
+                        setState(() => _selectedIndex = i),
+                    destinations: destinations,
+                  ),
+                );
+              },
             );
           },
         );

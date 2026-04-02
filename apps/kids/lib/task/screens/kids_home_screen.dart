@@ -51,21 +51,23 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
       appBar: AppBar(
         title: AppHeaderKids(title: 'Mijn Opdrachten'),
         actions: [
-          if (_syncing)
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+          if (widget.orchestrator != null) ...[
+            if (_syncing)
+              const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _sync,
+                tooltip: 'Synchroniseren',
               ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: widget.orchestrator != null ? _sync : null,
-              tooltip: 'Synchroniseren',
-            ),
+          ],
         ],
       ),
       body: StreamBuilder<List<KidsTask>>(

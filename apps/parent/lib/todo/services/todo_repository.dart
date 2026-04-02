@@ -81,6 +81,7 @@ class TodoRepository {
                 t.syncState.equals('deleted').not(),
           )
           ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
             (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.asc(t.createdAt),
           ]))
@@ -97,6 +98,7 @@ class TodoRepository {
                 t.syncState.equals('deleted').not(),
           )
           ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
             // Sort rows with no due date after those that have one.
             (t) => OrderingTerm.asc(t.dueDate.isNull()),
             (t) => OrderingTerm.asc(t.dueDate),
@@ -125,8 +127,8 @@ class TodoRepository {
                 t.syncState.equals('deleted').not(),
           )
           ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
             (t) => OrderingTerm.asc(t.dueDate),
-            (t) => OrderingTerm.asc(t.priority),
           ]))
         .watch()
         .map((rows) => rows.map(_taskFromRow).toList());
@@ -147,7 +149,10 @@ class TodoRepository {
                 t.dueDate.isBiggerOrEqualValue(startOfTomorrow) &
                 t.syncState.equals('deleted').not(),
           )
-          ..orderBy([(t) => OrderingTerm.asc(t.dueDate)]))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
+            (t) => OrderingTerm.asc(t.dueDate),
+          ]))
         .watch()
         .map((rows) => rows.map(_taskFromRow).toList());
   }
@@ -161,7 +166,10 @@ class TodoRepository {
                 t.isFlagged.equals(true) &
                 t.syncState.equals('deleted').not(),
           )
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.priority),
+            (t) => OrderingTerm.asc(t.sortOrder),
+          ]))
         .watch()
         .map((rows) => rows.map(_taskFromRow).toList());
   }

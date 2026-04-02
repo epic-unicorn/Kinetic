@@ -53,91 +53,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: AppHeader(title: 'Instellingen', centerTitle: false),
         centerTitle: false,
       ),
-      body: ListView(
-        children: [
-          const _SectionHeader(label: 'Uiterlijk'),
-          ValueListenableBuilder<AppTheme>(
-            valueListenable: themeNotifier,
-            builder: (context, currentTheme, _) => ListTile(
-              leading: const Icon(Icons.palette_outlined, color: kColorTeal),
-              title: const Text('Thema'),
-              subtitle: Text(currentTheme.label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showThemeSelector(context),
-            ),
-          ),
-          const _SectionHeader(label: 'Synchronisatie'),
-          ListTile(
-            leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
-            title: const Text('WebDAV configureren'),
-            subtitle: Text(
-              isConnected
-                  ? 'Verbonden'
-                  : 'Verbind met een Nextcloud- of WebDAV-server',
-            ),
-            trailing: isConnected
-                ? const Icon(Icons.check_circle, color: kColorTeal)
-                : const Icon(Icons.chevron_right),
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => WebDavSetupScreen(
-                    db: widget.db,
-                    configRepo: widget.configRepo,
-                    onConfigSaved: widget.onConfigSaved,
-                  ),
-                ),
-              );
-              _loadConfig();
-            },
-          ),
-          if (isConnected) ...[
-            const _SectionHeader(label: 'Familie'),
-            ListTile(
-              leading: const Icon(Icons.people_outline, color: kColorTeal),
-              title: const Text('Familie'),
-              subtitle: Text(
-                _config?.familyKeyBytes != null
-                    ? 'Partner gekoppeld'
-                    : 'Koppel met je partner',
+      body: ValueListenableBuilder<AppTheme>(
+        valueListenable: themeNotifier,
+        builder: (context, currentTheme, _) {
+          final iconColor = currentTheme == AppTheme.custom
+              ? kColorCustomAccent
+              : kColorTeal;
+          return ListView(
+            children: [
+              const _SectionHeader(label: 'Uiterlijk'),
+              ListTile(
+                leading: Icon(Icons.palette_outlined, color: iconColor),
+                title: const Text('Thema'),
+                subtitle: Text(currentTheme.label),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showThemeSelector(context),
               ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => FamilyScreen(
-                      db: widget.db,
-                      configRepo: widget.configRepo,
-                      onConfigSaved: widget.onConfigSaved,
+              const _SectionHeader(label: 'Synchronisatie'),
+              ListTile(
+                leading: Icon(Icons.cloud_outlined, color: iconColor),
+                title: const Text('WebDAV configureren'),
+                subtitle: Text(
+                  isConnected
+                      ? 'Verbonden'
+                      : 'Verbind met een Nextcloud- of WebDAV-server',
+                ),
+                trailing: isConnected
+                    ? Icon(Icons.check_circle, color: iconColor)
+                    : const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => WebDavSetupScreen(
+                        db: widget.db,
+                        configRepo: widget.configRepo,
+                        onConfigSaved: widget.onConfigSaved,
+                      ),
                     ),
+                  );
+                  _loadConfig();
+                },
+              ),
+              if (isConnected) ...[
+                const _SectionHeader(label: 'Familie'),
+                ListTile(
+                  leading: Icon(Icons.people_outline, color: iconColor),
+                  title: const Text('Familie'),
+                  subtitle: Text(
+                    _config?.familyKeyBytes != null
+                        ? 'Partner gekoppeld'
+                        : 'Koppel met je partner',
                   ),
-                );
-                _loadConfig();
-              },
-            ),
-            const _SectionHeader(label: 'Back-up & Herstel'),
-            ListTile(
-              leading: const Icon(Icons.backup_outlined, color: kColorTeal),
-              title: const Text('Herstelsleutel exporteren'),
-              subtitle: const Text('Bewaar je persoonlijke sleutel veilig'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _exportRecoveryKey(),
-            ),
-            ListTile(
-              leading: const Icon(Icons.restore_outlined, color: kColorTeal),
-              title: const Text('Herstelsleutel importeren'),
-              subtitle: const Text('Herstel van een ander apparaat'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showImportPersonalKeyDialog(),
-            ),
-          ],
-          const _SectionHeader(label: 'Over'),
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: kColorTeal),
-            title: const Text('Kinetic Link'),
-            subtitle: const Text('Versie 2.0.0'),
-          ),
-        ],
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => FamilyScreen(
+                          db: widget.db,
+                          configRepo: widget.configRepo,
+                          onConfigSaved: widget.onConfigSaved,
+                        ),
+                      ),
+                    );
+                    _loadConfig();
+                  },
+                ),
+              ],
+              const _SectionHeader(label: 'Back-up & Herstel'),
+              ListTile(
+                leading: Icon(Icons.backup_outlined, color: iconColor),
+                title: const Text('Herstelsleutel exporteren'),
+                subtitle: const Text('Bewaar je persoonlijke sleutel veilig'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _exportRecoveryKey(),
+              ),
+              ListTile(
+                leading: Icon(Icons.restore_outlined, color: iconColor),
+                title: const Text('Herstelsleutel importeren'),
+                subtitle: const Text('Herstel van een ander apparaat'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showImportPersonalKeyDialog(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -263,7 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _importPersonalKey(String jsonString) async {
     try {
       final importedKey = KineticEncryption.importRecoveryJson(jsonString);
-      
+
       if (_config != null) {
         // Update the config with the imported personal key
         await widget.configRepo.save(
@@ -276,7 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             familyKeyBytes: _config!.familyKeyBytes,
           ),
         );
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -288,9 +287,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij importeren: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
       }
     }
   }
@@ -381,7 +380,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
   ) async {
     try {
       debugPrint('[Migration] Starting migration check...');
-      
+
       final client = WebDavClient(
         baseUrl: serverUrl,
         username: username,
@@ -404,11 +403,13 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         debugPrint('[Migration] Checking for remote files...');
         final tasksPath = '/kinetic/$username/tasks';
         final notesPath = '/kinetic/$username/notes';
-        
+
         final taskFiles = await _listServerFiles(client, tasksPath);
         final noteFiles = await _listServerFiles(client, notesPath);
-        
-        debugPrint('[Migration] Found ${taskFiles.length} task files and ${noteFiles.length} note files');
+
+        debugPrint(
+          '[Migration] Found ${taskFiles.length} task files and ${noteFiles.length} note files',
+        );
 
         if (taskFiles.isEmpty && noteFiles.isEmpty) {
           // No existing data, nothing to migrate
@@ -417,7 +418,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         }
 
         // There are files on the server - ask user what to do
-        debugPrint('[Migration] Found existing files, showing migration dialog');
+        debugPrint(
+          '[Migration] Found existing files, showing migration dialog',
+        );
         if (!mounted) {
           debugPrint('[Migration] Widget not mounted, aborting');
           return;
@@ -467,19 +470,25 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
 
         if (shouldImport ?? false) {
           // Try to import - will only import decryptable items
-          debugPrint('[Migration] User chose to import, attempting to read and decrypt data');
+          debugPrint(
+            '[Migration] User chose to import, attempting to read and decrypt data',
+          );
           try {
             final remoteTasks = await service.pullTasks();
             final remoteNotes = await service.pullNotes();
-            debugPrint('[Migration] Successfully decrypted ${remoteTasks.length} tasks and ${remoteNotes.length} notes');
-            
+            debugPrint(
+              '[Migration] Successfully decrypted ${remoteTasks.length} tasks and ${remoteNotes.length} notes',
+            );
+
             if (remoteTasks.isNotEmpty || remoteNotes.isNotEmpty) {
               await _importRemoteData(remoteTasks, remoteNotes);
             } else {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Kon de bestaande gegevens niet decoderen. Ze zijn mogelijk met een ander wachtwoord versleuteld.'),
+                    content: Text(
+                      'Kon de bestaande gegevens niet decoderen. Ze zijn mogelijk met een ander wachtwoord versleuteld.',
+                    ),
                   ),
                 );
               }
@@ -494,7 +503,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           }
         } else {
           // Clean up: delete remote files
-          debugPrint('[Migration] User chose to clean up, deleting remote files');
+          debugPrint(
+            '[Migration] User chose to clean up, deleting remote files',
+          );
           await _cleanupRemoteFiles(client, taskFiles, noteFiles);
         }
       } finally {
@@ -505,14 +516,17 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       debugPrint('[Migration] Error during migration: $e');
       debugPrintStack(stackTrace: st);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Migratiecontrole mislukt: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Migratiecontrole mislukt: $e')));
       }
     }
   }
 
-  Future<List<String>> _listServerFiles(WebDavClient client, String path) async {
+  Future<List<String>> _listServerFiles(
+    WebDavClient client,
+    String path,
+  ) async {
     try {
       // Use PROPFIND to list files without encryption/decryption
       final entries = await client.propfind(path);
@@ -550,15 +564,17 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${taskFiles.length + noteFiles.length} bestanden verwijderd.'),
+            content: Text(
+              '${taskFiles.length + noteFiles.length} bestanden verwijderd.',
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij opschonen: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij opschonen: $e')));
       }
     }
   }
@@ -570,66 +586,71 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     try {
       // Import tasks
       for (final remoteTask in remoteTasks) {
-        final existingTask = await (widget.db.select(widget.db.personalTasks)
-              ..where((t) => t.id.equals(remoteTask.uid)))
-            .getSingleOrNull();
+        final existingTask = await (widget.db.select(
+          widget.db.personalTasks,
+        )..where((t) => t.id.equals(remoteTask.uid))).getSingleOrNull();
 
         if (existingTask == null) {
           // New task from remote
           final isCompleted = remoteTask.status == ICalTaskStatus.completed;
-          await widget.db.into(widget.db.personalTasks).insert(
-            PersonalTasksCompanion(
-              id: Value(remoteTask.uid),
-              title: Value(remoteTask.summary),
-              notes: Value(remoteTask.description),
-              dueDate: Value(remoteTask.dueAt),
-              isCompleted: Value(isCompleted),
-              completedAt: Value(isCompleted ? DateTime.now() : null),
-              createdAt: Value(remoteTask.createdAt),
-              updatedAt: Value(remoteTask.updatedAt),
-              recurrenceRule: Value(remoteTask.rrule),
-              syncState: const Value('clean'),
-            ),
-          );
+          await widget.db
+              .into(widget.db.personalTasks)
+              .insert(
+                PersonalTasksCompanion(
+                  id: Value(remoteTask.uid),
+                  title: Value(remoteTask.summary),
+                  notes: Value(remoteTask.description),
+                  dueDate: Value(remoteTask.dueAt),
+                  isCompleted: Value(isCompleted),
+                  completedAt: Value(isCompleted ? DateTime.now() : null),
+                  createdAt: Value(remoteTask.createdAt),
+                  updatedAt: Value(remoteTask.updatedAt),
+                  recurrenceRule: Value(remoteTask.rrule),
+                  syncState: const Value('clean'),
+                ),
+              );
         }
       }
 
       // Import notes
       for (final remoteNote in remoteNotes) {
-        final existingNote = await (widget.db.select(widget.db.personalNotes)
-              ..where((n) => n.id.equals(remoteNote.uid)))
-            .getSingleOrNull();
+        final existingNote = await (widget.db.select(
+          widget.db.personalNotes,
+        )..where((n) => n.id.equals(remoteNote.uid))).getSingleOrNull();
 
         if (existingNote == null) {
           // New note from remote
-          await widget.db.into(widget.db.personalNotes).insert(
-            PersonalNotesCompanion(
-              id: Value(remoteNote.uid),
-              title: Value(remoteNote.summary),
-              body: Value(remoteNote.description ?? ''),
-              isShared: Value(remoteNote.isShared),
-              createdAt: Value(remoteNote.createdAt),
-              updatedAt: Value(remoteNote.updatedAt),
-              remindAt: Value(remoteNote.remindAt),
-              syncState: const Value('clean'),
-            ),
-          );
+          await widget.db
+              .into(widget.db.personalNotes)
+              .insert(
+                PersonalNotesCompanion(
+                  id: Value(remoteNote.uid),
+                  title: Value(remoteNote.summary),
+                  body: Value(remoteNote.description ?? ''),
+                  isShared: Value(remoteNote.isShared),
+                  createdAt: Value(remoteNote.createdAt),
+                  updatedAt: Value(remoteNote.updatedAt),
+                  remindAt: Value(remoteNote.remindAt),
+                  syncState: const Value('clean'),
+                ),
+              );
         }
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('${remoteTasks.length + remoteNotes.length} items geïmporteerd.'),
+            content: Text(
+              '${remoteTasks.length + remoteNotes.length} items geïmporteerd.',
+            ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij importeren: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
       }
     }
   }
@@ -717,12 +738,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
 
         // Check for existing remote data and ask user what to do
         if (mounted) {
-          await _handleMigration(
-            serverUrl,
-            username,
-            password,
-            personalKey,
-          );
+          await _handleMigration(serverUrl, username, password, personalKey);
         }
       }
 
