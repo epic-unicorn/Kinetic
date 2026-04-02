@@ -119,7 +119,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: kColorWarmGrey.withAlpha(80),
+                color: Theme.of(context).colorScheme.outlineVariant.withAlpha(80),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -133,8 +133,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               controller: _titleCtrl,
               autofocus: widget.task == null,
               style: tt.titleLarge,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Taaknaam',
+                hintStyle: tt.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 border: InputBorder.none,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -147,9 +150,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
               controller: _notesCtrl,
-              style: tt.bodyMedium?.copyWith(color: kColorWarmGrey),
-              decoration: const InputDecoration(
+              style: tt.bodyMedium,
+              decoration: InputDecoration(
                 hintText: 'Notities',
+                hintStyle: tt.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 border: InputBorder.none,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -302,7 +308,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 leading: Icon(
                   Icons.flag,
                   color: p == TaskPriority.none
-                      ? kColorWarmGrey
+                      ? Theme.of(context).colorScheme.outlineVariant
                       : priorityColor(p),
                 ),
                 title: Text(switch (p) {
@@ -390,7 +396,9 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = active ? (color ?? kColorTeal) : kColorWarmGrey;
+    final effectiveColor = active 
+        ? (color ?? kColorTeal) 
+        : Theme.of(context).colorScheme.onSurfaceVariant;
     return ListTile(
       dense: true,
       leading: Icon(icon, size: 20, color: effectiveColor),

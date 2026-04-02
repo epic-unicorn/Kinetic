@@ -18,11 +18,13 @@ class TodoRepository {
   final AppDatabase _db;
   final CategoryClassifier _classifier;
   final NotificationService? _notifications;
+  final void Function()? onWrite;
 
   TodoRepository({
     required AppDatabase db,
     CategoryClassifier? classifier,
     NotificationService? notifications,
+    this.onWrite,
   }) : _db = db,
        _classifier = classifier ?? categoryClassifier,
        _notifications = notifications;
@@ -72,7 +74,11 @@ class TodoRepository {
   /// All incomplete tasks, ordered by sort_order then created_at.
   Stream<List<PersonalTask>> watchAllTasks() {
     return (_db.select(_db.personalTasks)
-          ..where((t) => t.isCompleted.equals(false))
+          ..where(
+            (t) =>
+                t.isCompleted.equals(false) &
+                t.syncState.equals('deleted').not(),
+          )
           ..orderBy([
             (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.asc(t.createdAt),
@@ -84,7 +90,11 @@ class TodoRepository {
   /// All incomplete tasks ordered by due date (nulls last), then created_at.
   Stream<List<PersonalTask>> watchOpenTasks() {
     return (_db.select(_db.personalTasks)
-          ..where((t) => t.isCompleted.equals(false))
+          ..where(
+            (t) =>
+                t.isCompleted.equals(false) &
+                t.syncState.equals('deleted').not(),
+          )
           ..orderBy([
             // Sort rows with no due date after those that have one.
             (t) => OrderingTerm.asc(t.dueDate.isNull()),
@@ -110,7 +120,8 @@ class TodoRepository {
           ..where(
             (t) =>
                 t.isCompleted.equals(false) &
-                t.dueDate.isSmallerOrEqualValue(endOfToday),
+                t.dueDate.isSmallerOrEqualValue(endOfToday) &
+                t.syncState.equals('deleted').not(),
           )
           ..orderBy([
             (t) => OrderingTerm.asc(t.dueDate),
@@ -132,7 +143,8 @@ class TodoRepository {
           ..where(
             (t) =>
                 t.isCompleted.equals(false) &
-                t.dueDate.isBiggerOrEqualValue(startOfTomorrow),
+                t.dueDate.isBiggerOrEqualValue(startOfTomorrow) &
+                t.syncState.equals('deleted').not(),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.dueDate)]))
         .watch()
@@ -142,7 +154,12 @@ class TodoRepository {
   /// Flagged incomplete tasks.
   Stream<List<PersonalTask>> watchFlaggedTasks() {
     return (_db.select(_db.personalTasks)
-          ..where((t) => t.isCompleted.equals(false) & t.isFlagged.equals(true))
+          ..where(
+            (t) =>
+                t.isCompleted.equals(false) &
+                t.isFlagged.equals(true) &
+                t.syncState.equals('deleted').not(),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
         .watch()
         .map((rows) => rows.map(_taskFromRow).toList());
@@ -151,7 +168,11 @@ class TodoRepository {
   /// Completed tasks (for showing completed section).
   Stream<List<PersonalTask>> watchCompletedTasks() {
     return (_db.select(_db.personalTasks)
-          ..where((t) => t.isCompleted.equals(true))
+          ..where(
+            (t) =>
+                t.isCompleted.equals(true) &
+                t.syncState.equals('deleted').not(),
+          )
           ..orderBy([(t) => OrderingTerm.desc(t.completedAt)]))
         .watch()
         .map((rows) => rows.map(_taskFromRow).toList());
@@ -159,15 +180,27 @@ class TodoRepository {
 
   /// Permanently removes all completed tasks (bulk cleanup).
   Future<void> deleteCompletedTasks() async {
-    await (_db.delete(
-      _db.personalTasks,
-    )..where((t) => t.isCompleted.equals(true))).go();
+    // Soft-delete so the sync orchestrator can remove them from WebDAV.
+    await (_db.update(_db.personalTasks)
+          ..where((t) => t.isCompleted.equals(true)))
+        .write(
+      PersonalTasksCompanion(
+        syncState: const Value('deleted'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    onWrite?.call();
   }
 
   /// Tasks belonging to a specific list.
   Stream<List<PersonalTask>> watchTasksInList(String listId) {
     return (_db.select(_db.personalTasks)
-          ..where((t) => t.listId.equals(listId) & t.isCompleted.equals(false))
+          ..where(
+            (t) =>
+                t.listId.equals(listId) &
+                t.isCompleted.equals(false) &
+                t.syncState.equals('deleted').not(),
+          )
           ..orderBy([
             (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.asc(t.createdAt),
@@ -215,6 +248,7 @@ class TodoRepository {
     );
     await _db.into(_db.personalTasks).insert(_taskToCompanion(task));
     await _scheduleReminderFor(task);
+    onWrite?.call();
     return task;
   }
 
@@ -225,6 +259,7 @@ class TodoRepository {
     // Cancel old reminder, then schedule the (possibly new) one.
     await _notifications?.cancelReminder(_notifId(task.id));
     await _scheduleReminderFor(task);
+    onWrite?.call();
   }
 
   Future<void> completeTask(String taskId) async {
@@ -238,6 +273,7 @@ class TodoRepository {
       ),
     );
     await _notifications?.cancelReminder(_notifId(taskId));
+    onWrite?.call();
   }
 
   Future<void> uncompleteTask(String taskId) async {
@@ -250,6 +286,7 @@ class TodoRepository {
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
+    onWrite?.call();
   }
 
   Future<void> toggleFlag(String taskId, {required bool flagged}) async {
@@ -261,6 +298,7 @@ class TodoRepository {
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
+    onWrite?.call();
   }
 
   Future<void> togglePrivate(String taskId, {required bool isPrivate}) async {
@@ -272,16 +310,25 @@ class TodoRepository {
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
+    onWrite?.call();
   }
 
   Future<void> deleteTask(String taskId) async {
     await _notifications?.cancelReminder(_notifId(taskId));
+    // Delete subtasks immediately (they are not tracked separately on WebDAV).
     await (_db.delete(
       _db.personalSubtasks,
     )..where((t) => t.taskId.equals(taskId))).go();
-    await (_db.delete(
+    // Soft-delete the task so the sync orchestrator can remove it from WebDAV.
+    await (_db.update(
       _db.personalTasks,
-    )..where((t) => t.id.equals(taskId))).go();
+    )..where((t) => t.id.equals(taskId))).write(
+      PersonalTasksCompanion(
+        syncState: const Value('deleted'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    onWrite?.call();
   }
 
   // ── Subtasks ───────────────────────────────────────────────────────────────

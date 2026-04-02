@@ -44,8 +44,11 @@ class WebDavClient {
   /// Returns paths of all direct children of [collectionPath].
   /// Throws [WebDavException] on non-207 responses.
   Future<List<WebDavEntry>> propfind(String collectionPath) async {
+    // WebDAV collections require trailing slashes to avoid 301 redirects.
+    final path =
+        collectionPath.endsWith('/') ? collectionPath : '$collectionPath/';
     final response = await _http.send(
-      http.Request('PROPFIND', Uri.parse(_url(collectionPath)))
+      http.Request('PROPFIND', Uri.parse(_url(path)))
         ..headers.addAll(
             {..._authHeaders, 'Depth': '1', 'Content-Type': 'application/xml'})
         ..body = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:">'
@@ -128,8 +131,10 @@ class WebDavClient {
   /// Creates the collection at [path].  Succeeds silently if it already exists
   /// (405 Method Not Allowed — collection exists on Nextcloud/Apache).
   Future<void> mkcol(String path) async {
+    // WebDAV collections require trailing slashes
+    final pathWithSlash = path.endsWith('/') ? path : '$path/';
     final response = await _http.send(
-      http.Request('MKCOL', Uri.parse(_url(path)))
+      http.Request('MKCOL', Uri.parse(_url(pathWithSlash)))
         ..headers.addAll(_authHeaders),
     );
     final statusCode = response.statusCode;

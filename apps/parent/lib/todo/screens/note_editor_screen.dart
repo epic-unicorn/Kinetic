@@ -49,27 +49,30 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     setState(() => _saving = true);
     try {
       final note = widget.note;
+      late final PersonalNote savedNote;
+
       if (note != null) {
         // Update existing
-        await widget.repo.update(
-          note.copyWith(
-            title: _titleCtrl.text.trim(),
-            body: _bodyCtrl.text,
-            isShared: _isShared,
-            remindAt: _remindAt,
-          ),
+        final updatedNote = note.copyWith(
+          title: _titleCtrl.text.trim(),
+          body: _bodyCtrl.text,
+          isShared: _isShared,
+          remindAt: _remindAt,
         );
+        await widget.repo.update(updatedNote);
+        savedNote = updatedNote;
       } else {
         // Create new
-        await widget.repo.insert(
+        savedNote = await widget.repo.insert(
           title: _titleCtrl.text.trim(),
           body: _bodyCtrl.text,
           isShared: _isShared,
           remindAt: _remindAt,
         );
       }
+
       if (mounted) {
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(savedNote);
       }
     } catch (e) {
       if (mounted) {
@@ -129,10 +132,13 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             // Title
             TextField(
               controller: _titleCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Titel',
-                prefixIcon: Icon(Icons.note_outlined),
+                prefixIcon: const Icon(Icons.note_outlined),
                 hintText: 'Bijv. Boodschappenlijst',
+                hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -140,10 +146,13 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             // Body
             TextField(
               controller: _bodyCtrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Inhoud',
-                prefixIcon: Icon(Icons.description_outlined),
+                prefixIcon: const Icon(Icons.description_outlined),
                 hintText: 'Notitie inhoud (markdown ondersteund)',
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 alignLabelWithHint: true,
               ),
               minLines: 8,

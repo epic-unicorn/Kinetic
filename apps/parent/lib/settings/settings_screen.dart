@@ -1,23 +1,34 @@
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../db/app_database.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import '../main.dart';
 import 'settings_repository.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
+  final AppDatabase db;
   final WebDavConfigRepository configRepo;
   final SettingsRepository settingsRepo;
+  final VoidCallback? onConfigSaved;
 
   const SettingsScreen({
     super.key,
+    required this.db,
     required this.configRepo,
     required this.settingsRepo,
+    this.onConfigSaved,
   });
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,28 +36,47 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const _SectionHeader(label: 'Uiterlijk'),
-          ListTile(
-            leading: const Icon(Icons.palette_outlined, color: kColorTeal),
-            title: const Text('Thema'),
-            subtitle: const Text('Kies een kleurschema'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showThemeSelector(context),
+          ValueListenableBuilder<AppTheme>(
+            valueListenable: themeNotifier,
+            builder: (context, currentTheme, _) => ListTile(
+              leading: const Icon(Icons.palette_outlined, color: kColorTeal),
+              title: const Text('Thema'),
+              subtitle: Text(currentTheme.label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showThemeSelector(context),
+            ),
           ),
           const _SectionHeader(label: 'Synchronisatie'),
-          ListTile(
-            leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
-            title: const Text('WebDAV configureren'),
-            subtitle: const Text('Verbind met een Nextcloud- of WebDAV-server'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => WebDavSetupScreen(configRepo: configRepo),
-              ),
-            ),
+          FutureBuilder<SyncConfig?>(
+            future: widget.configRepo.load(),
+            builder: (context, snapshot) {
+              final isConfigured = snapshot.data != null;
+              return ListTile(
+                leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
+                title: const Text('WebDAV configureren'),
+                subtitle: Text(
+                  isConfigured
+                      ? 'Verbonden'
+                      : 'Verbind met een Nextcloud- of WebDAV-server',
+                ),
+                trailing: isConfigured
+                    ? const Icon(Icons.check_circle, color: kColorTeal)
+                    : const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => WebDavSetupScreen(
+                      db: widget.db,
+                      configRepo: widget.configRepo,
+                      onConfigSaved: widget.onConfigSaved,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           const _SectionHeader(label: 'Over'),
           ListTile(
-            leading: const Icon(Icons.info_outline, color: kColorWarmGrey),
+            leading: const Icon(Icons.info_outline, color: kColorTeal),
             title: const Text('Kinetic Link'),
             subtitle: const Text('Versie 2.0.0'),
           ),
@@ -71,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (newTheme) async {
                   if (newTheme != null) {
                     themeNotifier.value = newTheme;
-                    await settingsRepo.saveTheme(newTheme);
+                    await widget.settingsRepo.saveTheme(newTheme);
                     if (context.mounted) {
                       Navigator.pop(dialogContext);
                     }
@@ -90,9 +120,16 @@ class SettingsScreen extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class WebDavSetupScreen extends StatefulWidget {
+  final AppDatabase db;
   final WebDavConfigRepository configRepo;
+  final VoidCallback? onConfigSaved;
 
-  const WebDavSetupScreen({super.key, required this.configRepo});
+  const WebDavSetupScreen({
+    super.key,
+    required this.db,
+    required this.configRepo,
+    this.onConfigSaved,
+  });
 
   @override
   State<WebDavSetupScreen> createState() => _WebDavSetupScreenState();
@@ -187,17 +224,18 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         // New account — generate fresh keys.
         personalKey = KineticEncryption.generatePersonalKey();
         familyKey = KineticEncryption.generateFamilyKey();
-        // Also provision the directory tree for a new account.
-        final client = WebDavClient(
-          baseUrl: serverUrl,
-          username: username,
-          password: password,
-        );
-        try {
-          await WebDavEnrollment.setupDirectories(client, username);
-        } finally {
-          client.dispose();
-        }
+      }
+
+      // Always ensure directories exist (needed for both new and updated configs)
+      final client = WebDavClient(
+        baseUrl: serverUrl,
+        username: username,
+        password: password,
+      );
+      try {
+        await WebDavEnrollment.setupDirectories(client, username);
+      } finally {
+        client.dispose();
       }
 
       await widget.configRepo.save(
@@ -210,10 +248,25 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         ),
       );
 
+      // Mark all existing non-deleted items as dirty so they'll be synced to the server
+      if (_existing == null) {
+        // Only do this on first-time setup, not on edits
+        // Include items with syncState='clean' or NULL (for items created before sync was added)
+        await (widget.db.update(
+              widget.db.personalTasks,
+            )..where((t) => t.syncState.equals('clean') | t.syncState.isNull()))
+            .write(PersonalTasksCompanion(syncState: const Value('dirty')));
+        await (widget.db.update(
+              widget.db.personalNotes,
+            )..where((n) => n.syncState.equals('clean') | n.syncState.isNull()))
+            .write(PersonalNotesCompanion(syncState: const Value('dirty')));
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('WebDAV-configuratie opgeslagen.')),
         );
+        widget.onConfigSaved?.call();
         Navigator.of(context).pop();
       }
     } on Exception catch (e) {

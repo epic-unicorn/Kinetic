@@ -8,10 +8,14 @@ import '../models/personal_note.dart';
 class NoteRepository {
   final AppDatabase _db;
   final NotificationService? _notifications;
+  final void Function()? onWrite;
 
-  NoteRepository({required AppDatabase db, NotificationService? notifications})
-    : _db = db,
-      _notifications = notifications;
+  NoteRepository({
+    required AppDatabase db,
+    NotificationService? notifications,
+    this.onWrite,
+  }) : _db = db,
+       _notifications = notifications;
 
   /// All notes, ordered by creation date (newest first).
   /// Excludes soft-deleted notes (syncState='deleted').
@@ -46,6 +50,7 @@ class NoteRepository {
       );
       await _db.into(_db.personalNotes).insert(_noteToCompanion(note));
       await _scheduleReminderFor(note);
+      onWrite?.call();
       return note;
     } catch (e) {
       rethrow;
@@ -61,6 +66,7 @@ class NoteRepository {
       // Cancel old reminder, schedule new one.
       await _notifications?.cancelReminder(_notifId(note.id));
       await _scheduleReminderFor(note);
+      onWrite?.call();
     } catch (e) {
       rethrow;
     }
@@ -78,6 +84,7 @@ class NoteRepository {
           updatedAt: Value(DateTime.now().toUtc()),
         ),
       );
+      onWrite?.call();
     } catch (e) {
       rethrow;
     }

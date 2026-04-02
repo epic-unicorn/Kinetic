@@ -129,7 +129,9 @@ class SyncOrchestrator {
             updatedAt: Value(DateTime.now()),
           ),
         );
-      } catch (_) {
+      } catch (e) {
+        // Log the error instead of silently failing
+        print('Error pushing note ${row.id}: $e');
         // Leave dirty for next cycle.
       }
     }

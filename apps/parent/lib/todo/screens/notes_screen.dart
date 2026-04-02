@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart';
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
 import '../services/note_repository.dart';
@@ -8,8 +9,9 @@ import 'note_editor_screen.dart';
 /// Screen that displays all notes in a scrollable list with create/edit/delete.
 class NotesScreen extends StatefulWidget {
   final NoteRepository repo;
+  final ValueNotifier<SyncStatus>? syncStatus;
 
-  const NotesScreen({super.key, required this.repo});
+  const NotesScreen({super.key, required this.repo, this.syncStatus});
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -19,7 +21,34 @@ class _NotesScreenState extends State<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Notities'), centerTitle: false),
+      appBar: AppBar(
+        title: const Text('Notities'),
+        centerTitle: false,
+        actions: [
+          if (widget.syncStatus != null)
+            ValueListenableBuilder<SyncStatus>(
+              valueListenable: widget.syncStatus!,
+              builder: (context, status, _) => switch (status) {
+                SyncStatus.syncing => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                SyncStatus.error => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Icon(Icons.sync_problem_outlined),
+                  ),
+                SyncStatus.idle => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Icon(Icons.cloud_done_outlined),
+                  ),
+              },
+            ),
+        ],
+      ),
       body: StreamBuilder(
         stream: widget.repo.watchAll(),
         builder: (context, snapshot) {

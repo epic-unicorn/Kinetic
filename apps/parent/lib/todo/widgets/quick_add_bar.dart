@@ -72,7 +72,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(top: BorderSide(color: kColorWarmGrey.withAlpha(40))),
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline.withAlpha(40))),
       ),
       child: SafeArea(
         top: false,
@@ -88,14 +88,14 @@ class _QuickAddBarState extends State<QuickAddBar> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _hasText ? kColorTeal : kColorWarmGrey,
+                    color: _hasText ? kColorTeal : Theme.of(context).colorScheme.outlineVariant,
                     width: 2,
                   ),
                   color: _hasText ? kColorTeal : Colors.transparent,
                 ),
                 child: _hasText
                     ? const Icon(Icons.add, size: 18, color: Colors.white)
-                    : const Icon(Icons.add, size: 18, color: kColorWarmGrey),
+                    : Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.outlineVariant),
               ),
             ),
             const SizedBox(width: 12),
@@ -105,8 +105,11 @@ class _QuickAddBarState extends State<QuickAddBar> {
               child: TextField(
                 controller: _ctrl,
                 style: Theme.of(context).textTheme.bodyLarge,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Nieuwe taak…',
+                  hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -117,7 +120,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
 
             // Expand to full detail
             IconButton(
-              icon: const Icon(Icons.expand_less, color: kColorWarmGrey),
+              icon: Icon(Icons.expand_less, color: Theme.of(context).colorScheme.onSurfaceVariant),
               tooltip: 'Meer opties',
               onPressed: _openFull,
             ),

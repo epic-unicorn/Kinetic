@@ -80,18 +80,20 @@ class _PartnerScreenState extends State<PartnerScreen> {
               children: [
                 Icon(
                   Icons.inbox_outlined,
-                  size: 48,
+                  size: 56,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No proposals',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   'Your partner hasn\'t suggested any tasks yet.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),

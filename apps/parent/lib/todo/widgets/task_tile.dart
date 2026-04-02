@@ -149,7 +149,7 @@ class _TaskTileContent extends StatelessWidget {
                       decoration: task.isCompleted
                           ? TextDecoration.lineThrough
                           : null,
-                      color: task.isCompleted ? kColorWarmGrey : kColorOffWhite,
+                      color: task.isCompleted ? Theme.of(context).colorScheme.onSurfaceVariant : null,
                     ),
                   ),
                   if (hasDate || task.notes != null) ...[
@@ -162,13 +162,13 @@ class _TaskTileContent extends StatelessWidget {
                             style: tt.labelSmall?.copyWith(
                               color: overdue
                                   ? Colors.redAccent
-                                  : kColorWarmGrey,
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         if (hasDate && task.notes != null)
-                          const Text(
+                          Text(
                             ' · ',
-                            style: TextStyle(color: kColorWarmGrey),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         if (task.notes != null)
                           Expanded(
@@ -177,7 +177,7 @@ class _TaskTileContent extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: tt.labelSmall?.copyWith(
-                                color: kColorWarmGrey,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),

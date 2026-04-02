@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
@@ -13,8 +14,9 @@ import '../../todo/widgets/task_tile.dart';
 
 class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
+  final ValueNotifier<SyncStatus>? syncStatus;
 
-  const TasksScreen({super.key, required this.repo});
+  const TasksScreen({super.key, required this.repo, this.syncStatus});
 
   @override
   State<TasksScreen> createState() => _TasksScreenState();
@@ -43,6 +45,11 @@ class _TasksScreenState extends State<TasksScreen>
         title: const Text('Taken'),
         centerTitle: false,
         actions: [
+          if (widget.syncStatus != null)
+            ValueListenableBuilder<SyncStatus>(
+              valueListenable: widget.syncStatus!,
+              builder: (context, status, _) => _SyncIcon(status: status),
+            ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => showModalBottomSheet(
@@ -69,6 +76,31 @@ class _TasksScreenState extends State<TasksScreen>
         ],
       ),
       bottomSheet: QuickAddBar(repo: widget.repo),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sync icon
+// ---------------------------------------------------------------------------
+
+class _SyncIcon extends StatelessWidget {
+  final SyncStatus status;
+  const _SyncIcon({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: switch (status) {
+        SyncStatus.syncing => const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        SyncStatus.error => const Icon(Icons.sync_problem_outlined),
+        SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
+      },
     );
   }
 }
@@ -143,7 +175,7 @@ class _CompletedTasksTab extends StatelessWidget {
                 icon: const Icon(Icons.delete_sweep_outlined, size: 16),
                 label: const Text('Verwijder alles'),
                 style: TextButton.styleFrom(
-                  foregroundColor: kColorWarmGrey,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   textStyle: const TextStyle(fontSize: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
@@ -200,6 +232,7 @@ class _EmptyOpen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -207,14 +240,21 @@ class _EmptyOpen extends StatelessWidget {
           Icon(
             Icons.check_circle_outline,
             size: 56,
-            color: kColorWarmGrey.withAlpha(80),
+            color: scheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Alles klaar!',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: kColorWarmGrey),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Je hebt geen openstaande taken',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -227,6 +267,7 @@ class _EmptyCompleted extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -234,14 +275,21 @@ class _EmptyCompleted extends StatelessWidget {
           Icon(
             Icons.inbox_outlined,
             size: 56,
-            color: kColorWarmGrey.withAlpha(80),
+            color: scheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Geen voltooide taken',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: kColorWarmGrey),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Voltooide taken verschijnen hier',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

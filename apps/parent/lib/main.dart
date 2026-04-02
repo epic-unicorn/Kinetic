@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
@@ -21,6 +23,8 @@ import 'todo/services/todo_repository.dart';
 
 // Global theme notifier — allows theme changes from anywhere in the app
 final themeNotifier = ValueNotifier<AppTheme>(AppTheme.dark);
+
+enum SyncStatus { idle, syncing, error }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +86,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final PartnerLoadRepository _loadRepository;
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
+  final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
+  Timer? _syncDebounce;
 
   int _selectedIndex = 0;
 
@@ -90,8 +96,16 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _notifSvc = ParentNotificationService();
-    _todoRepository = TodoRepository(db: widget.db, notifications: _notifSvc);
-    _noteRepository = NoteRepository(db: widget.db, notifications: _notifSvc);
+    _todoRepository = TodoRepository(
+      db: widget.db,
+      notifications: _notifSvc,
+      onWrite: _scheduleDebouncedSync,
+    );
+    _noteRepository = NoteRepository(
+      db: widget.db,
+      notifications: _notifSvc,
+      onWrite: _scheduleDebouncedSync,
+    );
     _proposalRepository = PartnerProposalRepository(db: widget.db);
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
 
@@ -122,20 +136,40 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       // Note: client is kept alive for the duration of the app lifecycle
       // It will be cleaned up when the app terminates
 
-      _syncOrchestrator!.sync(); // fire-and-forget initial sync
+      _triggerSync(); // fire-and-forget initial sync
+    } else {
+      syncStatus.value = SyncStatus.idle;
     }
+  }
+
+  Future<void> _triggerSync() async {
+    if (_syncOrchestrator == null) return;
+    syncStatus.value = SyncStatus.syncing;
+    try {
+      await _syncOrchestrator!.sync();
+      syncStatus.value = SyncStatus.idle;
+    } catch (e) {
+      print('Sync error: $e');
+      syncStatus.value = SyncStatus.error;
+    }
+  }
+
+  void _scheduleDebouncedSync() {
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(seconds: 3), _triggerSync);
   }
 
   /// Trigger a sync whenever the app returns to the foreground.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _syncOrchestrator?.sync();
+      _triggerSync();
     }
   }
 
   @override
   void dispose() {
+    _syncDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     widget.db.close();
     super.dispose();
@@ -144,15 +178,17 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      TasksScreen(repo: _todoRepository),
+      TasksScreen(repo: _todoRepository, syncStatus: syncStatus),
       PartnerScreen(
         proposalRepository: _proposalRepository,
         loadRepository: _loadRepository,
       ),
-      NotesScreen(repo: _noteRepository),
+      NotesScreen(repo: _noteRepository, syncStatus: syncStatus),
       SettingsScreen(
+        db: widget.db,
         configRepo: _webDavConfig,
         settingsRepo: widget.settingsRepo,
+        onConfigSaved: _initSync,
       ),
     ];
 
