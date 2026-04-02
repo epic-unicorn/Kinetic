@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
-        android:label="Kinetic Kids"
+        android:label="Kinetic - Kids"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

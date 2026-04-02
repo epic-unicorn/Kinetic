@@ -128,6 +128,7 @@ class _OpenTasksTab extends StatelessWidget {
         }
 
         final items = <Widget>[];
+        items.add(const SizedBox(height: 8));
         for (var i = 0; i < open.length; i++) {
           items.add(TaskTile(task: open[i], repo: repo));
           if (i < open.length - 1) items.add(_divider);
@@ -165,6 +166,7 @@ class _CompletedTasksTab extends StatelessWidget {
         final items = <Widget>[];
 
         // ── Delete all button ──────────────────────────────────────────────
+        items.add(const SizedBox(height: 8));
         items.add(
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),

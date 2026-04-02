@@ -124,8 +124,9 @@ class _NotesScreenState extends State<NotesScreen> {
 
           return ValueListenableBuilder<bool>(
             valueListenable: widget.hasFamilyKey ?? ValueNotifier(false),
-            builder: (context, paired, _) => ListView.builder(
+            builder: (context, paired, _) => ListView.separated(
               itemCount: notes.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, i) => _NoteTile(
                 note: notes[i],
                 repo: widget.repo,
@@ -140,7 +141,10 @@ class _NotesScreenState extends State<NotesScreen> {
           final messenger = ScaffoldMessenger.of(context);
           final result = await Navigator.of(context).push<PersonalNote?>(
             MaterialPageRoute(
-              builder: (_) => NoteEditorScreen(repo: widget.repo),
+              builder: (_) => NoteEditorScreen(
+                repo: widget.repo,
+                hasFamilyKey: widget.hasFamilyKey?.value ?? false,
+              ),
             ),
           );
           if (mounted && result != null) {
@@ -173,34 +177,35 @@ class _NoteTile extends StatelessWidget {
         : note.body;
 
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       title: Text(note.title),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             preview,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           Row(
             children: [
               if (note.remindAt != null) ...[
                 Icon(Icons.alarm, size: 14, color: kColorGold),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   formatDueDate(note.remindAt!),
                   style: Theme.of(
                     context,
                   ).textTheme.labelSmall?.copyWith(color: kColorGold),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
               ],
               if (note.isShared && showSharedBadge) ...[
                 Icon(Icons.lock, size: 14, color: kColorTeal),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   'Gedeeld',
                   style: Theme.of(
@@ -215,7 +220,11 @@ class _NoteTile extends StatelessWidget {
       onTap: () async {
         final result = await Navigator.of(context).push<PersonalNote?>(
           MaterialPageRoute(
-            builder: (_) => NoteEditorScreen(repo: repo, note: note),
+            builder: (_) => NoteEditorScreen(
+              repo: repo,
+              note: note,
+              hasFamilyKey: showSharedBadge,
+            ),
           ),
         );
         if (context.mounted && result != null) {

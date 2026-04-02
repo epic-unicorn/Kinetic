@@ -7,8 +7,14 @@ import '../services/note_repository.dart';
 class NoteEditorScreen extends StatefulWidget {
   final NoteRepository repo;
   final PersonalNote? note;
+  final bool hasFamilyKey;
 
-  const NoteEditorScreen({super.key, required this.repo, this.note});
+  const NoteEditorScreen({
+    super.key,
+    required this.repo,
+    this.note,
+    this.hasFamilyKey = false,
+  });
 
   @override
   State<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -182,9 +188,13 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             // Is Shared toggle
             SwitchListTile(
               title: const Text('Gedeeld met partner'),
-              subtitle: const Text('Versleuteld met gezinssleutel'),
+              subtitle: Text(
+                widget.hasFamilyKey
+                    ? 'Versleuteld met gezinssleutel'
+                    : 'Koppel eerst met je partner',
+              ),
               value: _isShared,
-              onChanged: (v) => setState(() => _isShared = v),
+              onChanged: widget.hasFamilyKey ? (v) => setState(() => _isShared = v) : null,
               secondary: const Icon(Icons.lock_outlined),
             ),
             const SizedBox(height: 28),

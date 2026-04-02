@@ -96,7 +96,7 @@ class _TaskTileContent extends StatelessWidget {
       onTap: () => _openDetail(context),
       onLongPress: () => _showContextMenu(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,9 +118,22 @@ class _TaskTileContent extends StatelessWidget {
                           color: task.priority != TaskPriority.none
                               ? priorityColor(task.priority)
                               : kColorWarmGrey,
-                          width: 2,
+                          width: task.priority == TaskPriority.high ? 2.5 : 2,
                         ),
-                  color: task.isCompleted ? kColorTeal : Colors.transparent,
+                  color: task.isCompleted
+                      ? kColorTeal
+                      : (task.priority != TaskPriority.none
+                          ? priorityColor(task.priority).withAlpha(30)
+                          : Colors.transparent),
+                  boxShadow: task.priority != TaskPriority.none && !task.isCompleted
+                      ? [
+                          BoxShadow(
+                            color: priorityColor(task.priority).withAlpha(50),
+                            blurRadius: 4,
+                            spreadRadius: 0,
+                          ),
+                        ]
+                      : null,
                 ),
                 child: task.isCompleted
                     ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -129,9 +142,10 @@ class _TaskTileContent extends StatelessWidget {
                               child: Text(
                                 priorityLabel(task.priority),
                                 style: TextStyle(
-                                  fontSize: 8,
+                                  fontSize: 9,
                                   color: priorityColor(task.priority),
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             )

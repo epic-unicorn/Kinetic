@@ -31,9 +31,9 @@ Color priorityColor(TaskPriority p) => switch (p) {
 };
 
 String priorityLabel(TaskPriority p) => switch (p) {
-  TaskPriority.high => '!!!',
-  TaskPriority.medium => '!!',
-  TaskPriority.low => '!',
+  TaskPriority.high => 'H',
+  TaskPriority.medium => 'M',
+  TaskPriority.low => 'L',
   TaskPriority.none => '',
 };
 
