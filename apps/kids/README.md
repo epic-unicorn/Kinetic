@@ -17,6 +17,8 @@ On startup and every app resume:
 3. Tasks are merged into local SQLite (Last-Write-Wins on `updatedAt`)
 4. Locally-completed tasks are pushed back to WebDAV
 
+**First-time sync**: If the local database is empty and remote files exist, all tasks are imported. Any subsequent local/remote changes use Last-Write-Wins merge.
+
 ## Development
 
 ```bash

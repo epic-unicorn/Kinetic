@@ -9,7 +9,7 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 | **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence. |
 | **Partner** | Incoming task proposals (accept/snooze/dismiss) + family workload metrics. |
 | **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. |
-| **Instellingen** | WebDAV config, connection test, personal & family key export/import, theme selector. |
+| **Instellingen** | WebDAV config, connection test, theme selector. **Back-up & Herstel** section for recovery key export/import. |
 
 ## Development
 
@@ -48,6 +48,19 @@ lib/
     ├── proposals/{id}.ics     — partner proposals (family key)
     └── tasks/                 — assigned kids tasks (family key)
 ```
+
+## Data Migration & Recovery
+
+When configuring WebDAV or upgrading with existing server data:
+
+1. **Automatic detection**: App detects remote tasks/notes without decrypting them
+2. **User choice**: Dialog offers to import (re-encrypt with new key) or cleanup (delete old data)
+3. **Key recovery**: Export/import recovery keys in Settings **Back-up & Herstel** for multi-device access
+
+The recovery key is your personal AES-256 key in JSON format. Export it to enable:
+- Importing on new devices to access old encrypted data
+- Disaster recovery if the local key is lost
+- Manual backup of your encryption key
 
 ## Backlog
 
