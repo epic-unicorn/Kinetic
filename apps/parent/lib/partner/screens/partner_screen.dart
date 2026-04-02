@@ -36,7 +36,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
               _showLoadMetrics ? Icons.assessment : Icons.assessment_outlined,
             ),
             onPressed: _toggleLoadMetrics,
-            tooltip: 'Family workload metrics',
+            tooltip: 'Familie taakverdeling',
           ),
         ],
       ),
@@ -65,7 +65,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(height: 16),
-                Text('Error loading proposals'),
+                Text('Fout bij laden van voorstellen'),
               ],
             ),
           );
@@ -85,14 +85,14 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No proposals',
+                  'Geen voorstellen',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your partner hasn\'t suggested any tasks yet.',
+                  'Je partner heeft nog geen taken voorgesteld.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -200,17 +200,17 @@ class _PartnerScreenState extends State<PartnerScreen> {
               children: [
                 TextButton(
                   onPressed: () => _dismissProposal(proposal.id),
-                  child: const Text('Dismiss'),
+                  child: const Text('Afwijzen'),
                 ),
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: () => _snoozeProposal(proposal.id),
-                  child: const Text('Snooze'),
+                  child: const Text('Later'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.check),
-                  label: const Text('Accept'),
+                  label: const Text('Accepteren'),
                   onPressed: () => _acceptProposal(proposal.id),
                 ),
               ],
@@ -225,7 +225,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
     if (widget.loadRepository == null) {
       return Center(
         child: Text(
-          'Load metrics unavailable',
+          'Taakverdeling niet beschikbaar',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       );
@@ -248,7 +248,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No family data',
+                  'Geen familiedata',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
@@ -287,12 +287,12 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    metric.parentName ?? 'Unknown Parent',
+                    metric.parentName ?? 'Onbekende ouder',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 Text(
-                  '${metric.taskCount} tasks',
+                  '${metric.taskCount} taken',
                   style: Theme.of(
                     context,
                   ).textTheme.titleSmall?.copyWith(color: scheme.primary),
@@ -326,7 +326,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                             ?.copyWith(color: scheme.primary),
                       ),
                       Text(
-                        'Categories',
+                        'Categorieën',
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ],
@@ -337,7 +337,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
             if ((metric.tasksByCategory?.isNotEmpty ?? false)) ...[
               const SizedBox(height: 12),
               Text(
-                'By Category',
+                'Per categorie',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -374,7 +374,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Proposal accepted')));
+      ).showSnackBar(const SnackBar(content: Text('Voorstel geaccepteerd')));
     }
   }
 
@@ -383,7 +383,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Proposal snoozed')));
+      ).showSnackBar(const SnackBar(content: Text('Voorstel uitgesteld')));
     }
   }
 
@@ -392,7 +392,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Proposal dismissed')));
+      ).showSnackBar(const SnackBar(content: Text('Voorstel afgewezen')));
     }
   }
 
@@ -410,9 +410,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
   String _formatDate(DateTime date) {
     final today = DateTime.now();
     final diff = date.difference(today).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
-    if (diff < 7) return 'In $diff days';
+    if (diff == 0) return 'Vandaag';
+    if (diff == 1) return 'Morgen';
+    if (diff < 7) return 'Over $diff dagen';
     return '${date.month}/${date.day}';
   }
 }

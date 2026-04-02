@@ -92,6 +92,13 @@ class WebDavConfigRepository {
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
   }
 
+  /// Removes the family key without touching any other config fields.
+  ///
+  /// Call this when leaving the family pairing.
+  Future<void> clearFamilyKey() async {
+    await _store.delete(key: _kFamilyKey);
+  }
+
   // ---------------------------------------------------------------------------
   // Delete
   // ---------------------------------------------------------------------------

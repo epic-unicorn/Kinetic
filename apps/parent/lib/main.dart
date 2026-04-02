@@ -87,6 +87,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
+  final hasFamilyKey = ValueNotifier<bool>(false);
   Timer? _syncDebounce;
 
   int _selectedIndex = 0;
@@ -117,6 +118,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   Future<void> _initSync() async {
     final config = await _webDavConfig.load();
+    hasFamilyKey.value = config?.familyKeyBytes != null;
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
 
@@ -177,49 +179,65 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final screens = [
-      TasksScreen(repo: _todoRepository, syncStatus: syncStatus),
-      PartnerScreen(
-        proposalRepository: _proposalRepository,
-        loadRepository: _loadRepository,
-      ),
-      NotesScreen(repo: _noteRepository, syncStatus: syncStatus),
-      SettingsScreen(
-        db: widget.db,
-        configRepo: _webDavConfig,
-        settingsRepo: widget.settingsRepo,
-        onConfigSaved: _initSync,
-      ),
-    ];
+    return ValueListenableBuilder<bool>(
+      valueListenable: hasFamilyKey,
+      builder: (context, paired, _) {
+        final screens = <Widget>[
+          TasksScreen(repo: _todoRepository, syncStatus: syncStatus),
+          if (paired)
+            PartnerScreen(
+              proposalRepository: _proposalRepository,
+              loadRepository: _loadRepository,
+            ),
+          NotesScreen(
+            repo: _noteRepository,
+            syncStatus: syncStatus,
+            hasFamilyKey: hasFamilyKey,
+          ),
+          SettingsScreen(
+            db: widget.db,
+            configRepo: _webDavConfig,
+            settingsRepo: widget.settingsRepo,
+            onConfigSaved: _initSync,
+          ),
+        ];
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        destinations: const [
-          NavigationDestination(
+        final destinations = <NavigationDestination>[
+          const NavigationDestination(
             icon: Icon(Icons.check_circle_outline),
             selectedIcon: Icon(Icons.check_circle),
             label: 'Taken',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Partner',
-          ),
-          NavigationDestination(
+          if (paired)
+            const NavigationDestination(
+              icon: Icon(Icons.people_outline),
+              selectedIcon: Icon(Icons.people),
+              label: 'Partner',
+            ),
+          const NavigationDestination(
             icon: Icon(Icons.note_outlined),
             selectedIcon: Icon(Icons.note),
             label: 'Notities',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: 'Instellingen',
           ),
-        ],
-      ),
+        ];
+
+        // Clamp selected index in case the partner tab disappears
+        final clampedIndex = _selectedIndex.clamp(0, screens.length - 1);
+
+        return Scaffold(
+          body: IndexedStack(index: clampedIndex, children: screens),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: clampedIndex,
+            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+            destinations: destinations,
+          ),
+        );
+      },
     );
   }
 }

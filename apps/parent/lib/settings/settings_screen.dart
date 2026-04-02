@@ -8,6 +8,7 @@ import '../db/app_database.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import '../main.dart';
+import 'family_screen.dart';
 import 'settings_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -29,8 +30,22 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  SyncConfig? _config;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    final config = await widget.configRepo.load();
+    if (mounted) setState(() => _config = config);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isConnected = _config != null;
     return Scaffold(
       appBar: AppBar(title: const Text('Instellingen'), centerTitle: false),
       body: ListView(
@@ -47,33 +62,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const _SectionHeader(label: 'Synchronisatie'),
-          FutureBuilder<SyncConfig?>(
-            future: widget.configRepo.load(),
-            builder: (context, snapshot) {
-              final isConfigured = snapshot.data != null;
-              return ListTile(
-                leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
-                title: const Text('WebDAV configureren'),
-                subtitle: Text(
-                  isConfigured
-                      ? 'Verbonden'
-                      : 'Verbind met een Nextcloud- of WebDAV-server',
+          ListTile(
+            leading: const Icon(Icons.cloud_outlined, color: kColorTeal),
+            title: const Text('WebDAV configureren'),
+            subtitle: Text(
+              isConnected
+                  ? 'Verbonden'
+                  : 'Verbind met een Nextcloud- of WebDAV-server',
+            ),
+            trailing: isConnected
+                ? const Icon(Icons.check_circle, color: kColorTeal)
+                : const Icon(Icons.chevron_right),
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => WebDavSetupScreen(
+                    db: widget.db,
+                    configRepo: widget.configRepo,
+                    onConfigSaved: widget.onConfigSaved,
+                  ),
                 ),
-                trailing: isConfigured
-                    ? const Icon(Icons.check_circle, color: kColorTeal)
-                    : const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
+              );
+              _loadConfig();
+            },
+          ),
+          if (isConnected) ...[
+            const _SectionHeader(label: 'Familie'),
+            ListTile(
+              leading: const Icon(Icons.people_outline, color: kColorTeal),
+              title: const Text('Familie'),
+              subtitle: Text(
+                _config?.familyKeyBytes != null
+                    ? 'Partner gekoppeld'
+                    : 'Koppel met je partner',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                await Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => WebDavSetupScreen(
+                    builder: (_) => FamilyScreen(
                       db: widget.db,
                       configRepo: widget.configRepo,
                       onConfigSaved: widget.onConfigSaved,
                     ),
                   ),
-                ),
-              );
-            },
-          ),
+                );
+                _loadConfig();
+              },
+            ),
+          ],
           const _SectionHeader(label: 'Over'),
           ListTile(
             leading: const Icon(Icons.info_outline, color: kColorTeal),
@@ -212,19 +249,25 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
 
       // Only generate keys the first time; preserve existing keys on an edit.
       final Uint8List personalKey;
-      final Uint8List familyKey;
       if (_existing != null &&
           _existing!.username == username &&
           _existing!.serverUrl == serverUrl) {
-        // Reuse existing keys.
+        // Reuse existing personal key. Never overwrite the family key here —
+        // it is set exclusively via the QR exchange flow.
         personalKey = _existing!.personalKeyBytes;
-        familyKey =
-            _existing!.familyKeyBytes ?? KineticEncryption.generateFamilyKey();
       } else {
-        // New account — generate fresh keys.
+        // New account — generate only the personal key.
+        // Family key is NOT generated here; it is exchanged via QR pairing.
         personalKey = KineticEncryption.generatePersonalKey();
-        familyKey = KineticEncryption.generateFamilyKey();
       }
+
+      // Preserve any previously exchanged family key when editing credentials.
+      final existingFamilyKey =
+          (_existing != null &&
+              _existing!.username == username &&
+              _existing!.serverUrl == serverUrl)
+          ? _existing!.familyKeyBytes
+          : null; // new account starts without a family key
 
       // Always ensure directories exist (needed for both new and updated configs)
       final client = WebDavClient(
@@ -244,7 +287,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           username: username,
           password: password,
           personalKeyBytes: personalKey,
-          familyKeyBytes: familyKey,
+          familyKeyBytes: existingFamilyKey,
         ),
       );
 
@@ -306,117 +349,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _exportFamilyKey() async {
-    if (_existing == null) return;
-    final familyKey = _existing!.familyKeyBytes;
-    if (familyKey == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nog geen familiesleutel ingesteld.')),
-      );
-      return;
-    }
-    final json = KineticEncryption.exportFamilyKeyJson(
-      familyKey,
-      _existing!.username,
-    );
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Familiesleutel'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Deel deze sleutel met je partner. '
-                'Bewaar hem veilig — iedereen met deze sleutel kan '
-                'gedeelde taken en notities lezen.',
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                json,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Sluiten'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _importFamilyKey() async {
-    if (_existing == null) return;
-    final controller = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Familiesleutel importeren'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Plak hier de familiesleutel-JSON die je partner heeft geëxporteerd.',
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                maxLines: 8,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: '{\n  "version": 1,\n  ...\n}',
-                ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Importeren'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    try {
-      final familyKey = KineticEncryption.importFamilyKeyJson(
-        controller.text.trim(),
-      );
-      await widget.configRepo.saveFamilyKey(familyKey);
-      // Update in-memory config.
-      setState(() {
-        _existing = _existing!.withFamilyKey(familyKey);
-      });
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Familiesleutel geïmporteerd.')),
-      );
-    } on FormatException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ongeldige sleutel: $e')));
-    }
   }
 
   @override
@@ -531,26 +463,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                   'je data te herstellen als je dit apparaat kwijtraakt.',
                 ),
                 onTap: _exportRecoveryKey,
-              ),
-              ListTile(
-                leading: const Icon(Icons.people_outline, color: kColorTeal),
-                title: const Text('Familiesleutel exporteren'),
-                subtitle: const Text(
-                  'Deel deze sleutel met je partner zodat jullie elkaars '
-                  'gedeelde taken en notities kunnen lezen.',
-                ),
-                onTap: _exportFamilyKey,
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.file_download_outlined,
-                  color: kColorTeal,
-                ),
-                title: const Text('Familiesleutel importeren'),
-                subtitle: const Text(
-                  'Plak de familiesleutel die je van je partner hebt ontvangen.',
-                ),
-                onTap: _importFamilyKey,
               ),
             ],
           ],

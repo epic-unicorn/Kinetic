@@ -209,4 +209,61 @@ class KineticEncryption {
     }
     return Uint8List.fromList(bytes);
   }
+
+  // ---------------------------------------------------------------------------
+  // Family key QR payload (for partner sharing)
+  // ---------------------------------------------------------------------------
+
+  /// Serialises [familyKey] to a compact JSON string suitable for encoding
+  /// in a QR code.
+  ///
+  /// The payload includes [serverUrl] so the scanning device can verify
+  /// the key belongs to the same WebDAV server.
+  ///
+  /// Format:
+  /// ```json
+  /// {"v":1,"url":"https://...","user":"alice","key":"<base64 32 bytes>"}
+  /// ```
+  static String exportFamilyKeyQrPayload(
+    Uint8List familyKey,
+    String serverUrl,
+    String username,
+  ) {
+    return jsonEncode({
+      'v': 1,
+      'url': serverUrl,
+      'user': username,
+      'key': base64.encode(familyKey),
+    });
+  }
+
+  /// Parses a QR payload produced by [exportFamilyKeyQrPayload].
+  ///
+  /// Returns a record with the decoded [familyKey], the [serverUrl] embedded
+  /// in the payload, and the [username] hint.
+  ///
+  /// Throws [FormatException] if the payload is malformed.
+  static ({Uint8List familyKey, String serverUrl, String username})
+      importFamilyKeyQrPayload(String payload) {
+    final Map<String, dynamic> map;
+    try {
+      map = jsonDecode(payload) as Map<String, dynamic>;
+    } catch (e) {
+      throw FormatException('Invalid QR payload: $e');
+    }
+    if (map['v'] != 1) {
+      throw FormatException('Unsupported QR version: ${map["v"]}');
+    }
+    final keyBase64 = map['key'] as String?;
+    if (keyBase64 == null) throw const FormatException('Missing key field');
+    final bytes = base64.decode(keyBase64);
+    if (bytes.length != 32) {
+      throw FormatException('key must be 32 bytes, got ${bytes.length}');
+    }
+    return (
+      familyKey: Uint8List.fromList(bytes),
+      serverUrl: (map['url'] as String?) ?? '',
+      username: (map['user'] as String?) ?? '',
+    );
+  }
 }

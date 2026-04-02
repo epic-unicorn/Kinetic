@@ -10,8 +10,14 @@ import 'note_editor_screen.dart';
 class NotesScreen extends StatefulWidget {
   final NoteRepository repo;
   final ValueNotifier<SyncStatus>? syncStatus;
+  final ValueNotifier<bool>? hasFamilyKey;
 
-  const NotesScreen({super.key, required this.repo, this.syncStatus});
+  const NotesScreen({
+    super.key,
+    required this.repo,
+    this.syncStatus,
+    this.hasFamilyKey,
+  });
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -116,10 +122,16 @@ class _NotesScreenState extends State<NotesScreen> {
             );
           }
 
-          return ListView.builder(
-            itemCount: notes.length,
-            itemBuilder: (context, i) =>
-                _NoteTile(note: notes[i], repo: widget.repo),
+          return ValueListenableBuilder<bool>(
+            valueListenable: widget.hasFamilyKey ?? ValueNotifier(false),
+            builder: (context, paired, _) => ListView.builder(
+              itemCount: notes.length,
+              itemBuilder: (context, i) => _NoteTile(
+                note: notes[i],
+                repo: widget.repo,
+                showSharedBadge: paired,
+              ),
+            ),
           );
         },
       ),
@@ -146,8 +158,13 @@ class _NotesScreenState extends State<NotesScreen> {
 class _NoteTile extends StatelessWidget {
   final PersonalNote note;
   final NoteRepository repo;
+  final bool showSharedBadge;
 
-  const _NoteTile({required this.note, required this.repo});
+  const _NoteTile({
+    required this.note,
+    required this.repo,
+    this.showSharedBadge = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +198,7 @@ class _NoteTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
               ],
-              if (note.isShared) ...[
+              if (note.isShared && showSharedBadge) ...[
                 Icon(Icons.lock, size: 14, color: kColorTeal),
                 const SizedBox(width: 6),
                 Text(
