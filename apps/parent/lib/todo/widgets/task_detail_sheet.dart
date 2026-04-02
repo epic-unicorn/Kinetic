@@ -119,7 +119,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant.withAlpha(80),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withAlpha(80),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -396,8 +398,8 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = active 
-        ? (color ?? kColorTeal) 
+    final effectiveColor = active
+        ? (color ?? kColorTeal)
         : Theme.of(context).colorScheme.onSurfaceVariant;
     return ListTile(
       dense: true,

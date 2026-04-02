@@ -149,7 +149,9 @@ class _TaskTileContent extends StatelessWidget {
                       decoration: task.isCompleted
                           ? TextDecoration.lineThrough
                           : null,
-                      color: task.isCompleted ? Theme.of(context).colorScheme.onSurfaceVariant : null,
+                      color: task.isCompleted
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : null,
                     ),
                   ),
                   if (hasDate || task.notes != null) ...[
@@ -162,13 +164,19 @@ class _TaskTileContent extends StatelessWidget {
                             style: tt.labelSmall?.copyWith(
                               color: overdue
                                   ? Colors.redAccent
-                                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         if (hasDate && task.notes != null)
                           Text(
                             ' · ',
-                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         if (task.notes != null)
                           Expanded(
@@ -177,7 +185,9 @@ class _TaskTileContent extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: tt.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),

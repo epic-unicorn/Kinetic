@@ -30,21 +30,21 @@ class _NotesScreenState extends State<NotesScreen> {
               valueListenable: widget.syncStatus!,
               builder: (context, status, _) => switch (status) {
                 SyncStatus.syncing => const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                ),
                 SyncStatus.error => const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.sync_problem_outlined),
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Icon(Icons.sync_problem_outlined),
+                ),
                 SyncStatus.idle => const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.cloud_done_outlined),
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Icon(Icons.cloud_done_outlined),
+                ),
               },
             ),
         ],

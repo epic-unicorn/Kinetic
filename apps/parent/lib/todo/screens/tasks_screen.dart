@@ -94,10 +94,10 @@ class _SyncIcon extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: switch (status) {
         SyncStatus.syncing => const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
         SyncStatus.error => const Icon(Icons.sync_problem_outlined),
         SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
       },
@@ -175,7 +175,9 @@ class _CompletedTasksTab extends StatelessWidget {
                 icon: const Icon(Icons.delete_sweep_outlined, size: 16),
                 label: const Text('Verwijder alles'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                   textStyle: const TextStyle(fontSize: 12),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
@@ -245,16 +247,16 @@ class _EmptyOpen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Alles klaar!',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: scheme.onSurface,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
             'Je hebt geen openstaande taken',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -272,24 +274,20 @@ class _EmptyCompleted extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 56,
-            color: scheme.onSurfaceVariant,
-          ),
+          Icon(Icons.inbox_outlined, size: 56, color: scheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'Geen voltooide taken',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: scheme.onSurface,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
             'Voltooide taken verschijnen hier',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),

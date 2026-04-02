@@ -181,9 +181,9 @@ class TodoRepository {
   /// Permanently removes all completed tasks (bulk cleanup).
   Future<void> deleteCompletedTasks() async {
     // Soft-delete so the sync orchestrator can remove them from WebDAV.
-    await (_db.update(_db.personalTasks)
-          ..where((t) => t.isCompleted.equals(true)))
-        .write(
+    await (_db.update(
+      _db.personalTasks,
+    )..where((t) => t.isCompleted.equals(true))).write(
       PersonalTasksCompanion(
         syncState: const Value('deleted'),
         updatedAt: Value(DateTime.now().toUtc()),
