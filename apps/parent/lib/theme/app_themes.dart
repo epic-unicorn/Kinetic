@@ -81,12 +81,7 @@ String formatDueDate(DateTime due, {bool allDay = true}) {
 
 bool isOverdue(DateTime due) {
   final now = DateTime.now();
-  final d = due.toLocal();
-  return DateTime(
-    d.year,
-    d.month,
-    d.day,
-  ).isBefore(DateTime(now.year, now.month, now.day));
+  return due.toLocal().isBefore(now);
 }
 
 String _weekday(int w) => const [
@@ -156,12 +151,12 @@ ThemeData _buildLightTheme() {
       centerTitle: false,
     ),
     cardTheme: CardThemeData(
-      color: colorScheme.surfaceContainerLow,
+      color: Colors.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     listTileTheme: ListTileThemeData(
-      tileColor: colorScheme.surfaceContainerLow,
+      tileColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -199,12 +194,12 @@ ThemeData _buildDarkTheme() {
       centerTitle: false,
     ),
     cardTheme: CardThemeData(
-      color: colorScheme.surfaceContainerLow,
+      color: Colors.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     listTileTheme: ListTileThemeData(
-      tileColor: colorScheme.surfaceContainerLow,
+      tileColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -243,12 +238,12 @@ ThemeData _buildCustomTheme() {
       centerTitle: false,
     ),
     cardTheme: CardThemeData(
-      color: kColorCustomMuted.withOpacity(0.5),
+      color: Colors.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     listTileTheme: ListTileThemeData(
-      tileColor: kColorCustomMuted.withOpacity(0.5),
+      tileColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(

@@ -206,6 +206,8 @@ class _NoteTile extends StatelessWidget {
     final preview = note.body.length > 100
         ? '${note.body.substring(0, 100)}…'
         : note.body;
+    final reminderPassed = note.remindAt != null && isOverdue(note.remindAt!);
+    final reminderColor = reminderPassed ? Colors.redAccent : kColorGold;
 
     return Card(
       child: ListTile(
@@ -228,13 +230,13 @@ class _NoteTile extends StatelessWidget {
             Row(
               children: [
                 if (note.remindAt != null) ...[
-                  Icon(Icons.alarm, size: 14, color: kColorGold),
+                  Icon(Icons.alarm, size: 14, color: reminderColor),
                   const SizedBox(width: 8),
                   Text(
                     formatDueDate(note.remindAt!),
                     style: Theme.of(
                       context,
-                    ).textTheme.labelSmall?.copyWith(color: kColorGold),
+                    ).textTheme.labelSmall?.copyWith(color: reminderColor),
                   ),
                   const SizedBox(width: 16),
                 ],

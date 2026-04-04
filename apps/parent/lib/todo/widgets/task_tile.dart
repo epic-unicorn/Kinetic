@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
 import 'task_detail_sheet.dart';
+
+// ---------------------------------------------------------------------------
+// Helper: Task completion feedback (haptic + notification sound)
+// ---------------------------------------------------------------------------
+
+const _channel = MethodChannel('net.moonbaseone.kinetic.parent/audio');
+
+Future<void> _playCompletionFeedback() async {
+  // Haptic feedback
+  HapticFeedback.mediumImpact();
+
+  // Audio feedback — play system notification sound
+  try {
+    await _channel.invokeMethod('playNotificationSound');
+  } catch (e) {
+    // Silently fail if sound doesn't play
+  }
+}
 
 // ---------------------------------------------------------------------------
 // TaskTile — a single personal task row.
@@ -50,6 +69,7 @@ class TaskTile extends StatelessWidget {
             await repo.uncompleteTask(task.id);
           } else {
             await repo.completeTask(task.id);
+            await _playCompletionFeedback();
           }
           return false;
         }
@@ -90,7 +110,7 @@ class TaskTile extends StatelessWidget {
   }
 }
 
-class _TaskTileContent extends StatelessWidget {
+class _TaskTileContent extends StatefulWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
@@ -102,10 +122,24 @@ class _TaskTileContent extends StatelessWidget {
   });
 
   @override
+  State<_TaskTileContent> createState() => _TaskTileContentState();
+}
+
+class _TaskTileContentState extends State<_TaskTileContent> {
+  Future<void> _toggleComplete() async {
+    if (widget.task.isCompleted) {
+      await widget.repo.uncompleteTask(widget.task.id);
+    } else {
+      await widget.repo.completeTask(widget.task.id);
+      await _playCompletionFeedback();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final hasDate = task.dueDate != null;
-    final overdue = hasDate && isOverdue(task.dueDate!) && !task.isCompleted;
+    final hasDate = widget.task.dueDate != null;
+    final overdue = hasDate && isOverdue(widget.task.dueDate!) && !widget.task.isCompleted;
 
     return Card(
       child: InkWell(
@@ -118,9 +152,7 @@ class _TaskTileContent extends StatelessWidget {
             children: [
               // ── Checkbox ────────────────────────────────────────────────────
               GestureDetector(
-                onTap: () => task.isCompleted
-                    ? repo.uncompleteTask(task.id)
-                    : repo.completeTask(task.id),
+                onTap: _toggleComplete,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 24,
@@ -128,31 +160,31 @@ class _TaskTileContent extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 1, right: 12),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: task.isCompleted
+                    border: widget.task.isCompleted
                         ? null
                         : Border.all(
-                            color: task.priority != TaskPriority.none
-                                ? priorityColor(task.priority)
+                            color: widget.task.priority != TaskPriority.none
+                                ? priorityColor(widget.task.priority)
                                 : kColorWarmGrey,
-                            width: task.priority == TaskPriority.high ? 2.5 : 2,
+                            width: widget.task.priority == TaskPriority.high ? 2.5 : 2,
                           ),
-                    color: task.isCompleted
+                    color: widget.task.isCompleted
                         ? kColorTeal
-                        : (task.priority != TaskPriority.none
-                              ? priorityColor(task.priority).withAlpha(30)
+                        : (widget.task.priority != TaskPriority.none
+                              ? priorityColor(widget.task.priority).withAlpha(30)
                               : Colors.transparent),
                     boxShadow:
-                        task.priority != TaskPriority.none && !task.isCompleted
+                        widget.task.priority != TaskPriority.none && !widget.task.isCompleted
                         ? [
                             BoxShadow(
-                              color: priorityColor(task.priority).withAlpha(50),
+                              color: priorityColor(widget.task.priority).withAlpha(50),
                               blurRadius: 4,
                               spreadRadius: 0,
                             ),
                           ]
                         : null,
                   ),
-                  child: task.isCompleted
+                  child: widget.task.isCompleted
                       ? const Icon(Icons.check, size: 14, color: Colors.white)
                       : null,
                 ),
@@ -163,25 +195,25 @@ class _TaskTileContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      task.title,
+                      widget.task.title,
                       style: tt.bodyLarge?.copyWith(
-                        decoration: task.isCompleted
+                        decoration: widget.task.isCompleted
                             ? TextDecoration.lineThrough
                             : null,
-                        color: task.isCompleted
+                        color: widget.task.isCompleted
                             ? Theme.of(context).colorScheme.onSurfaceVariant
                             : null,
                       ),
                     ),
-                    if (hasDate || task.notes != null) ...[
+                    if (hasDate || widget.task.notes != null) ...[
                       const SizedBox(height: 3),
                       Row(
                         children: [
                           if (hasDate)
                             Text(
                               formatDueDate(
-                                task.dueDate!,
-                                allDay: task.isAllDay,
+                                widget.task.dueDate!,
+                                allDay: widget.task.isAllDay,
                               ),
                               style: tt.labelSmall?.copyWith(
                                 color: overdue
@@ -191,7 +223,7 @@ class _TaskTileContent extends StatelessWidget {
                                       ).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          if (hasDate && task.notes != null)
+                          if (hasDate && widget.task.notes != null)
                             Text(
                               ' · ',
                               style: TextStyle(
@@ -200,10 +232,10 @@ class _TaskTileContent extends StatelessWidget {
                                 ).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                          if (task.notes != null)
+                          if (widget.task.notes != null)
                             Expanded(
                               child: Text(
-                                task.notes!,
+                                widget.task.notes!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: tt.labelSmall?.copyWith(
@@ -223,12 +255,12 @@ class _TaskTileContent extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (task.isFlagged)
+                  if (widget.task.isFlagged)
                     const Padding(
                       padding: EdgeInsets.only(left: 6),
                       child: Icon(Icons.flag, size: 16, color: kColorGold),
                     ),
-                  if (task.isPrivate)
+                  if (widget.task.isPrivate)
                     const Padding(
                       padding: EdgeInsets.only(left: 6),
                       child: Icon(
@@ -237,7 +269,7 @@ class _TaskTileContent extends StatelessWidget {
                         color: kColorWarmGrey,
                       ),
                     ),
-                  if (task.recurrenceRule != null)
+                  if (widget.task.recurrenceRule != null)
                     const Padding(
                       padding: EdgeInsets.only(left: 4),
                       child: Icon(
@@ -246,8 +278,8 @@ class _TaskTileContent extends StatelessWidget {
                         color: kColorWarmGrey,
                       ),
                     ),
-                  // ── Mission badge ──────────────────────────────────────────
-                  if (task.kidsTaskId != null)
+                  // ── Mission badge ──────────────────────────────────────
+                  if (widget.task.kidsTaskId != null)
                     const Padding(
                       padding: EdgeInsets.only(left: 6),
                       child: _MissionBadge(),
@@ -267,7 +299,7 @@ class _TaskTileContent extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) =>
-          TaskDetailSheet(task: task, repo: repo, hasFamilyKey: hasFamilyKey),
+          TaskDetailSheet(task: widget.task, repo: widget.repo, hasFamilyKey: widget.hasFamilyKey),
     );
   }
 
@@ -280,24 +312,24 @@ class _TaskTileContent extends StatelessWidget {
           children: [
             ListTile(
               leading: Icon(
-                task.isFlagged ? Icons.flag : Icons.flag_outlined,
+                widget.task.isFlagged ? Icons.flag : Icons.flag_outlined,
                 color: kColorGold,
               ),
-              title: Text(task.isFlagged ? 'Markering verwijderen' : 'Markeer'),
+              title: Text(widget.task.isFlagged ? 'Markering verwijderen' : 'Markeer'),
               onTap: () {
                 Navigator.pop(context);
-                repo.toggleFlag(task.id, flagged: !task.isFlagged);
+                widget.repo.toggleFlag(widget.task.id, flagged: !widget.task.isFlagged);
               },
             ),
             ListTile(
               leading: Icon(
-                task.isPrivate ? Icons.lock_open_outlined : Icons.lock_outline,
+                widget.task.isPrivate ? Icons.lock_open_outlined : Icons.lock_outline,
                 color: kColorWarmGrey,
               ),
-              title: Text(task.isPrivate ? 'Deelbaar maken' : 'Privé maken'),
+              title: Text(widget.task.isPrivate ? 'Deelbaar maken' : 'Privé maken'),
               onTap: () {
                 Navigator.pop(context);
-                repo.togglePrivate(task.id, isPrivate: !task.isPrivate);
+                widget.repo.togglePrivate(widget.task.id, isPrivate: !widget.task.isPrivate);
               },
             ),
             ListTile(
@@ -308,11 +340,11 @@ class _TaskTileContent extends StatelessWidget {
               title: const Text('Taak verwijderen'),
               onTap: () {
                 Navigator.pop(context);
-                repo.deleteTask(task.id);
+                widget.repo.deleteTask(widget.task.id);
               },
             ),
             // Greyed-out placeholder — only shown when connected to a family.
-            if (hasFamilyKey)
+            if (widget.hasFamilyKey)
               ListTile(
                 leading: const Icon(Icons.send_outlined, color: Colors.white24),
                 title: const Text(

@@ -37,7 +37,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   late TaskPriority _priority;
   DateTime? _dueDate;
   bool _isAllDay = true;
-  bool _isFlagged = false;
   bool _isPrivate = false;
   String? _recurrenceRule;
   String? _listId;
@@ -53,7 +52,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     _priority = t?.priority ?? TaskPriority.none;
     _dueDate = t?.dueDate;
     _isAllDay = t?.isAllDay ?? true;
-    _isFlagged = t?.isFlagged ?? false;
     _isPrivate = t?.isPrivate ?? false;
     _recurrenceRule = t?.recurrenceRule;
     _listId = t?.listId ?? widget.initialListId;
@@ -80,7 +78,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         dueDate: _dueDate,
         isAllDay: _isAllDay,
         recurrenceRule: _recurrenceRule,
-        isFlagged: _isFlagged,
         isPrivate: _isPrivate,
       );
     } else {
@@ -92,7 +89,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           dueDate: _dueDate,
           isAllDay: _isAllDay,
           recurrenceRule: _recurrenceRule,
-          isFlagged: _isFlagged,
           isPrivate: _isPrivate,
           listId: _listId,
           clearDueDate: _dueDate == null,
@@ -202,13 +198,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 ? priorityColor(_priority)
                 : null,
             onTap: () => _pickPriority(context),
-          ),
-          _MetaRow(
-            icon: _isFlagged ? Icons.flag : Icons.flag_outlined,
-            label: 'Markeer',
-            active: _isFlagged,
-            color: _isFlagged ? kColorGold : null,
-            onTap: () => setState(() => _isFlagged = !_isFlagged),
           ),
           _MetaRow(
             icon: _isPrivate ? Icons.lock : Icons.lock_open_outlined,
