@@ -63,6 +63,9 @@ class PersonalTasks extends Table {
   // Auto-detected: household / health / admin / school / finance / other
   TextColumn get category => text().withDefault(const Constant('other'))();
 
+  // User-defined category label; null = uncategorized
+  TextColumn get customCategory => text().nullable()();
+
   /// When to fire a local reminder notification; null = no reminder.
   DateTimeColumn get remindAt => dateTime().nullable()();
 
@@ -97,6 +100,12 @@ class PersonalNotes extends Table {
   BoolColumn get isShared => boolean().withDefault(const Constant(false))();
 
   DateTimeColumn get remindAt => dateTime().nullable()();
+
+  // User-defined category label; null = uncategorized
+  TextColumn get category => text().nullable()();
+
+  // Manual sort order within category; 0 = unsorted (falls back to createdAt)
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   // WebDAV sync metadata
   TextColumn get webdavEtag => text().nullable()();

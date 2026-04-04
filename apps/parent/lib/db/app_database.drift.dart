@@ -692,6 +692,17 @@ class $PersonalTasksTable extends PersonalTasks
     requiredDuringInsert: false,
     defaultValue: const Constant('other'),
   );
+  static const VerificationMeta _customCategoryMeta = const VerificationMeta(
+    'customCategory',
+  );
+  @override
+  late final GeneratedColumn<String> customCategory = GeneratedColumn<String>(
+    'custom_category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _remindAtMeta = const VerificationMeta(
     'remindAt',
   );
@@ -776,6 +787,7 @@ class $PersonalTasksTable extends PersonalTasks
     isPrivate,
     kidsTaskId,
     category,
+    customCategory,
     remindAt,
     sortOrder,
     webdavEtag,
@@ -892,6 +904,15 @@ class $PersonalTasksTable extends PersonalTasks
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
+    if (data.containsKey('custom_category')) {
+      context.handle(
+        _customCategoryMeta,
+        customCategory.isAcceptableOrUnknown(
+          data['custom_category']!,
+          _customCategoryMeta,
+        ),
+      );
+    }
     if (data.containsKey('remind_at')) {
       context.handle(
         _remindAtMeta,
@@ -997,6 +1018,10 @@ class $PersonalTasksTable extends PersonalTasks
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
+      customCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_category'],
+      ),
       remindAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}remind_at'],
@@ -1045,6 +1070,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   final bool isPrivate;
   final String? kidsTaskId;
   final String category;
+  final String? customCategory;
 
   /// When to fire a local reminder notification; null = no reminder.
   final DateTime? remindAt;
@@ -1073,6 +1099,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     required this.isPrivate,
     this.kidsTaskId,
     required this.category,
+    this.customCategory,
     this.remindAt,
     required this.sortOrder,
     this.webdavEtag,
@@ -1109,6 +1136,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       map['kids_task_id'] = Variable<String>(kidsTaskId);
     }
     map['category'] = Variable<String>(category);
+    if (!nullToAbsent || customCategory != null) {
+      map['custom_category'] = Variable<String>(customCategory);
+    }
     if (!nullToAbsent || remindAt != null) {
       map['remind_at'] = Variable<DateTime>(remindAt);
     }
@@ -1150,6 +1180,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ? const Value.absent()
           : Value(kidsTaskId),
       category: Value(category),
+      customCategory: customCategory == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customCategory),
       remindAt: remindAt == null && nullToAbsent
           ? const Value.absent()
           : Value(remindAt),
@@ -1183,6 +1216,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       isPrivate: serializer.fromJson<bool>(json['isPrivate']),
       kidsTaskId: serializer.fromJson<String?>(json['kidsTaskId']),
       category: serializer.fromJson<String>(json['category']),
+      customCategory: serializer.fromJson<String?>(json['customCategory']),
       remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       webdavEtag: serializer.fromJson<String?>(json['webdavEtag']),
@@ -1209,6 +1243,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       'isPrivate': serializer.toJson<bool>(isPrivate),
       'kidsTaskId': serializer.toJson<String?>(kidsTaskId),
       'category': serializer.toJson<String>(category),
+      'customCategory': serializer.toJson<String?>(customCategory),
       'remindAt': serializer.toJson<DateTime?>(remindAt),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'webdavEtag': serializer.toJson<String?>(webdavEtag),
@@ -1233,6 +1268,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     bool? isPrivate,
     Value<String?> kidsTaskId = const Value.absent(),
     String? category,
+    Value<String?> customCategory = const Value.absent(),
     Value<DateTime?> remindAt = const Value.absent(),
     int? sortOrder,
     Value<String?> webdavEtag = const Value.absent(),
@@ -1256,6 +1292,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate: isPrivate ?? this.isPrivate,
     kidsTaskId: kidsTaskId.present ? kidsTaskId.value : this.kidsTaskId,
     category: category ?? this.category,
+    customCategory: customCategory.present
+        ? customCategory.value
+        : this.customCategory,
     remindAt: remindAt.present ? remindAt.value : this.remindAt,
     sortOrder: sortOrder ?? this.sortOrder,
     webdavEtag: webdavEtag.present ? webdavEtag.value : this.webdavEtag,
@@ -1287,6 +1326,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ? data.kidsTaskId.value
           : this.kidsTaskId,
       category: data.category.present ? data.category.value : this.category,
+      customCategory: data.customCategory.present
+          ? data.customCategory.value
+          : this.customCategory,
       remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       webdavEtag: data.webdavEtag.present
@@ -1315,6 +1357,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('category: $category, ')
+          ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('webdavEtag: $webdavEtag, ')
@@ -1326,7 +1369,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     listId,
     title,
@@ -1341,13 +1384,14 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate,
     kidsTaskId,
     category,
+    customCategory,
     remindAt,
     sortOrder,
     webdavEtag,
     syncState,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1366,6 +1410,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           other.isPrivate == this.isPrivate &&
           other.kidsTaskId == this.kidsTaskId &&
           other.category == this.category &&
+          other.customCategory == this.customCategory &&
           other.remindAt == this.remindAt &&
           other.sortOrder == this.sortOrder &&
           other.webdavEtag == this.webdavEtag &&
@@ -1389,6 +1434,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
   final Value<bool> isPrivate;
   final Value<String?> kidsTaskId;
   final Value<String> category;
+  final Value<String?> customCategory;
   final Value<DateTime?> remindAt;
   final Value<int> sortOrder;
   final Value<String?> webdavEtag;
@@ -1411,6 +1457,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.category = const Value.absent(),
+    this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.webdavEtag = const Value.absent(),
@@ -1434,6 +1481,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.category = const Value.absent(),
+    this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.webdavEtag = const Value.absent(),
@@ -1460,6 +1508,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Expression<bool>? isPrivate,
     Expression<String>? kidsTaskId,
     Expression<String>? category,
+    Expression<String>? customCategory,
     Expression<DateTime>? remindAt,
     Expression<int>? sortOrder,
     Expression<String>? webdavEtag,
@@ -1483,6 +1532,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       if (isPrivate != null) 'is_private': isPrivate,
       if (kidsTaskId != null) 'kids_task_id': kidsTaskId,
       if (category != null) 'category': category,
+      if (customCategory != null) 'custom_category': customCategory,
       if (remindAt != null) 'remind_at': remindAt,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (webdavEtag != null) 'webdav_etag': webdavEtag,
@@ -1508,6 +1558,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Value<bool>? isPrivate,
     Value<String?>? kidsTaskId,
     Value<String>? category,
+    Value<String?>? customCategory,
     Value<DateTime?>? remindAt,
     Value<int>? sortOrder,
     Value<String?>? webdavEtag,
@@ -1531,6 +1582,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       category: category ?? this.category,
+      customCategory: customCategory ?? this.customCategory,
       remindAt: remindAt ?? this.remindAt,
       sortOrder: sortOrder ?? this.sortOrder,
       webdavEtag: webdavEtag ?? this.webdavEtag,
@@ -1586,6 +1638,9 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (customCategory.present) {
+      map['custom_category'] = Variable<String>(customCategory.value);
+    }
     if (remindAt.present) {
       map['remind_at'] = Variable<DateTime>(remindAt.value);
     }
@@ -1627,6 +1682,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('category: $category, ')
+          ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('webdavEtag: $webdavEtag, ')
@@ -1699,6 +1755,29 @@ class $PersonalNotesTable extends PersonalNotes
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _webdavEtagMeta = const VerificationMeta(
     'webdavEtag',
   );
@@ -1751,6 +1830,8 @@ class $PersonalNotesTable extends PersonalNotes
     body,
     isShared,
     remindAt,
+    category,
+    sortOrder,
     webdavEtag,
     syncState,
     createdAt,
@@ -1797,6 +1878,18 @@ class $PersonalNotesTable extends PersonalNotes
       context.handle(
         _remindAtMeta,
         remindAt.isAcceptableOrUnknown(data['remind_at']!, _remindAtMeta),
+      );
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
       );
     }
     if (data.containsKey('webdav_etag')) {
@@ -1856,6 +1949,14 @@ class $PersonalNotesTable extends PersonalNotes
         DriftSqlType.dateTime,
         data['${effectivePrefix}remind_at'],
       ),
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
       webdavEtag: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}webdav_etag'],
@@ -1889,6 +1990,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
   /// true = encrypted with family key and stored in shared WebDAV folder.
   final bool isShared;
   final DateTime? remindAt;
+  final String? category;
+  final int sortOrder;
   final String? webdavEtag;
   final String syncState;
   final DateTime createdAt;
@@ -1899,6 +2002,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
     required this.body,
     required this.isShared,
     this.remindAt,
+    this.category,
+    required this.sortOrder,
     this.webdavEtag,
     required this.syncState,
     required this.createdAt,
@@ -1914,6 +2019,10 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
     if (!nullToAbsent || remindAt != null) {
       map['remind_at'] = Variable<DateTime>(remindAt);
     }
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
     if (!nullToAbsent || webdavEtag != null) {
       map['webdav_etag'] = Variable<String>(webdavEtag);
     }
@@ -1932,6 +2041,10 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
       remindAt: remindAt == null && nullToAbsent
           ? const Value.absent()
           : Value(remindAt),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
+      sortOrder: Value(sortOrder),
       webdavEtag: webdavEtag == null && nullToAbsent
           ? const Value.absent()
           : Value(webdavEtag),
@@ -1952,6 +2065,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
       body: serializer.fromJson<String>(json['body']),
       isShared: serializer.fromJson<bool>(json['isShared']),
       remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
+      category: serializer.fromJson<String?>(json['category']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
       webdavEtag: serializer.fromJson<String?>(json['webdavEtag']),
       syncState: serializer.fromJson<String>(json['syncState']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1967,6 +2082,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
       'body': serializer.toJson<String>(body),
       'isShared': serializer.toJson<bool>(isShared),
       'remindAt': serializer.toJson<DateTime?>(remindAt),
+      'category': serializer.toJson<String?>(category),
+      'sortOrder': serializer.toJson<int>(sortOrder),
       'webdavEtag': serializer.toJson<String?>(webdavEtag),
       'syncState': serializer.toJson<String>(syncState),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1980,6 +2097,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
     String? body,
     bool? isShared,
     Value<DateTime?> remindAt = const Value.absent(),
+    Value<String?> category = const Value.absent(),
+    int? sortOrder,
     Value<String?> webdavEtag = const Value.absent(),
     String? syncState,
     DateTime? createdAt,
@@ -1990,6 +2109,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
     body: body ?? this.body,
     isShared: isShared ?? this.isShared,
     remindAt: remindAt.present ? remindAt.value : this.remindAt,
+    category: category.present ? category.value : this.category,
+    sortOrder: sortOrder ?? this.sortOrder,
     webdavEtag: webdavEtag.present ? webdavEtag.value : this.webdavEtag,
     syncState: syncState ?? this.syncState,
     createdAt: createdAt ?? this.createdAt,
@@ -2002,6 +2123,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
       body: data.body.present ? data.body.value : this.body,
       isShared: data.isShared.present ? data.isShared.value : this.isShared,
       remindAt: data.remindAt.present ? data.remindAt.value : this.remindAt,
+      category: data.category.present ? data.category.value : this.category,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       webdavEtag: data.webdavEtag.present
           ? data.webdavEtag.value
           : this.webdavEtag,
@@ -2019,6 +2142,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
           ..write('body: $body, ')
           ..write('isShared: $isShared, ')
           ..write('remindAt: $remindAt, ')
+          ..write('category: $category, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('webdavEtag: $webdavEtag, ')
           ..write('syncState: $syncState, ')
           ..write('createdAt: $createdAt, ')
@@ -2034,6 +2159,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
     body,
     isShared,
     remindAt,
+    category,
+    sortOrder,
     webdavEtag,
     syncState,
     createdAt,
@@ -2048,6 +2175,8 @@ class PersonalNoteRow extends DataClass implements Insertable<PersonalNoteRow> {
           other.body == this.body &&
           other.isShared == this.isShared &&
           other.remindAt == this.remindAt &&
+          other.category == this.category &&
+          other.sortOrder == this.sortOrder &&
           other.webdavEtag == this.webdavEtag &&
           other.syncState == this.syncState &&
           other.createdAt == this.createdAt &&
@@ -2060,6 +2189,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
   final Value<String> body;
   final Value<bool> isShared;
   final Value<DateTime?> remindAt;
+  final Value<String?> category;
+  final Value<int> sortOrder;
   final Value<String?> webdavEtag;
   final Value<String> syncState;
   final Value<DateTime> createdAt;
@@ -2071,6 +2202,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
     this.body = const Value.absent(),
     this.isShared = const Value.absent(),
     this.remindAt = const Value.absent(),
+    this.category = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.webdavEtag = const Value.absent(),
     this.syncState = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2083,6 +2216,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
     this.body = const Value.absent(),
     this.isShared = const Value.absent(),
     this.remindAt = const Value.absent(),
+    this.category = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.webdavEtag = const Value.absent(),
     this.syncState = const Value.absent(),
     required DateTime createdAt,
@@ -2098,6 +2233,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
     Expression<String>? body,
     Expression<bool>? isShared,
     Expression<DateTime>? remindAt,
+    Expression<String>? category,
+    Expression<int>? sortOrder,
     Expression<String>? webdavEtag,
     Expression<String>? syncState,
     Expression<DateTime>? createdAt,
@@ -2110,6 +2247,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
       if (body != null) 'body': body,
       if (isShared != null) 'is_shared': isShared,
       if (remindAt != null) 'remind_at': remindAt,
+      if (category != null) 'category': category,
+      if (sortOrder != null) 'sort_order': sortOrder,
       if (webdavEtag != null) 'webdav_etag': webdavEtag,
       if (syncState != null) 'sync_state': syncState,
       if (createdAt != null) 'created_at': createdAt,
@@ -2124,6 +2263,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
     Value<String>? body,
     Value<bool>? isShared,
     Value<DateTime?>? remindAt,
+    Value<String?>? category,
+    Value<int>? sortOrder,
     Value<String?>? webdavEtag,
     Value<String>? syncState,
     Value<DateTime>? createdAt,
@@ -2136,6 +2277,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
       body: body ?? this.body,
       isShared: isShared ?? this.isShared,
       remindAt: remindAt ?? this.remindAt,
+      category: category ?? this.category,
+      sortOrder: sortOrder ?? this.sortOrder,
       webdavEtag: webdavEtag ?? this.webdavEtag,
       syncState: syncState ?? this.syncState,
       createdAt: createdAt ?? this.createdAt,
@@ -2161,6 +2304,12 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
     }
     if (remindAt.present) {
       map['remind_at'] = Variable<DateTime>(remindAt.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
     }
     if (webdavEtag.present) {
       map['webdav_etag'] = Variable<String>(webdavEtag.value);
@@ -2188,6 +2337,8 @@ class PersonalNotesCompanion extends UpdateCompanion<PersonalNoteRow> {
           ..write('body: $body, ')
           ..write('isShared: $isShared, ')
           ..write('remindAt: $remindAt, ')
+          ..write('category: $category, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('webdavEtag: $webdavEtag, ')
           ..write('syncState: $syncState, ')
           ..write('createdAt: $createdAt, ')
@@ -4281,6 +4432,7 @@ typedef $$PersonalTasksTableCreateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String> category,
+      Value<String?> customCategory,
       Value<DateTime?> remindAt,
       Value<int> sortOrder,
       Value<String?> webdavEtag,
@@ -4305,6 +4457,7 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String> category,
+      Value<String?> customCategory,
       Value<DateTime?> remindAt,
       Value<int> sortOrder,
       Value<String?> webdavEtag,
@@ -4437,6 +4590,11 @@ class $$PersonalTasksTableFilterComposer
 
   ColumnFilters<String> get category => $composableBuilder(
     column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customCategory => $composableBuilder(
+    column: $table.customCategory,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4593,6 +4751,11 @@ class $$PersonalTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get customCategory => $composableBuilder(
+    column: $table.customCategory,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get remindAt => $composableBuilder(
     column: $table.remindAt,
     builder: (column) => ColumnOrderings(column),
@@ -4702,6 +4865,11 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get customCategory => $composableBuilder(
+    column: $table.customCategory,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get remindAt =>
       $composableBuilder(column: $table.remindAt, builder: (column) => column);
@@ -4814,6 +4982,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<String?> webdavEtag = const Value.absent(),
@@ -4836,6 +5005,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 category: category,
+                customCategory: customCategory,
                 remindAt: remindAt,
                 sortOrder: sortOrder,
                 webdavEtag: webdavEtag,
@@ -4860,6 +5030,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<String?> webdavEtag = const Value.absent(),
@@ -4882,6 +5053,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 category: category,
+                customCategory: customCategory,
                 remindAt: remindAt,
                 sortOrder: sortOrder,
                 webdavEtag: webdavEtag,
@@ -4991,6 +5163,8 @@ typedef $$PersonalNotesTableCreateCompanionBuilder =
       Value<String> body,
       Value<bool> isShared,
       Value<DateTime?> remindAt,
+      Value<String?> category,
+      Value<int> sortOrder,
       Value<String?> webdavEtag,
       Value<String> syncState,
       required DateTime createdAt,
@@ -5004,6 +5178,8 @@ typedef $$PersonalNotesTableUpdateCompanionBuilder =
       Value<String> body,
       Value<bool> isShared,
       Value<DateTime?> remindAt,
+      Value<String?> category,
+      Value<int> sortOrder,
       Value<String?> webdavEtag,
       Value<String> syncState,
       Value<DateTime> createdAt,
@@ -5042,6 +5218,16 @@ class $$PersonalNotesTableFilterComposer
 
   ColumnFilters<DateTime> get remindAt => $composableBuilder(
     column: $table.remindAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5100,6 +5286,16 @@ class $$PersonalNotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get webdavEtag => $composableBuilder(
     column: $table.webdavEtag,
     builder: (column) => ColumnOrderings(column),
@@ -5144,6 +5340,12 @@ class $$PersonalNotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get remindAt =>
       $composableBuilder(column: $table.remindAt, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
   GeneratedColumn<String> get webdavEtag => $composableBuilder(
     column: $table.webdavEtag,
@@ -5196,6 +5398,8 @@ class $$PersonalNotesTableTableManager
                 Value<String> body = const Value.absent(),
                 Value<bool> isShared = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<String?> webdavEtag = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -5207,6 +5411,8 @@ class $$PersonalNotesTableTableManager
                 body: body,
                 isShared: isShared,
                 remindAt: remindAt,
+                category: category,
+                sortOrder: sortOrder,
                 webdavEtag: webdavEtag,
                 syncState: syncState,
                 createdAt: createdAt,
@@ -5220,6 +5426,8 @@ class $$PersonalNotesTableTableManager
                 Value<String> body = const Value.absent(),
                 Value<bool> isShared = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
+                Value<String?> category = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
                 Value<String?> webdavEtag = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
                 required DateTime createdAt,
@@ -5231,6 +5439,8 @@ class $$PersonalNotesTableTableManager
                 body: body,
                 isShared: isShared,
                 remindAt: remindAt,
+                category: category,
+                sortOrder: sortOrder,
                 webdavEtag: webdavEtag,
                 syncState: syncState,
                 createdAt: createdAt,

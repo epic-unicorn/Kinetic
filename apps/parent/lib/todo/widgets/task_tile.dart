@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
+import 'category_sheet.dart';
 import 'task_detail_sheet.dart';
 
 // ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ class _TaskTileContentState extends State<_TaskTileContent> {
     return Card(
       child: InkWell(
         onTap: () => _openDetail(context),
-        onLongPress: () => _showContextMenu(context),
+        onLongPress: () => _pickCategory(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -314,76 +315,21 @@ class _TaskTileContentState extends State<_TaskTileContent> {
     );
   }
 
-  void _showContextMenu(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _pickCategory(BuildContext context) async {
+    final categories = await widget.repo.watchTaskCategories().first;
+    if (!mounted) return;
+    final result = await showCategoryPicker(
+      // ignore: use_build_context_synchronously
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                widget.task.isFlagged ? Icons.flag : Icons.flag_outlined,
-                color: kColorGold,
-              ),
-              title: Text(
-                widget.task.isFlagged ? 'Markering verwijderen' : 'Markeer',
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                widget.repo.toggleFlag(
-                  widget.task.id,
-                  flagged: !widget.task.isFlagged,
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                widget.task.isPrivate
-                    ? Icons.lock_open_outlined
-                    : Icons.lock_outline,
-                color: kColorWarmGrey,
-              ),
-              title: Text(
-                widget.task.isPrivate ? 'Deelbaar maken' : 'Privé maken',
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                widget.repo.togglePrivate(
-                  widget.task.id,
-                  isPrivate: !widget.task.isPrivate,
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Colors.redAccent,
-              ),
-              title: const Text('Taak verwijderen'),
-              onTap: () {
-                Navigator.pop(context);
-                widget.repo.deleteTask(widget.task.id);
-              },
-            ),
-            // Greyed-out placeholder — only shown when connected to a family.
-            if (widget.hasFamilyKey)
-              ListTile(
-                leading: const Icon(Icons.send_outlined, color: Colors.white24),
-                title: const Text(
-                  'Stuur naar kinderen',
-                  style: TextStyle(color: Colors.white24),
-                ),
-                subtitle: const Text(
-                  'Binnenkort beschikbaar',
-                  style: TextStyle(color: Colors.white24, fontSize: 12),
-                ),
-                enabled: false,
-              ),
-          ],
-        ),
-      ),
+      existingCategories: categories,
+      currentCategory: widget.task.customCategory,
     );
+    if (result != null) {
+      await widget.repo.updateTaskCustomCategory(
+        widget.task.id,
+        result.isEmpty ? null : result,
+      );
+    }
   }
 }
 

@@ -9,6 +9,8 @@ class PersonalNote {
   final String body;
   final bool isShared;
   final DateTime? remindAt;
+  final String? category;
+  final int sortOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -18,6 +20,8 @@ class PersonalNote {
     required this.body,
     required this.isShared,
     this.remindAt,
+    this.category,
+    this.sortOrder = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -27,6 +31,8 @@ class PersonalNote {
     String body = '',
     bool isShared = false,
     DateTime? remindAt,
+    String? category,
+    int sortOrder = 0,
   }) {
     final now = DateTime.now().toUtc();
     return PersonalNote(
@@ -35,6 +41,8 @@ class PersonalNote {
       body: body,
       isShared: isShared,
       remindAt: remindAt,
+      category: category,
+      sortOrder: sortOrder,
       createdAt: now,
       updatedAt: now,
     );
@@ -47,6 +55,8 @@ class PersonalNote {
       body: row.body,
       isShared: row.isShared,
       remindAt: row.remindAt,
+      category: row.category,
+      sortOrder: row.sortOrder,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -57,13 +67,19 @@ class PersonalNote {
     String? body,
     bool? isShared,
     DateTime? remindAt,
+    bool clearRemindAt = false,
+    String? category,
+    bool clearCategory = false,
+    int? sortOrder,
   }) {
     return PersonalNote(
       id: id,
       title: title ?? this.title,
       body: body ?? this.body,
       isShared: isShared ?? this.isShared,
-      remindAt: remindAt ?? this.remindAt,
+      remindAt: clearRemindAt ? null : (remindAt ?? this.remindAt),
+      category: clearCategory ? null : (category ?? this.category),
+      sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt,
       updatedAt: DateTime.now().toUtc(),
     );

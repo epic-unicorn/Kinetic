@@ -118,46 +118,212 @@ class _SyncIcon extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Open tasks tab
+// Open tasks tab — grouped by customCategory with drag-to-reorder
 // ---------------------------------------------------------------------------
 
-class _OpenTasksTab extends StatelessWidget {
+// Sealed types for the flat list items used by ReorderableListView.
+sealed class _ListItem {}
+
+class _HeaderItem extends _ListItem {
+  final String? category;
+  _HeaderItem({required this.category});
+}
+
+class _TaskItem extends _ListItem {
+  final PersonalTask task;
+  _TaskItem({required this.task});
+}
+
+class _OpenTasksTab extends StatefulWidget {
   final TodoRepository repo;
   final bool hasFamilyKey;
 
   const _OpenTasksTab({required this.repo, this.hasFamilyKey = false});
 
   @override
+  State<_OpenTasksTab> createState() => _OpenTasksTabState();
+}
+
+class _OpenTasksTabState extends State<_OpenTasksTab> {
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PersonalTask>>(
-      stream: repo.watchOpenTasks(),
+      stream: widget.repo.watchOpenTasks(),
       builder: (ctx, snap) {
-        final open = snap.data ?? [];
+        final tasks = snap.data ?? [];
 
-        if (open.isEmpty) {
+        if (tasks.isEmpty) {
           return const _EmptyOpen();
         }
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final dividerColor = isDark
-            ? const Color(0xFF333333)
-            : const Color(0xFFEEEEEE);
-
-        final items = <Widget>[];
-        items.add(const SizedBox(height: 8));
-        for (var i = 0; i < open.length; i++) {
-          items.add(
-            TaskTile(task: open[i], repo: repo, hasFamilyKey: hasFamilyKey),
-          );
-          if (i < open.length - 1)
-            items.add(
-              Divider(height: 1, indent: 0, endIndent: 0, color: dividerColor),
-            );
+        // Group tasks by customCategory
+        final groups = <String?, List<PersonalTask>>{};
+        for (final t in tasks) {
+          groups.putIfAbsent(t.customCategory, () => []).add(t);
         }
-        items.add(const SizedBox(height: 80)); // room for QuickAddBar
 
-        return ListView(children: items);
+        // Sort group keys: null (uncategorised) first, then alphabetical
+        final groupKeys = groups.keys.toList()
+          ..sort((a, b) {
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.compareTo(b);
+          });
+
+        // Build flat list: header + tasks per category
+        final flatItems = <_ListItem>[];
+        final showHeaders =
+            groupKeys.length > 1 || groupKeys.first != null;
+
+        for (final cat in groupKeys) {
+          if (showHeaders) {
+            flatItems.add(_HeaderItem(category: cat));
+          }
+          for (final t in groups[cat]!) {
+            flatItems.add(_TaskItem(task: t));
+          }
+        }
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dividerColor =
+            isDark ? const Color(0xFF333333) : const Color(0xFFEEEEEE);
+
+        return ReorderableListView.builder(
+          buildDefaultDragHandles: false,
+          padding: const EdgeInsets.only(top: 8, bottom: 80),
+          itemCount: flatItems.length,
+          itemBuilder: (context, index) {
+            final item = flatItems[index];
+
+            if (item is _HeaderItem) {
+              return _CategoryHeader(
+                key: ValueKey('header_${item.category}'),
+                label: item.category ?? 'Geen categorie',
+              );
+            }
+
+            final taskItem = item as _TaskItem;
+            return _DraggableTaskRow(
+              key: ValueKey(taskItem.task.id),
+              index: index,
+              task: taskItem.task,
+              repo: widget.repo,
+              hasFamilyKey: widget.hasFamilyKey,
+              dividerColor: dividerColor,
+            );
+          },
+          onReorder: (oldIndex, newIndex) {
+            _onReorder(flatItems, oldIndex, newIndex);
+          },
+        );
       },
+    );
+  }
+
+  void _onReorder(List<_ListItem> items, int oldIndex, int newIndex) {
+    // Headers have no drag listener so this guard is just a safety net.
+    if (items[oldIndex] is _HeaderItem) return;
+
+    if (oldIndex < newIndex) newIndex -= 1;
+
+    // Build the reordered list.
+    final reordered = [...items]
+      ..removeAt(oldIndex)
+      ..insert(newIndex, items[oldIndex]);
+
+    // Compute new category + sortOrder for every task in the reordered list.
+    final updates = <({String id, String? category, int sortOrder})>[];
+    String? currentCat;
+    int posInCat = 0;
+
+    for (final item in reordered) {
+      if (item is _HeaderItem) {
+        currentCat = item.category;
+        posInCat = 0;
+      } else {
+        final taskItem = item as _TaskItem;
+        updates.add((
+          id: taskItem.task.id,
+          category: currentCat,
+          sortOrder: posInCat,
+        ));
+        posInCat++;
+      }
+    }
+
+    widget.repo.batchUpdateCategoryAndOrder(updates);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Category header row
+// ---------------------------------------------------------------------------
+
+class _CategoryHeader extends StatelessWidget {
+  final String label;
+
+  const _CategoryHeader({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Task row with drag handle
+// ---------------------------------------------------------------------------
+
+class _DraggableTaskRow extends StatelessWidget {
+  final int index;
+  final PersonalTask task;
+  final TodoRepository repo;
+  final bool hasFamilyKey;
+  final Color dividerColor;
+
+  const _DraggableTaskRow({
+    super.key,
+    required this.index,
+    required this.task,
+    required this.repo,
+    required this.hasFamilyKey,
+    required this.dividerColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: TaskTile(
+            task: task,
+            repo: repo,
+            hasFamilyKey: hasFamilyKey,
+          ),
+        ),
+        ReorderableDragStartListener(
+          index: index,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            child: Icon(
+              Icons.drag_handle,
+              size: 20,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

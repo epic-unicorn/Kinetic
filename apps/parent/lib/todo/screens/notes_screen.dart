@@ -5,6 +5,7 @@ import '../../theme/app_header.dart';
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
 import '../services/note_repository.dart';
+import '../widgets/category_sheet.dart';
 import 'note_editor_screen.dart';
 
 /// Screen that displays all notes in a scrollable list with create/edit/delete.
@@ -74,7 +75,7 @@ class _NotesScreenState extends State<NotesScreen> {
           ),
         ],
       ),
-      body: StreamBuilder(
+      body: StreamBuilder<List<PersonalNote>>(
         stream: widget.repo.watchAll(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -144,24 +145,10 @@ class _NotesScreenState extends State<NotesScreen> {
           return ValueListenableBuilder<bool>(
             valueListenable: widget.hasFamilyKey ?? ValueNotifier(false),
             builder: (context, paired, _) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              final dividerColor = isDark
-                  ? const Color(0xFF333333)
-                  : const Color(0xFFEEEEEE);
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
-                itemCount: notes.length,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  indent: 0,
-                  endIndent: 0,
-                  color: dividerColor,
-                ),
-                itemBuilder: (context, i) => _NoteTile(
-                  note: notes[i],
-                  repo: widget.repo,
-                  showSharedBadge: paired,
-                ),
+              return _NoteGroupedList(
+                notes: notes,
+                repo: widget.repo,
+                showSharedBadge: paired,
               );
             },
           );
@@ -190,6 +177,166 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Grouped + draggable notes list
+// ---------------------------------------------------------------------------
+
+sealed class _NoteListItem {}
+
+class _NoteHeaderItem extends _NoteListItem {
+  final String? category;
+  _NoteHeaderItem({required this.category});
+}
+
+class _NoteDataItem extends _NoteListItem {
+  final PersonalNote note;
+  _NoteDataItem({required this.note});
+}
+
+class _NoteGroupedList extends StatefulWidget {
+  final List<PersonalNote> notes;
+  final NoteRepository repo;
+  final bool showSharedBadge;
+
+  const _NoteGroupedList({
+    required this.notes,
+    required this.repo,
+    required this.showSharedBadge,
+  });
+
+  @override
+  State<_NoteGroupedList> createState() => _NoteGroupedListState();
+}
+
+class _NoteGroupedListState extends State<_NoteGroupedList> {
+  @override
+  Widget build(BuildContext context) {
+    // Group notes by category
+    final groups = <String?, List<PersonalNote>>{};
+    for (final n in widget.notes) {
+      groups.putIfAbsent(n.category, () => []).add(n);
+    }
+
+    final groupKeys = groups.keys.toList()
+      ..sort((a, b) {
+        if (a == null) return -1;
+        if (b == null) return 1;
+        return a.compareTo(b);
+      });
+
+    final showHeaders = groupKeys.length > 1 || groupKeys.first != null;
+
+    final flatItems = <_NoteListItem>[];
+    for (final cat in groupKeys) {
+      if (showHeaders) {
+        flatItems.add(_NoteHeaderItem(category: cat));
+      }
+      for (final n in groups[cat]!) {
+        flatItems.add(_NoteDataItem(note: n));
+      }
+    }
+
+    return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+      itemCount: flatItems.length,
+      itemBuilder: (context, index) {
+        final item = flatItems[index];
+
+        if (item is _NoteHeaderItem) {
+          return _NoteCategoryHeader(
+            key: ValueKey('header_${item.category}'),
+            label: item.category ?? 'Geen categorie',
+          );
+        }
+
+        final noteItem = item as _NoteDataItem;
+        return Row(
+          key: ValueKey(noteItem.note.id),
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _NoteTile(
+                note: noteItem.note,
+                repo: widget.repo,
+                showSharedBadge: widget.showSharedBadge,
+              ),
+            ),
+            ReorderableDragStartListener(
+              index: index,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                child: Icon(
+                  Icons.drag_handle,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      onReorder: (oldIndex, newIndex) {
+        _onReorder(flatItems, oldIndex, newIndex);
+      },
+    );
+  }
+
+  void _onReorder(List<_NoteListItem> items, int oldIndex, int newIndex) {
+    if (items[oldIndex] is _NoteHeaderItem) return;
+    if (oldIndex < newIndex) newIndex -= 1;
+
+    final reordered = [...items]
+      ..removeAt(oldIndex)
+      ..insert(newIndex, items[oldIndex]);
+
+    final updates = <({String id, String? category, int sortOrder})>[];
+    String? currentCat;
+    int posInCat = 0;
+
+    for (final item in reordered) {
+      if (item is _NoteHeaderItem) {
+        currentCat = item.category;
+        posInCat = 0;
+      } else {
+        final noteItem = item as _NoteDataItem;
+        updates.add((
+          id: noteItem.note.id,
+          category: currentCat,
+          sortOrder: posInCat,
+        ));
+        posInCat++;
+      }
+    }
+
+    widget.repo.batchUpdateCategoryAndOrder(updates);
+  }
+}
+
+class _NoteCategoryHeader extends StatelessWidget {
+  final String label;
+
+  const _NoteCategoryHeader({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 class _NoteTile extends StatelessWidget {
   final PersonalNote note;
   final NoteRepository repo;
@@ -204,7 +351,7 @@ class _NoteTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preview = note.body.length > 100
-        ? '${note.body.substring(0, 100)}…'
+        ? '${note.body.substring(0, 100)}\u2026'
         : note.body;
     final reminderPassed = note.remindAt != null && isOverdue(note.remindAt!);
     final reminderColor = reminderPassed ? Colors.redAccent : kColorGold;
@@ -270,6 +417,7 @@ class _NoteTile extends StatelessWidget {
             ).showSnackBar(const SnackBar(content: Text('Notitie opgeslagen')));
           }
         },
+        onLongPress: () => _pickCategory(context),
         trailing: PopupMenuButton<String>(
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
@@ -324,4 +472,20 @@ class _NoteTile extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _pickCategory(BuildContext context) async {
+    final categories = await repo.watchNoteCategories().first;
+    if (!context.mounted) return;
+    final result = await showCategoryPicker(
+      context: context,
+      existingCategories: categories,
+      currentCategory: note.category,
+    );
+    if (result != null) {
+      await repo.updateNoteCategory(note.id, result.isEmpty ? null : result);
+    }
+  }
 }
+
+
+/// Screen that displays all notes in a scrollable list with create/edit/delete.

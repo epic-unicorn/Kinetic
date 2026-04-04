@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/personal_note.dart';
 import '../services/note_repository.dart';
+import '../widgets/category_sheet.dart';
 
 /// Screen for creating or editing a note.
 class NoteEditorScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   late final TextEditingController _bodyCtrl;
   late bool _isShared;
   late DateTime? _remindAt;
+  String? _category;
   bool _saving = false;
 
   @override
@@ -35,6 +37,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     _bodyCtrl = TextEditingController(text: note?.body ?? '');
     _isShared = note?.isShared ?? false;
     _remindAt = note?.remindAt;
+    _category = note?.category;
   }
 
   @override
@@ -64,6 +67,8 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           body: _bodyCtrl.text,
           isShared: _isShared,
           remindAt: _remindAt,
+          category: _category,
+          clearCategory: _category == null,
         );
         await widget.repo.update(updatedNote);
         savedNote = updatedNote;
@@ -74,6 +79,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           body: _bodyCtrl.text,
           isShared: _isShared,
           remindAt: _remindAt,
+          category: _category,
         );
       }
 
@@ -90,6 +96,20 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       if (mounted) {
         setState(() => _saving = false);
       }
+    }
+  }
+
+  Future<void> _pickCategory() async {
+    final categories = await widget.repo.watchNoteCategories().first;
+    if (!mounted) return;
+    final result = await showCategoryPicker(
+      // ignore: use_build_context_synchronously
+      context: context,
+      existingCategories: categories,
+      currentCategory: _category,
+    );
+    if (result != null && mounted) {
+      setState(() => _category = result.isEmpty ? null : result);
     }
   }
 
@@ -182,6 +202,20 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                     )
                   : null,
               onTap: _pickReminder,
+            ),
+            const SizedBox(height: 4),
+
+            // Category
+            ListTile(
+              leading: const Icon(Icons.label_outline),
+              title: Text(_category ?? 'Categorie toevoegen'),
+              trailing: _category != null
+                  ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() => _category = null),
+                    )
+                  : null,
+              onTap: _pickCategory,
             ),
             const SizedBox(height: 12),
 

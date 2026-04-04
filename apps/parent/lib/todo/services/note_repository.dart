@@ -17,12 +17,20 @@ class NoteRepository {
   }) : _db = db,
        _notifications = notifications;
 
-  /// All notes, ordered by creation date (newest first).
+  /// All notes, grouped by category (nulls first) then creation date (newest first).
   /// Excludes soft-deleted notes (syncState='deleted').
   Stream<List<PersonalNote>> watchAll() {
     return (_db.select(_db.personalNotes)
           ..where((t) => t.syncState.equals('deleted').not())
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          ..orderBy([
+            (t) => OrderingTerm(
+              expression: t.category.isNull(),
+              mode: OrderingMode.desc,
+            ),
+            (t) => OrderingTerm.asc(t.category),
+            (t) => OrderingTerm.asc(t.sortOrder),
+            (t) => OrderingTerm.desc(t.createdAt),
+          ]))
         .watch()
         .map((rows) => rows.map(_noteFromRow).toList());
   }
@@ -40,6 +48,8 @@ class NoteRepository {
     String body = '',
     bool isShared = false,
     DateTime? remindAt,
+    String? category,
+    int sortOrder = 0,
   }) async {
     try {
       final note = PersonalNote.create(
@@ -47,6 +57,8 @@ class NoteRepository {
         body: body,
         isShared: isShared,
         remindAt: remindAt,
+        category: category,
+        sortOrder: sortOrder,
       );
       await _db.into(_db.personalNotes).insert(_noteToCompanion(note));
       await _scheduleReminderFor(note);
@@ -91,7 +103,49 @@ class NoteRepository {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+  Future<void> updateNoteCategory(String noteId, String? category) async {
+    await (_db.update(
+      _db.personalNotes,
+    )..where((t) => t.id.equals(noteId))).write(
+      PersonalNotesCompanion(
+        category: Value(category),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    onWrite?.call();
+  }
 
+  /// Batch-update category and sortOrder for notes after drag-and-drop reordering.
+  Future<void> batchUpdateCategoryAndOrder(
+    List<({String id, String? category, int sortOrder})> updates,
+  ) async {
+    await _db.transaction(() async {
+      for (final u in updates) {
+        await (_db.update(_db.personalNotes)
+              ..where((t) => t.id.equals(u.id)))
+            .write(
+              PersonalNotesCompanion(
+                category: Value(u.category),
+                sortOrder: Value(u.sortOrder),
+                updatedAt: Value(DateTime.now().toUtc()),
+              ),
+            );
+      }
+    });
+    onWrite?.call();
+  }
+
+  /// Stream of distinct, sorted category names from all notes.
+  Stream<List<String>> watchNoteCategories() {
+    return watchAll().map(
+      (notes) => notes
+          .map((n) => n.category)
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort(),
+    );
+  }
   PersonalNote _noteFromRow(PersonalNoteRow row) {
     return PersonalNote.fromRow(row);
   }
@@ -103,6 +157,8 @@ class NoteRepository {
       body: Value(note.body),
       isShared: Value(note.isShared),
       remindAt: Value(note.remindAt),
+      category: Value(note.category),
+      sortOrder: Value(note.sortOrder),
       createdAt: Value(note.createdAt),
       updatedAt: Value(note.updatedAt),
       syncState: const Value('dirty'),

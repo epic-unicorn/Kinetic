@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
+import 'category_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // TaskDetailSheet
@@ -40,6 +41,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   bool _isPrivate = false;
   String? _recurrenceRule;
   String? _listId;
+  String? _customCategory;
 
   bool _saving = false;
 
@@ -55,6 +57,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     _isPrivate = t?.isPrivate ?? false;
     _recurrenceRule = t?.recurrenceRule;
     _listId = t?.listId ?? widget.initialListId;
+    _customCategory = t?.customCategory;
   }
 
   @override
@@ -79,6 +82,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         isAllDay: _isAllDay,
         recurrenceRule: _recurrenceRule,
         isPrivate: _isPrivate,
+        customCategory: _customCategory,
       );
     } else {
       await widget.repo.updateTask(
@@ -91,6 +95,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           recurrenceRule: _recurrenceRule,
           isPrivate: _isPrivate,
           listId: _listId,
+          customCategory: _customCategory,
+          clearCustomCategory: _customCategory == null,
           clearDueDate: _dueDate == null,
         ),
       );
@@ -205,6 +211,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             active: _isPrivate,
             onTap: () => setState(() => _isPrivate = !_isPrivate),
           ),
+          _MetaRow(
+            icon: Icons.label_outline,
+            label: _customCategory ?? 'Categorie toevoegen',
+            active: _customCategory != null,
+            onTap: () => _pickCategory(context),
+            trailing: _customCategory != null
+                ? IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => setState(() => _customCategory = null),
+                  )
+                : null,
+          ),
           if (_dueDate != null)
             _MetaRow(
               icon: Icons.repeat,
@@ -288,6 +306,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         _isAllDay = true;
       }
     });
+  }
+
+  Future<void> _pickCategory(BuildContext context) async {
+    final categories = await widget.repo.watchTaskCategories().first;
+    if (!mounted) return;
+    final result = await showCategoryPicker(
+      // ignore: use_build_context_synchronously
+      context: context,
+      existingCategories: categories,
+      currentCategory: _customCategory,
+    );
+    if (result != null && mounted) {
+      setState(() => _customCategory = result.isEmpty ? null : result);
+    }
   }
 
   void _pickPriority(BuildContext context) {

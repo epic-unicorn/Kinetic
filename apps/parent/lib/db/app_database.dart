@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,6 +43,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.addColumn(partnerProposals, partnerProposals.syncState);
+      }
+      if (from < 7) {
+        await m.addColumn(personalTasks, personalTasks.customCategory);
+        await m.addColumn(personalNotes, personalNotes.category);
+        await m.addColumn(personalNotes, personalNotes.sortOrder);
       }
     },
   );

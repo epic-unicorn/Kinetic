@@ -89,7 +89,7 @@ class TodoRepository {
         .map((rows) => rows.map(_taskFromRow).toList());
   }
 
-  /// All incomplete tasks ordered by due date (nulls last), then created_at.
+  /// All incomplete tasks, ordered by custom category (nulls first), sortOrder, then created_at.
   Stream<List<PersonalTask>> watchOpenTasks() {
     return (_db.select(_db.personalTasks)
           ..where(
@@ -98,8 +98,14 @@ class TodoRepository {
                 t.syncState.equals('deleted').not(),
           )
           ..orderBy([
+            // Uncategorized (null) sorts before named categories
+            (t) => OrderingTerm(
+              expression: t.customCategory.isNull(),
+              mode: OrderingMode.desc,
+            ),
+            (t) => OrderingTerm.asc(t.customCategory),
+            (t) => OrderingTerm.asc(t.sortOrder),
             (t) => OrderingTerm.desc(t.priority),
-            // Sort rows with no due date after those that have one.
             (t) => OrderingTerm.asc(t.dueDate.isNull()),
             (t) => OrderingTerm.asc(t.dueDate),
             (t) => OrderingTerm.asc(t.createdAt),
@@ -229,6 +235,7 @@ class TodoRepository {
     bool isFlagged = false,
     bool? isPrivate,
     TaskCategory? category,
+    String? customCategory,
     DateTime? remindAt,
   }) async {
     final autoCategory = category ?? _classifier.classify(title, notes: notes);
@@ -253,6 +260,7 @@ class TodoRepository {
       isFlagged: isFlagged,
       isPrivate: taskIsPrivate,
       category: autoCategory,
+      customCategory: customCategory,
       remindAt: remindAt,
     );
     await _db.into(_db.personalTasks).insert(_taskToCompanion(task));
@@ -338,6 +346,54 @@ class TodoRepository {
       ),
     );
     onWrite?.call();
+  }
+
+  Future<void> updateTaskCustomCategory(
+    String taskId,
+    String? category,
+  ) async {
+    await (_db.update(
+      _db.personalTasks,
+    )..where((t) => t.id.equals(taskId))).write(
+      PersonalTasksCompanion(
+        customCategory: Value(category),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    onWrite?.call();
+  }
+
+  /// Batch-update the customCategory and sortOrder for a list of tasks in one
+  /// transaction. Used after drag-and-drop reordering.
+  Future<void> batchUpdateCategoryAndOrder(
+    List<({String id, String? category, int sortOrder})> updates,
+  ) async {
+    await _db.transaction(() async {
+      for (final u in updates) {
+        await (_db.update(_db.personalTasks)
+              ..where((t) => t.id.equals(u.id)))
+            .write(
+              PersonalTasksCompanion(
+                customCategory: Value(u.category),
+                sortOrder: Value(u.sortOrder),
+                updatedAt: Value(DateTime.now().toUtc()),
+              ),
+            );
+      }
+    });
+    onWrite?.call();
+  }
+
+  /// Stream of distinct, sorted category names from open tasks.
+  Stream<List<String>> watchTaskCategories() {
+    return watchOpenTasks().map(
+      (tasks) => tasks
+          .map((t) => t.customCategory)
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort(),
+    );
   }
 
   // ── Subtasks ───────────────────────────────────────────────────────────────
@@ -510,6 +566,7 @@ class TodoRepository {
     isPrivate: r.isPrivate,
     kidsTaskId: r.kidsTaskId,
     category: TaskCategory.values.byName(r.category),
+    customCategory: r.customCategory,
     remindAt: r.remindAt,
     sortOrder: r.sortOrder,
     createdAt: r.createdAt,
@@ -532,6 +589,7 @@ class TodoRepository {
         isPrivate: Value(t.isPrivate),
         kidsTaskId: Value(t.kidsTaskId),
         category: Value(t.category.name),
+        customCategory: Value(t.customCategory),
         remindAt: Value(t.remindAt),
         sortOrder: Value(t.sortOrder),
         createdAt: Value(t.createdAt),

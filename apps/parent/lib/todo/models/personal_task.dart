@@ -136,6 +136,9 @@ class PersonalTask {
 
   final TaskCategory category;
 
+  /// User-defined category label for grouping in the tasks list; null = uncategorized.
+  final String? customCategory;
+
   /// When to fire a local reminder notification; null = no reminder.
   final DateTime? remindAt;
 
@@ -158,6 +161,7 @@ class PersonalTask {
     required this.isPrivate,
     this.kidsTaskId,
     required this.category,
+    this.customCategory,
     this.remindAt,
     required this.sortOrder,
     required this.createdAt,
@@ -175,6 +179,7 @@ class PersonalTask {
     bool isFlagged = false,
     bool isPrivate = false,
     TaskCategory? category,
+    String? customCategory,
     DateTime? remindAt,
     int sortOrder = 0,
   }) {
@@ -194,6 +199,7 @@ class PersonalTask {
       isPrivate: isPrivate,
       kidsTaskId: null,
       category: category ?? TaskCategory.other,
+      customCategory: customCategory,
       remindAt: remindAt,
       sortOrder: sortOrder,
       createdAt: now,
@@ -216,6 +222,8 @@ class PersonalTask {
     bool? isPrivate,
     String? kidsTaskId,
     TaskCategory? category,
+    String? customCategory,
+    bool clearCustomCategory = false,
     DateTime? remindAt,
     bool clearRemindAt = false,
     int? sortOrder,
@@ -235,6 +243,7 @@ class PersonalTask {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       category: category ?? this.category,
+      customCategory: clearCustomCategory ? null : (customCategory ?? this.customCategory),
       remindAt: clearRemindAt ? null : (remindAt ?? this.remindAt),
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt,
