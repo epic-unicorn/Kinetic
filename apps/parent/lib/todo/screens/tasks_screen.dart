@@ -56,10 +56,8 @@ class _TasksScreenState extends State<TasksScreen>
           if (widget.syncStatus != null)
             ValueListenableBuilder<SyncStatus>(
               valueListenable: widget.syncStatus!,
-              builder: (context, status, _) => _SyncIcon(
-                status: status,
-                onRetryPressed: widget.onSyncRetry,
-              ),
+              builder: (context, status, _) =>
+                  _SyncIcon(status: status, onRetryPressed: widget.onSyncRetry),
             ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -105,10 +103,7 @@ class _SyncIcon extends StatelessWidget {
   final SyncStatus status;
   final VoidCallback? onRetryPressed;
 
-  const _SyncIcon({
-    required this.status,
-    this.onRetryPressed,
-  });
+  const _SyncIcon({required this.status, this.onRetryPressed});
 
   @override
   Widget build(BuildContext context) {

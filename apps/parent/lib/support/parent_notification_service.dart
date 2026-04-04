@@ -6,13 +6,14 @@ import 'package:timezone/timezone.dart' as tz;
 import '../notifications/notification_service.dart';
 
 // Callback function type for snooze/postpone actions
-typedef OnReminderActionCallback = Future<void> Function(
-  int reminderId,
-  String actionId,
-  String title,
-  String body,
-  DateTime originalTime,
-);
+typedef OnReminderActionCallback =
+    Future<void> Function(
+      int reminderId,
+      String actionId,
+      String title,
+      String body,
+      DateTime originalTime,
+    );
 
 // ---------------------------------------------------------------------------
 // ParentNotificationService
@@ -41,10 +42,11 @@ class ParentNotificationService implements NotificationService {
   OnReminderActionCallback? _onActionCallback;
 
   // Store reminder metadata for rescheduling
-  final Map<int, ({String title, String body, DateTime originalTime})> _scheduledReminders = {};
+  final Map<int, ({String title, String body, DateTime originalTime})>
+  _scheduledReminders = {};
 
   ParentNotificationService({OnReminderActionCallback? onActionCallback})
-      : _onActionCallback = onActionCallback;
+    : _onActionCallback = onActionCallback;
 
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
@@ -146,10 +148,10 @@ class ParentNotificationService implements NotificationService {
     required DateTime at,
   }) async {
     await _ensureInitialized();
-    
+
     // Store reminder metadata for action handling
     _scheduledReminders[id] = (title: title, body: body, originalTime: at);
-    
+
     final scheduled = tz.TZDateTime.from(at, tz.local);
     if (scheduled.isBefore(DateTime.now())) return; // skip past reminders
     await _plugin.zonedSchedule(
@@ -199,12 +201,7 @@ class ParentNotificationService implements NotificationService {
       _ => DateTime.now().add(const Duration(minutes: 5)), // default fallback
     };
 
-    await scheduleReminder(
-      id: id,
-      title: title,
-      body: body,
-      at: newTime,
-    );
+    await scheduleReminder(id: id, title: title, body: body, at: newTime);
 
     return newTime;
   }

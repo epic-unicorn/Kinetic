@@ -162,9 +162,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       // Set timeout of 30 seconds for sync operations
       await _syncOrchestrator!.sync().timeout(
         const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException(
-          'Sync operation timed out after 30 seconds',
-        ),
+        onTimeout: () =>
+            throw TimeoutException('Sync operation timed out after 30 seconds'),
       );
       syncStatus.value = SyncStatus.idle;
     } catch (e) {
