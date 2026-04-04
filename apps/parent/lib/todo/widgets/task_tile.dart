@@ -139,7 +139,8 @@ class _TaskTileContentState extends State<_TaskTileContent> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final hasDate = widget.task.dueDate != null;
-    final overdue = hasDate && isOverdue(widget.task.dueDate!) && !widget.task.isCompleted;
+    final overdue =
+        hasDate && isOverdue(widget.task.dueDate!) && !widget.task.isCompleted;
 
     return Card(
       child: InkWell(
@@ -166,18 +167,25 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                             color: widget.task.priority != TaskPriority.none
                                 ? priorityColor(widget.task.priority)
                                 : kColorWarmGrey,
-                            width: widget.task.priority == TaskPriority.high ? 2.5 : 2,
+                            width: widget.task.priority == TaskPriority.high
+                                ? 2.5
+                                : 2,
                           ),
                     color: widget.task.isCompleted
                         ? kColorTeal
                         : (widget.task.priority != TaskPriority.none
-                              ? priorityColor(widget.task.priority).withAlpha(30)
+                              ? priorityColor(
+                                  widget.task.priority,
+                                ).withAlpha(30)
                               : Colors.transparent),
                     boxShadow:
-                        widget.task.priority != TaskPriority.none && !widget.task.isCompleted
+                        widget.task.priority != TaskPriority.none &&
+                            !widget.task.isCompleted
                         ? [
                             BoxShadow(
-                              color: priorityColor(widget.task.priority).withAlpha(50),
+                              color: priorityColor(
+                                widget.task.priority,
+                              ).withAlpha(50),
                               blurRadius: 4,
                               spreadRadius: 0,
                             ),
@@ -298,8 +306,11 @@ class _TaskTileContentState extends State<_TaskTileContent> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) =>
-          TaskDetailSheet(task: widget.task, repo: widget.repo, hasFamilyKey: widget.hasFamilyKey),
+      builder: (_) => TaskDetailSheet(
+        task: widget.task,
+        repo: widget.repo,
+        hasFamilyKey: widget.hasFamilyKey,
+      ),
     );
   }
 
@@ -315,21 +326,33 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                 widget.task.isFlagged ? Icons.flag : Icons.flag_outlined,
                 color: kColorGold,
               ),
-              title: Text(widget.task.isFlagged ? 'Markering verwijderen' : 'Markeer'),
+              title: Text(
+                widget.task.isFlagged ? 'Markering verwijderen' : 'Markeer',
+              ),
               onTap: () {
                 Navigator.pop(context);
-                widget.repo.toggleFlag(widget.task.id, flagged: !widget.task.isFlagged);
+                widget.repo.toggleFlag(
+                  widget.task.id,
+                  flagged: !widget.task.isFlagged,
+                );
               },
             ),
             ListTile(
               leading: Icon(
-                widget.task.isPrivate ? Icons.lock_open_outlined : Icons.lock_outline,
+                widget.task.isPrivate
+                    ? Icons.lock_open_outlined
+                    : Icons.lock_outline,
                 color: kColorWarmGrey,
               ),
-              title: Text(widget.task.isPrivate ? 'Deelbaar maken' : 'Privé maken'),
+              title: Text(
+                widget.task.isPrivate ? 'Deelbaar maken' : 'Privé maken',
+              ),
               onTap: () {
                 Navigator.pop(context);
-                widget.repo.togglePrivate(widget.task.id, isPrivate: !widget.task.isPrivate);
+                widget.repo.togglePrivate(
+                  widget.task.id,
+                  isPrivate: !widget.task.isPrivate,
+                );
               },
             ),
             ListTile(
