@@ -16,12 +16,14 @@ class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
   final ValueNotifier<SyncStatus>? syncStatus;
   final bool hasFamilyKey;
+  final VoidCallback? onSyncRetry;
 
   const TasksScreen({
     super.key,
     required this.repo,
     this.syncStatus,
     this.hasFamilyKey = false,
+    this.onSyncRetry,
   });
 
   @override
@@ -54,7 +56,10 @@ class _TasksScreenState extends State<TasksScreen>
           if (widget.syncStatus != null)
             ValueListenableBuilder<SyncStatus>(
               valueListenable: widget.syncStatus!,
-              builder: (context, status, _) => _SyncIcon(status: status),
+              builder: (context, status, _) => _SyncIcon(
+                status: status,
+                onRetryPressed: widget.onSyncRetry,
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -98,7 +103,12 @@ class _TasksScreenState extends State<TasksScreen>
 
 class _SyncIcon extends StatelessWidget {
   final SyncStatus status;
-  const _SyncIcon({required this.status});
+  final VoidCallback? onRetryPressed;
+
+  const _SyncIcon({
+    required this.status,
+    this.onRetryPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +120,16 @@ class _SyncIcon extends StatelessWidget {
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        SyncStatus.error => const Icon(Icons.sync_problem_outlined),
+        SyncStatus.error => GestureDetector(
+          onTap: onRetryPressed,
+          child: Tooltip(
+            message: 'Sync mislukt, tap om opnieuw te proberen.',
+            child: Icon(
+              Icons.sync_problem_outlined,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ),
         SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
       },
     );
@@ -172,8 +191,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
 
         // Build flat list: header + tasks per category
         final flatItems = <_ListItem>[];
-        final showHeaders =
-            groupKeys.length > 1 || groupKeys.first != null;
+        final showHeaders = groupKeys.length > 1 || groupKeys.first != null;
 
         for (final cat in groupKeys) {
           if (showHeaders) {
@@ -185,8 +203,9 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
         }
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final dividerColor =
-            isDark ? const Color(0xFF333333) : const Color(0xFFEEEEEE);
+        final dividerColor = isDark
+            ? const Color(0xFF333333)
+            : const Color(0xFFEEEEEE);
 
         return ReorderableListView.builder(
           buildDefaultDragHandles: false,
@@ -306,11 +325,7 @@ class _DraggableTaskRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: TaskTile(
-            task: task,
-            repo: repo,
-            hasFamilyKey: hasFamilyKey,
-          ),
+          child: TaskTile(task: task, repo: repo, hasFamilyKey: hasFamilyKey),
         ),
         ReorderableDragStartListener(
           index: index,

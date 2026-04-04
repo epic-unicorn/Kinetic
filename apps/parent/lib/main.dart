@@ -159,7 +159,13 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     if (_syncOrchestrator == null) return;
     syncStatus.value = SyncStatus.syncing;
     try {
-      await _syncOrchestrator!.sync();
+      // Set timeout of 30 seconds for sync operations
+      await _syncOrchestrator!.sync().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+          'Sync operation timed out after 30 seconds',
+        ),
+      );
       syncStatus.value = SyncStatus.idle;
     } catch (e) {
       print('Sync error: $e');
@@ -205,6 +211,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     repo: _todoRepository,
                     syncStatus: hasWebDav ? syncStatus : null,
                     hasFamilyKey: paired,
+                    onSyncRetry: _triggerSync,
                   ),
                   if (paired)
                     PartnerScreen(
@@ -213,6 +220,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     ),
                   NotesScreen(
                     repo: _noteRepository,
+                    onSyncRetry: _triggerSync,
                     syncStatus: hasWebDav ? syncStatus : null,
                     hasFamilyKey: hasFamilyKey,
                   ),

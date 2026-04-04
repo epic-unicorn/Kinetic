@@ -243,7 +243,9 @@ class PersonalTask {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       category: category ?? this.category,
-      customCategory: clearCustomCategory ? null : (customCategory ?? this.customCategory),
+      customCategory: clearCustomCategory
+          ? null
+          : (customCategory ?? this.customCategory),
       remindAt: clearRemindAt ? null : (remindAt ?? this.remindAt),
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt,

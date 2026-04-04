@@ -13,12 +13,14 @@ class NotesScreen extends StatefulWidget {
   final NoteRepository repo;
   final ValueNotifier<SyncStatus>? syncStatus;
   final ValueNotifier<bool>? hasFamilyKey;
+  final VoidCallback? onSyncRetry;
 
   const NotesScreen({
     super.key,
     required this.repo,
     this.syncStatus,
     this.hasFamilyKey,
+    this.onSyncRetry,
   });
 
   @override
@@ -36,24 +38,27 @@ class _NotesScreenState extends State<NotesScreen> {
           if (widget.syncStatus != null)
             ValueListenableBuilder<SyncStatus>(
               valueListenable: widget.syncStatus!,
-              builder: (context, status, _) => switch (status) {
-                SyncStatus.syncing => const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: SizedBox(
+              builder: (context, status, _) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: switch (status) {
+                  SyncStatus.syncing => const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                ),
-                SyncStatus.error => const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Icon(Icons.sync_problem_outlined),
-                ),
-                SyncStatus.idle => const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Icon(Icons.cloud_done_outlined),
-                ),
-              },
+                  SyncStatus.error => GestureDetector(
+                    onTap: widget.onSyncRetry,
+                    child: Tooltip(
+                      message: 'Sync mislukt, tap om opnieuw te proberen.',
+                      child: Icon(
+                        Icons.sync_problem_outlined,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
+                },
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.add),

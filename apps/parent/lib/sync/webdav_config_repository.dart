@@ -99,6 +99,13 @@ class WebDavConfigRepository {
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
   }
 
+  /// Stores a new personal key without touching any other config fields.
+  ///
+  /// Use this when importing a personal key backup, independent of WebDAV.
+  Future<void> savePersonalKey(Uint8List personalKey) async {
+    await _store.write(key: _kPersonalKey, value: base64.encode(personalKey));
+  }
+
   /// Removes the family key without touching any other config fields.
   ///
   /// Call this when leaving the family pairing.

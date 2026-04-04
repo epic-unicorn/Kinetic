@@ -121,15 +121,15 @@ class NoteRepository {
   ) async {
     await _db.transaction(() async {
       for (final u in updates) {
-        await (_db.update(_db.personalNotes)
-              ..where((t) => t.id.equals(u.id)))
-            .write(
-              PersonalNotesCompanion(
-                category: Value(u.category),
-                sortOrder: Value(u.sortOrder),
-                updatedAt: Value(DateTime.now().toUtc()),
-              ),
-            );
+        await (_db.update(
+          _db.personalNotes,
+        )..where((t) => t.id.equals(u.id))).write(
+          PersonalNotesCompanion(
+            category: Value(u.category),
+            sortOrder: Value(u.sortOrder),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
       }
     });
     onWrite?.call();
@@ -138,14 +138,12 @@ class NoteRepository {
   /// Stream of distinct, sorted category names from all notes.
   Stream<List<String>> watchNoteCategories() {
     return watchAll().map(
-      (notes) => notes
-          .map((n) => n.category)
-          .whereType<String>()
-          .toSet()
-          .toList()
-        ..sort(),
+      (notes) =>
+          notes.map((n) => n.category).whereType<String>().toSet().toList()
+            ..sort(),
     );
   }
+
   PersonalNote _noteFromRow(PersonalNoteRow row) {
     return PersonalNote.fromRow(row);
   }

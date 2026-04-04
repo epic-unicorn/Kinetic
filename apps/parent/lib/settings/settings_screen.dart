@@ -203,13 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showImportPersonalKeyDialog() async {
-    if (_config == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WebDAV niet geconfigureerd')),
-      );
-      return;
-    }
-
+    // Personal key import is independent of WebDAV configuration
     final textCtrl = TextEditingController();
     final importResult = await showDialog<bool>(
       context: context,
@@ -264,7 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final importedKey = KineticEncryption.importRecoveryJson(jsonString);
 
       if (_config != null) {
-        // Update the config with the imported personal key
+        // WebDAV is configured: update the full config with the imported personal key
         await widget.configRepo.save(
           SyncConfig(
             serverUrl: _config!.serverUrl,
@@ -275,15 +269,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             familyKeyBytes: _config!.familyKeyBytes,
           ),
         );
+      } else {
+        // WebDAV not configured: save just the personal key for later use
+        await widget.configRepo.savePersonalKey(importedKey);
+      }
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Persoonlijke sleutel succesvol geïmporteerd.'),
-            ),
-          );
-          _loadConfig();
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Persoonlijke sleutel succesvol geïmporteerd.'),
+          ),
+        );
+        _loadConfig();
       }
     } catch (e) {
       if (mounted) {

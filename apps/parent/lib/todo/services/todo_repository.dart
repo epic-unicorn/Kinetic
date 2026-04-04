@@ -348,10 +348,7 @@ class TodoRepository {
     onWrite?.call();
   }
 
-  Future<void> updateTaskCustomCategory(
-    String taskId,
-    String? category,
-  ) async {
+  Future<void> updateTaskCustomCategory(String taskId, String? category) async {
     await (_db.update(
       _db.personalTasks,
     )..where((t) => t.id.equals(taskId))).write(
@@ -370,15 +367,15 @@ class TodoRepository {
   ) async {
     await _db.transaction(() async {
       for (final u in updates) {
-        await (_db.update(_db.personalTasks)
-              ..where((t) => t.id.equals(u.id)))
-            .write(
-              PersonalTasksCompanion(
-                customCategory: Value(u.category),
-                sortOrder: Value(u.sortOrder),
-                updatedAt: Value(DateTime.now().toUtc()),
-              ),
-            );
+        await (_db.update(
+          _db.personalTasks,
+        )..where((t) => t.id.equals(u.id))).write(
+          PersonalTasksCompanion(
+            customCategory: Value(u.category),
+            sortOrder: Value(u.sortOrder),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
       }
     });
     onWrite?.call();
@@ -387,12 +384,13 @@ class TodoRepository {
   /// Stream of distinct, sorted category names from open tasks.
   Stream<List<String>> watchTaskCategories() {
     return watchOpenTasks().map(
-      (tasks) => tasks
-          .map((t) => t.customCategory)
-          .whereType<String>()
-          .toSet()
-          .toList()
-        ..sort(),
+      (tasks) =>
+          tasks
+              .map((t) => t.customCategory)
+              .whereType<String>()
+              .toSet()
+              .toList()
+            ..sort(),
     );
   }
 

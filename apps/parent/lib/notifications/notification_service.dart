@@ -17,4 +17,13 @@ abstract class NotificationService {
     required String body,
     String? payload,
   });
+
+  /// Reschedule a reminder for a later time based on snooze/postpone action.
+  /// Returns the new scheduled time.
+  Future<DateTime> rescheduleReminder({
+    required int id,
+    required String actionId,
+    required String title,
+    required String body,
+  });
 }

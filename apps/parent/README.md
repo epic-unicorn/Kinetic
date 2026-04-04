@@ -67,3 +67,4 @@ The recovery key is your personal AES-256 key in JSON format. Export it to enabl
 - "Assign to child" UI in task detail
 - Parent approval screen for kids-completed tasks
 - Activity history and XP tracking
+- sort cateogies
