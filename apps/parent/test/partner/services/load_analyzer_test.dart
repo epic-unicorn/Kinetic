@@ -16,17 +16,19 @@ Future<void> _insertTask(
   String category = 'other',
 }) async {
   final now = DateTime.now().toUtc();
-  await db.into(db.personalTasks).insert(
-    PersonalTasksCompanion.insert(
-      id: id,
-      title: title,
-      isCompleted: Value(isCompleted),
-      dueDate: Value(dueDate),
-      category: Value(category),
-      createdAt: now,
-      updatedAt: now,
-    ),
-  );
+  await db
+      .into(db.personalTasks)
+      .insert(
+        PersonalTasksCompanion.insert(
+          id: id,
+          title: title,
+          isCompleted: Value(isCompleted),
+          dueDate: Value(dueDate),
+          category: Value(category),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
 }
 
 void main() {
@@ -62,8 +64,18 @@ void main() {
     });
 
     test('counts all non-completed tasks across categories', () async {
-      await _insertTask(db, id: 't1', title: 'Dish washing', category: 'household');
-      await _insertTask(db, id: 't2', title: 'Doctor visit', category: 'health');
+      await _insertTask(
+        db,
+        id: 't1',
+        title: 'Dish washing',
+        category: 'household',
+      );
+      await _insertTask(
+        db,
+        id: 't2',
+        title: 'Doctor visit',
+        category: 'health',
+      );
       await _insertTask(db, id: 't3', title: 'Belasting', category: 'finance');
       await _insertTask(db, id: 't4', title: 'Done', isCompleted: true);
 
@@ -74,9 +86,19 @@ void main() {
     test('counts urgent tasks (due within 7 days inclusive)', () async {
       final now = DateTime.now().toUtc();
       // Due in 3 days → urgent
-      await _insertTask(db, id: 't1', title: 'Urgent', dueDate: now.add(const Duration(days: 3)));
+      await _insertTask(
+        db,
+        id: 't1',
+        title: 'Urgent',
+        dueDate: now.add(const Duration(days: 3)),
+      );
       // Due in 7 days exactly → urgent
-      await _insertTask(db, id: 't2', title: 'Boundary', dueDate: now.add(const Duration(days: 7)));
+      await _insertTask(
+        db,
+        id: 't2',
+        title: 'Boundary',
+        dueDate: now.add(const Duration(days: 7)),
+      );
 
       final metrics = await analyzer.getMyLoad('p', 'P');
       expect(metrics.urgentCount, equals(2));
@@ -86,7 +108,12 @@ void main() {
       final now = DateTime.now().toUtc();
       // Use 9 days to avoid inDays truncation from slight time delta between
       // test setup and getMyLoad's internal DateTime.now().
-      await _insertTask(db, id: 't1', title: 'Later taak', dueDate: now.add(const Duration(days: 9)));
+      await _insertTask(
+        db,
+        id: 't1',
+        title: 'Later taak',
+        dueDate: now.add(const Duration(days: 9)),
+      );
 
       final metrics = await analyzer.getMyLoad('p', 'P');
       expect(metrics.urgentCount, equals(0));
@@ -110,8 +137,18 @@ void main() {
     });
 
     test('groups tasks by category', () async {
-      await _insertTask(db, id: 't1', title: 'Huishouden 1', category: 'household');
-      await _insertTask(db, id: 't2', title: 'Huishouden 2', category: 'household');
+      await _insertTask(
+        db,
+        id: 't1',
+        title: 'Huishouden 1',
+        category: 'household',
+      );
+      await _insertTask(
+        db,
+        id: 't2',
+        title: 'Huishouden 2',
+        category: 'household',
+      );
       await _insertTask(db, id: 't3', title: 'Gezondheid', category: 'health');
 
       final metrics = await analyzer.getMyLoad('p', 'P');
@@ -121,7 +158,13 @@ void main() {
 
     test('excludes completed tasks from category counts', () async {
       await _insertTask(db, id: 't1', title: 'Open', category: 'household');
-      await _insertTask(db, id: 't2', title: 'Klaar', category: 'household', isCompleted: true);
+      await _insertTask(
+        db,
+        id: 't2',
+        title: 'Klaar',
+        category: 'household',
+        isCompleted: true,
+      );
 
       final metrics = await analyzer.getMyLoad('p', 'P');
       expect(metrics.tasksByCategory['household'], equals(1));
@@ -160,7 +203,12 @@ void main() {
         await _insertTask(db, id: 'open$i', title: 'Open $i');
       }
       for (var i = 0; i < 10; i++) {
-        await _insertTask(db, id: 'done$i', title: 'Done $i', isCompleted: true);
+        await _insertTask(
+          db,
+          id: 'done$i',
+          title: 'Done $i',
+          isCompleted: true,
+        );
       }
       // 4 open tasks, max=10 → 4 < 5 → true
       expect(await analyzer.hasCapacityForMoreProposals(10), isTrue);

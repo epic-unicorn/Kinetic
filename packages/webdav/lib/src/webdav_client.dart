@@ -182,7 +182,8 @@ class WebDavClient {
       // Find the surrounding <response> block to pick out etag + resourcetype.
       final blockStart = xml.lastIndexOf('<', hrefMatch.start);
       var blockEnd = xml.indexOf('</d:response>', hrefMatch.end);
-      if (blockEnd == -1) blockEnd = xml.indexOf('</D:response>', hrefMatch.end);
+      if (blockEnd == -1)
+        blockEnd = xml.indexOf('</D:response>', hrefMatch.end);
       if (blockEnd == -1) continue;
       final block = xml.substring(blockStart, blockEnd);
       final etagMatch = _etagRegex.firstMatch(block);

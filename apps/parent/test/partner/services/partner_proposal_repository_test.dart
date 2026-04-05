@@ -18,23 +18,26 @@ Future<void> _insertProposal(
   String syncState = 'clean',
 }) async {
   final now = DateTime.now().toUtc();
-  await db.into(db.partnerProposals).insert(
-    PartnerProposalsCompanion.insert(
-      id: id,
-      fromParentId: fromParentId,
-      taskTitle: taskTitle,
-      status: Value(status),
-      syncState: Value(syncState),
-      receivedAt: now,
-      updatedAt: now,
-    ),
-  );
+  await db
+      .into(db.partnerProposals)
+      .insert(
+        PartnerProposalsCompanion.insert(
+          id: id,
+          fromParentId: fromParentId,
+          taskTitle: taskTitle,
+          status: Value(status),
+          syncState: Value(syncState),
+          receivedAt: now,
+          updatedAt: now,
+        ),
+      );
 }
 
 /// Reads the raw DB row for a proposal.
 Future<PartnerProposalRow?> _getRaw(AppDatabase db, String id) async {
-  return (db.select(db.partnerProposals)..where((t) => t.id.equals(id)))
-      .getSingleOrNull();
+  return (db.select(
+    db.partnerProposals,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 }
 
 void main() {
@@ -69,18 +72,20 @@ void main() {
 
     test('maps DB row to PartnerProposal correctly', () async {
       final now = DateTime.now().toUtc();
-      await db.into(db.partnerProposals).insert(
-        PartnerProposalsCompanion.insert(
-          id: 'mapped-1',
-          fromParentId: 'partner-42',
-          taskTitle: 'Afwas doen',
-          taskCategory: const Value('household'),
-          taskPriority: const Value(2),
-          status: const Value('pending'),
-          receivedAt: now,
-          updatedAt: now,
-        ),
-      );
+      await db
+          .into(db.partnerProposals)
+          .insert(
+            PartnerProposalsCompanion.insert(
+              id: 'mapped-1',
+              fromParentId: 'partner-42',
+              taskTitle: 'Afwas doen',
+              taskCategory: const Value('household'),
+              taskPriority: const Value(2),
+              status: const Value('pending'),
+              receivedAt: now,
+              updatedAt: now,
+            ),
+          );
 
       final proposals = await repo.watchPending().first;
       expect(proposals, hasLength(1));
@@ -131,7 +136,12 @@ void main() {
   // --------------------------------------------------------------------------
   group('PartnerProposalRepository.accept', () {
     test('sets status to accepted and syncState to dirty', () async {
-      await _insertProposal(db, id: 'p1', status: 'pending', syncState: 'clean');
+      await _insertProposal(
+        db,
+        id: 'p1',
+        status: 'pending',
+        syncState: 'clean',
+      );
 
       await repo.accept('p1');
 
@@ -146,7 +156,12 @@ void main() {
   // --------------------------------------------------------------------------
   group('PartnerProposalRepository.snooze', () {
     test('sets status to snoozed and syncState to dirty', () async {
-      await _insertProposal(db, id: 'p1', status: 'pending', syncState: 'clean');
+      await _insertProposal(
+        db,
+        id: 'p1',
+        status: 'pending',
+        syncState: 'clean',
+      );
 
       await repo.snooze('p1');
 
@@ -161,7 +176,12 @@ void main() {
   // --------------------------------------------------------------------------
   group('PartnerProposalRepository.dismiss', () {
     test('sets status to dismissed and syncState to dirty', () async {
-      await _insertProposal(db, id: 'p1', status: 'pending', syncState: 'clean');
+      await _insertProposal(
+        db,
+        id: 'p1',
+        status: 'pending',
+        syncState: 'clean',
+      );
 
       await repo.dismiss('p1');
 
@@ -176,7 +196,12 @@ void main() {
   // --------------------------------------------------------------------------
   group('PartnerProposalRepository.delete', () {
     test('sets syncState to deleted without changing status', () async {
-      await _insertProposal(db, id: 'p1', status: 'pending', syncState: 'clean');
+      await _insertProposal(
+        db,
+        id: 'p1',
+        status: 'pending',
+        syncState: 'clean',
+      );
 
       await repo.delete('p1');
 
@@ -193,7 +218,12 @@ void main() {
   // --------------------------------------------------------------------------
   group('PartnerProposalRepository.reject', () {
     test('sets status to rejected and syncState to dirty', () async {
-      await _insertProposal(db, id: 'p1', status: 'pending', syncState: 'clean');
+      await _insertProposal(
+        db,
+        id: 'p1',
+        status: 'pending',
+        syncState: 'clean',
+      );
 
       await repo.reject('p1', 'Afwas doen');
 

@@ -65,7 +65,9 @@ class FakeHttpClient extends http.BaseClient {
       bodyBytes = request.bodyBytes;
     } else {
       final collected = await request.finalize().toBytes();
-      bodyBytes = collected is Uint8List ? collected : Uint8List.fromList(collected);
+      bodyBytes = collected is Uint8List
+          ? collected
+          : Uint8List.fromList(collected);
     }
 
     switch (method) {
@@ -99,10 +101,14 @@ class FakeHttpClient extends http.BaseClient {
 
       // ── OPTIONS ───────────────────────────────────────────────────────────
       case 'OPTIONS':
-        return _rawResponse(200, Uint8List(0), headers: {
-          'dav': '1, 2',
-          'allow': 'OPTIONS, GET, PUT, DELETE, PROPFIND, MKCOL',
-        });
+        return _rawResponse(
+          200,
+          Uint8List(0),
+          headers: {
+            'dav': '1, 2',
+            'allow': 'OPTIONS, GET, PUT, DELETE, PROPFIND, MKCOL',
+          },
+        );
 
       default:
         return _rawResponse(405, Uint8List(0));
@@ -164,4 +170,3 @@ class FakeHttpClient extends http.BaseClient {
     return sb.toString();
   }
 }
-

@@ -294,13 +294,9 @@ class SyncOrchestrator {
         final proposal = _proposalRowToProposal(row);
         final json = _proposalToJson(proposal);
         await service.pushProposal(json);
-        await (_db.update(
-          _db.partnerProposals,
-        )..where((p) => p.id.equals(row.id))).write(
-          const PartnerProposalsCompanion(
-            syncState: Value('clean'),
-          ),
-        );
+        await (_db.update(_db.partnerProposals)
+              ..where((p) => p.id.equals(row.id)))
+            .write(const PartnerProposalsCompanion(syncState: Value('clean')));
       } catch (_) {
         // Leave dirty for next cycle.
       }
