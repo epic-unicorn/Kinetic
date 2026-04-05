@@ -169,10 +169,10 @@ class WebDavClient {
   // PROPFIND XML parser — intentionally minimal, no xml package dependency.
   // ---------------------------------------------------------------------------
 
-  static final _hrefRegex = RegExp(r'<[Dd](?:av:)?href>(.*?)</', dotAll: true);
+  static final _hrefRegex = RegExp(r'<[Dd](?:av)?:href>(.*?)</', dotAll: true);
   static final _etagRegex =
-      RegExp(r'<[Dd](?:av:)?getetag>(.*?)</', dotAll: true);
-  static final _collectionRegex = RegExp(r'<[Dd](?:av:)?collection\s*/?>');
+      RegExp(r'<[Dd](?:av)?:getetag>(.*?)</', dotAll: true);
+  static final _collectionRegex = RegExp(r'<[Dd](?:av)?:collection\s*/?>');
 
   static List<WebDavEntry> _parsePropfind(String xml) {
     final entries = <WebDavEntry>[];
@@ -181,7 +181,8 @@ class WebDavClient {
       final href = _unescapeXml(hrefMatch.group(1)!.trim());
       // Find the surrounding <response> block to pick out etag + resourcetype.
       final blockStart = xml.lastIndexOf('<', hrefMatch.start);
-      final blockEnd = xml.indexOf('</d:response>', hrefMatch.end);
+      var blockEnd = xml.indexOf('</d:response>', hrefMatch.end);
+      if (blockEnd == -1) blockEnd = xml.indexOf('</D:response>', hrefMatch.end);
       if (blockEnd == -1) continue;
       final block = xml.substring(blockStart, blockEnd);
       final etagMatch = _etagRegex.firstMatch(block);

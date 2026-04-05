@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:uuid/uuid.dart';
 
@@ -32,6 +33,16 @@ class SyncOrchestrator {
     } finally {
       client.dispose();
     }
+  }
+
+  /// Runs the full sync pipeline against a pre-built [service].
+  ///
+  /// Exposed for integration testing — production code always uses [sync].
+  @visibleForTesting
+  Future<void> syncWithService(WebDavSyncService service) async {
+    await _syncTasks(service);
+    await _syncNotes(service);
+    await _syncProposals(service);
   }
 
   // ---------------------------------------------------------------------------
@@ -286,9 +297,8 @@ class SyncOrchestrator {
         await (_db.update(
           _db.partnerProposals,
         )..where((p) => p.id.equals(row.id))).write(
-          PartnerProposalsCompanion(
-            syncState: const Value('clean'),
-            updatedAt: Value(DateTime.now().toUtc()),
+          const PartnerProposalsCompanion(
+            syncState: Value('clean'),
           ),
         );
       } catch (_) {

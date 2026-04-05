@@ -26,12 +26,15 @@ All secrets are stored at runtime via secure storage — no `--dart-define` flag
 
 ```
 lib/
-├── db/        — Drift schema (PersonalTasks + PersonalNotes)
-├── todo/      — task & note models, repositories, screens
-├── partner/   — proposals, load metrics
-├── settings/  — WebDAV config, theme preference
-├── sync/      — SyncOrchestrator (WebDAV pull/push, LWW merge)
-├── theme/     — Material 3 color schemes
+├── db/            — Drift schema (PartnerProposals + PersonalTasks + PersonalNotes)
+├── notifications/ — local notification scheduling
+├── partner/       — proposals, load metrics, screens, services
+├── secure/        — secure storage wrappers
+├── settings/      — WebDAV config, theme preference
+├── support/       — support utilities
+├── sync/          — SyncOrchestrator (WebDAV pull/push, LWW merge)
+├── theme/         — Material 3 color schemes
+├── todo/          — task & note models, repositories, screens
 └── main.dart
 ```
 
@@ -39,14 +42,14 @@ lib/
 
 ```
 /kinetic/{username}/
-├── tasks/personal.ics   — personal tasks (personal key)
-├── tasks/shared.ics     — tasks for kids (family key)
-├── notes/personal.ics   — personal notes (personal key)
-├── notes/shared.ics     — shared notes (family key)
-└── shared/
-    ├── load/{username}.json   — workload metrics (family key)
-    ├── proposals/{id}.ics     — partner proposals (family key)
-    └── tasks/                 — assigned kids tasks (family key)
+├── tasks/{uid}.ics        — personal tasks (personal key)
+└── notes/{uid}.ics        — personal notes (personal key)
+
+/kinetic/shared/
+├── notes/{uid}.ics        — shared notes (family key)
+├── proposals/{id}.json    — partner proposals (family key)
+├── load/{parentId}.json   — workload metrics (family key)
+└── tasks/{uid}.ics        — tasks assigned to children (family key)
 ```
 
 ## Data Migration & Recovery
@@ -67,4 +70,3 @@ The recovery key is your personal AES-256 key in JSON format. Export it to enabl
 - "Assign to child" UI in task detail
 - Parent approval screen for kids-completed tasks
 - Activity history and XP tracking
-- sort cateogies

@@ -29,15 +29,20 @@ Shared sync, crypto, and serialization logic for Kinetic Link.
 - `importRecoveryJson(jsonString, password)` → keyBytes (restores from backup)
 
 **WebDavClient**:
-- `propfind(path)` → List of file hrefs in directory
-- `put(path, content)` → Upload file
-- `get(path)` → Download file content
-- `delete(path)` → Delete file
+- `propfind(path)` → `List<WebDavEntry>` for a collection (direct children only)
+- `put(path, bytes)` → Upload file; optional `etag` for conditional PUT
+- `get(path)` → Download raw bytes
+- `delete(path)` → Delete file (404 treated as success)
+
+**WebDavSyncService**:
+- `pullTasks()` / `pushTask(task)` / `deleteTask(uid)` — personal tasks
+- `pullNotes()` / `pushNote(note)` / `deleteNote(uid)` — personal + shared notes
+- `pullProposals()` / `pushProposal(json)` / `deleteProposal(id)` — partner proposals
+- `pullLoadMetrics()` / `pushLoadMetrics(json)` — family workload metrics
 
 **SyncConfig**:
-- Stores `webdavUrl`, `username`, `password`
-- Stores `personalKeyBytes` and `familyKeyBytes`
-- Persists via secure storage (Flutter Secure Storage)
+- Stores `serverUrl`, `username`, `password`, `parentId`
+- Stores `personalKeyBytes` and optional `familyKeyBytes`
 
 ## Encryption Architecture
 
@@ -92,7 +97,7 @@ flutter test
 Tests cover:
 - Encryption/decryption round-trips
 - iCal serialization/parsing
-- WebDAV PROPFIND mocking
+- WebDAV client with mocked HTTP
 - Key derivation consistency
 - Recovery JSON import/export
 
