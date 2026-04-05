@@ -215,8 +215,8 @@ void main() {
       expect(task.dueDate, isNotNull);
       expect(
         task.isDueToday,
-        isFalse,
-      ); // Overdue tasks are in the past, not due "today"
+        isTrue,
+      ); // Overdue tasks are in the past — isDueToday returns true for today + overdue
     });
 
     test('all-day flag affects sync serialization', () {

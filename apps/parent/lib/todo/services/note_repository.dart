@@ -166,12 +166,20 @@ class NoteRepository {
 
   Future<void> _scheduleReminderFor(PersonalNote note) async {
     if (note.remindAt == null) return;
-    await _notifications?.scheduleReminder(
-      id: _notifId(note.id),
-      title: note.title,
-      body: note.body,
-      at: note.remindAt!,
-    );
+    if (note.remindAt!.isBefore(DateTime.now())) return;
+    try {
+      final body = note.body.length > 100
+          ? '${note.body.substring(0, 100)}…'
+          : note.body;
+      await _notifications?.scheduleReminder(
+        id: _notifId(note.id),
+        title: note.title,
+        body: body,
+        at: note.remindAt!,
+      );
+    } catch (_) {
+      // Best-effort: notification scheduling errors should not fail note operations.
+    }
   }
 
   int _notifId(String noteId) => noteId.hashCode.abs();

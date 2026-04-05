@@ -67,6 +67,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           body: _bodyCtrl.text,
           isShared: _isShared,
           remindAt: _remindAt,
+          clearRemindAt: _remindAt == null,
           category: _category,
           clearCategory: _category == null,
         );
@@ -141,6 +142,37 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Notitie verwijderen?'),
+        content: const Text('Je kunt dit niet ongedaan maken.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.repo.delete(widget.note!.id);
+      if (mounted) Navigator.of(context).pop(null);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij verwijderen: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.note != null;
@@ -149,6 +181,14 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       appBar: AppBar(
         title: Text(isEditing ? 'Notitie bewerken' : 'Nieuwe notitie'),
         centerTitle: false,
+        actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Verwijderen',
+              onPressed: _confirmDelete,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -159,6 +159,23 @@ class _OpenTasksTab extends StatefulWidget {
 }
 
 class _OpenTasksTabState extends State<_OpenTasksTab> {
+  /// User-defined category order. Persists for the session.
+  /// Null entry represents the uncategorised bucket.
+  List<String?> _categoryOrder = [];
+
+  /// Merges stream categories with the current user-defined order.
+  /// New categories are appended; removed categories are dropped.
+  List<String?> _mergeOrder(Iterable<String?> streamKeys) {
+    final known = Set<String?>.from(streamKeys);
+    // Preserve existing order for categories still present.
+    final merged = _categoryOrder.where(known.contains).toList();
+    // Append any new categories not yet in the order list.
+    for (final k in streamKeys) {
+      if (!merged.contains(k)) merged.add(k);
+    }
+    return merged;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PersonalTask>>(
@@ -176,13 +193,20 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
           groups.putIfAbsent(t.customCategory, () => []).add(t);
         }
 
-        // Sort group keys: null (uncategorised) first, then alphabetical
-        final groupKeys = groups.keys.toList()
-          ..sort((a, b) {
-            if (a == null) return -1;
-            if (b == null) return 1;
-            return a.compareTo(b);
+        // Keep _categoryOrder in sync with available categories.
+        final merged = _mergeOrder(groups.keys);
+        if (merged.length != _categoryOrder.length ||
+            !merged.every(_categoryOrder.contains)) {
+          // Use post-frame callback to avoid calling setState during build.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() => _categoryOrder = _mergeOrder(groups.keys));
+            }
           });
+        }
+
+        // Build sorted group key list using user-defined order.
+        final groupKeys = merged.where(groups.containsKey).toList();
 
         // Build flat list: header + tasks per category
         final flatItems = <_ListItem>[];
@@ -213,6 +237,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
               return _CategoryHeader(
                 key: ValueKey('header_${item.category}'),
                 label: item.category ?? 'Geen categorie',
+                index: index,
               );
             }
 
@@ -235,17 +260,27 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
   }
 
   void _onReorder(List<_ListItem> items, int oldIndex, int newIndex) {
-    // Headers have no drag listener so this guard is just a safety net.
-    if (items[oldIndex] is _HeaderItem) return;
-
     if (oldIndex < newIndex) newIndex -= 1;
 
-    // Build the reordered list.
+    if (items[oldIndex] is _HeaderItem) {
+      // ── Category header drag: reorder the category block ─────────────────
+      // Simulate the reorder in the flat list to derive the new category order.
+      final reordered = [...items]
+        ..removeAt(oldIndex)
+        ..insert(newIndex, items[oldIndex]);
+      final newOrder = <String?>[];
+      for (final item in reordered) {
+        if (item is _HeaderItem) newOrder.add(item.category);
+      }
+      setState(() => _categoryOrder = newOrder);
+      return;
+    }
+
+    // ── Task drag: update category + sort order ───────────────────────────
     final reordered = [...items]
       ..removeAt(oldIndex)
       ..insert(newIndex, items[oldIndex]);
 
-    // Compute new category + sortOrder for every task in the reordered list.
     final updates = <({String id, String? category, int sortOrder})>[];
     String? currentCat;
     int posInCat = 0;
@@ -275,21 +310,43 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
 
 class _CategoryHeader extends StatelessWidget {
   final String label;
+  final int index;
 
-  const _CategoryHeader({super.key, required this.label});
+  const _CategoryHeader({
+    super.key,
+    required this.label,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        label.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 0, 4),
+            child: Text(
+              label.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
-      ),
+        ReorderableDragStartListener(
+          index: index,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 12, 0),
+            child: Icon(
+              Icons.drag_indicator,
+              size: 18,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -20,6 +20,9 @@ part 'app_database.drift.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Internal constructor for testing with a custom executor.
+  AppDatabase.withExecutor(super.executor);
+
   @override
   int get schemaVersion => 7;
 

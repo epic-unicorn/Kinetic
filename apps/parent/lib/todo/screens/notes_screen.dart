@@ -365,45 +365,48 @@ class _NoteTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 12,
+          vertical: 8,
         ),
         title: Text(note.title),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            Text(
-              preview,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (note.remindAt != null) ...[
-                  Icon(Icons.alarm, size: 14, color: reminderColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    formatDueDate(note.remindAt!),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: reminderColor),
-                  ),
-                  const SizedBox(width: 16),
+            const SizedBox(height: 4),
+            if (preview.isNotEmpty)
+              Text(
+                preview,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            if (note.remindAt != null || (note.isShared && showSharedBadge)) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  if (note.remindAt != null) ...[
+                    Icon(Icons.alarm, size: 14, color: reminderColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatDueDate(note.remindAt!),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: reminderColor),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  if (note.isShared && showSharedBadge) ...[
+                    Icon(Icons.lock, size: 14, color: kColorTeal),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Gedeeld',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: kColorTeal),
+                    ),
+                  ],
                 ],
-                if (note.isShared && showSharedBadge) ...[
-                  Icon(Icons.lock, size: 14, color: kColorTeal),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Gedeeld',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: kColorTeal),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ],
         ),
         onTap: () async {
@@ -423,57 +426,6 @@ class _NoteTile extends StatelessWidget {
           }
         },
         onLongPress: () => _pickCategory(context),
-        trailing: PopupMenuButton<String>(
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
-          ],
-          onSelected: (value) {
-            if (value == 'delete') {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Verwijderen?'),
-                  content: const Text('Je kunt dit niet ongedaan maken.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Annuleren'),
-                    ),
-                    FilledButton(
-                      onPressed: () async {
-                        try {
-                          await repo.delete(note.id);
-                          if (ctx.mounted) {
-                            Navigator.of(ctx).pop();
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Notitie verwijderd'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (ctx.mounted) {
-                            Navigator.of(ctx).pop();
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Fout bij verwijderen: $e'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Verwijderen'),
-                    ),
-                  ],
-                ),
-              );
-            }
-          },
-        ),
       ),
     );
   }
@@ -491,6 +443,3 @@ class _NoteTile extends StatelessWidget {
     }
   }
 }
-
-
-/// Screen that displays all notes in a scrollable list with create/edit/delete.

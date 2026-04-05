@@ -51,56 +51,22 @@ class TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dismissible(
       key: ValueKey(task.id),
+      direction: DismissDirection.startToEnd,
       // ── Swipe right: toggle complete ──────────────────────────────────────
       background: _SwipeBackground(
         alignment: Alignment.centerLeft,
         color: Colors.green.shade700,
         icon: task.isCompleted ? Icons.undo : Icons.check,
       ),
-      // ── Swipe left: delete ────────────────────────────────────────────────
-      secondaryBackground: _SwipeBackground(
-        alignment: Alignment.centerRight,
-        color: Colors.red.shade700,
-        icon: Icons.delete_outline,
-      ),
       confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          // Toggle complete — don't actually dismiss the tile
-          if (task.isCompleted) {
-            await repo.uncompleteTask(task.id);
-          } else {
-            await repo.completeTask(task.id);
-            await _playCompletionFeedback();
-          }
-          return false;
+        // Toggle complete — don't actually dismiss the tile
+        if (task.isCompleted) {
+          await repo.uncompleteTask(task.id);
+        } else {
+          await repo.completeTask(task.id);
+          await _playCompletionFeedback();
         }
-        // Swipe-to-delete — let it dismiss, then show undo
-        return true;
-      },
-      onDismissed: (_) {
-        repo.deleteTask(task.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"${task.title}" verwijderd'),
-            action: SnackBarAction(
-              label: 'Ongedaan maken',
-              onPressed: () {
-                // Re-create task with same data
-                repo.createTask(
-                  title: task.title,
-                  listId: task.listId,
-                  notes: task.notes,
-                  priority: task.priority,
-                  dueDate: task.dueDate,
-                  isAllDay: task.isAllDay,
-                  recurrenceRule: task.recurrenceRule,
-                  isFlagged: task.isFlagged,
-                  isPrivate: task.isPrivate,
-                );
-              },
-            ),
-          ),
-        );
+        return false;
       },
       child: _TaskTileContent(
         task: task,

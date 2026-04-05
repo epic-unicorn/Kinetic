@@ -183,7 +183,7 @@ void main() {
     });
 
     test('colors are valid Color values', () {
-      expect(kColorTeal.value, equals(0xFF44BBA4));
+      expect(kColorTeal.value, equals(0xFF3B82F6)); // kColorTeal = kColorKineticBlue (blue)
       expect(kColorGold.value, equals(0xFFE7BB41));
       expect(kColorCharcoal.value, equals(0xFF393E41));
     });

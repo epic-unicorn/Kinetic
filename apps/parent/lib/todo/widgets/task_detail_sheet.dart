@@ -72,37 +72,47 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (title.isEmpty) return;
     setState(() => _saving = true);
 
-    if (widget.task == null) {
-      await widget.repo.createTask(
-        title: title,
-        listId: _listId,
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-        priority: _priority,
-        dueDate: _dueDate,
-        isAllDay: _isAllDay,
-        recurrenceRule: _recurrenceRule,
-        isPrivate: _isPrivate,
-        customCategory: _customCategory,
-      );
-    } else {
-      await widget.repo.updateTask(
-        widget.task!.copyWith(
+    try {
+      final newNotes = _notesCtrl.text.trim();
+      if (widget.task == null) {
+        await widget.repo.createTask(
           title: title,
-          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+          listId: _listId,
+          notes: newNotes.isEmpty ? null : newNotes,
           priority: _priority,
           dueDate: _dueDate,
           isAllDay: _isAllDay,
           recurrenceRule: _recurrenceRule,
           isPrivate: _isPrivate,
-          listId: _listId,
           customCategory: _customCategory,
-          clearCustomCategory: _customCategory == null,
-          clearDueDate: _dueDate == null,
-        ),
-      );
+        );
+      } else {
+        await widget.repo.updateTask(
+          widget.task!.copyWith(
+            title: title,
+            notes: newNotes.isEmpty ? null : newNotes,
+            clearNotes: newNotes.isEmpty,
+            priority: _priority,
+            dueDate: _dueDate,
+            isAllDay: _isAllDay,
+            recurrenceRule: _recurrenceRule,
+            isPrivate: _isPrivate,
+            listId: _listId,
+            customCategory: _customCategory,
+            clearCustomCategory: _customCategory == null,
+            clearDueDate: _dueDate == null,
+          ),
+        );
+      }
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij opslaan: $e')),
+        );
+      }
     }
-
-    if (mounted) Navigator.pop(context);
   }
 
   @override
