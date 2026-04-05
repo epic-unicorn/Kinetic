@@ -631,8 +631,9 @@ class TodoRepository {
   /// Returns the raw DB row for a task, including syncState.  For tests only.
   @visibleForTesting
   Future<PersonalTaskRow?> debugGetRawTask(String id) {
-    return (_db.select(_db.personalTasks)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.personalTasks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Marks a task as synced (syncState='clean').  For tests only.

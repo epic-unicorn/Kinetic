@@ -363,10 +363,7 @@ class _NoteTile extends StatelessWidget {
 
     return Card(
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Text(note.title),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,7 +376,8 @@ class _NoteTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-            if (note.remindAt != null || (note.isShared && showSharedBadge)) ...[
+            if (note.remindAt != null ||
+                (note.isShared && showSharedBadge)) ...[
               const SizedBox(height: 6),
               Row(
                 children: [

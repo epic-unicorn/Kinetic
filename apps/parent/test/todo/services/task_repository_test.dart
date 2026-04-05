@@ -196,17 +196,20 @@ void main() {
       expect(rows?.syncState, equals('dirty'));
     });
 
-    test('updateTask marks task as dirty again after sync would have cleaned it', () async {
-      final task = await repo.createTask(title: 'Te bewerken taak');
-      // Simulate task being synced by manually setting clean.
-      await repo.debugMarkClean(task.id);
-      final afterSync = await repo.debugGetRawTask(task.id);
-      expect(afterSync?.syncState, equals('clean'));
+    test(
+      'updateTask marks task as dirty again after sync would have cleaned it',
+      () async {
+        final task = await repo.createTask(title: 'Te bewerken taak');
+        // Simulate task being synced by manually setting clean.
+        await repo.debugMarkClean(task.id);
+        final afterSync = await repo.debugGetRawTask(task.id);
+        expect(afterSync?.syncState, equals('clean'));
 
-      // Now edit the task — it should go back to dirty.
-      await repo.updateTask(task.copyWith(title: 'Bijgewerkte naam'));
-      final afterEdit = await repo.debugGetRawTask(task.id);
-      expect(afterEdit?.syncState, equals('dirty'));
-    });
+        // Now edit the task — it should go back to dirty.
+        await repo.updateTask(task.copyWith(title: 'Bijgewerkte naam'));
+        final afterEdit = await repo.debugGetRawTask(task.id);
+        expect(afterEdit?.syncState, equals('dirty'));
+      },
+    );
   });
 }

@@ -36,8 +36,7 @@ class _FakeNotifService implements NotificationService {
     required String actionId,
     required String title,
     required String body,
-  }) async =>
-      DateTime.now().add(const Duration(minutes: 5));
+  }) async => DateTime.now().add(const Duration(minutes: 5));
 }
 
 void main() {
@@ -81,11 +80,14 @@ void main() {
       repo = NoteRepository(db: db, notifications: notif);
     });
 
-    test('schedules reminder on insert when remindAt is in the future', () async {
-      final future = DateTime.now().add(const Duration(hours: 2));
-      await repo.insert(title: 'Herinnering', remindAt: future);
-      expect(notif.scheduled, hasLength(1));
-    });
+    test(
+      'schedules reminder on insert when remindAt is in the future',
+      () async {
+        final future = DateTime.now().add(const Duration(hours: 2));
+        await repo.insert(title: 'Herinnering', remindAt: future);
+        expect(notif.scheduled, hasLength(1));
+      },
+    );
 
     test('does NOT schedule when remindAt is in the past', () async {
       final past = DateTime.now().subtract(const Duration(hours: 1));

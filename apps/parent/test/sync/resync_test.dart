@@ -16,11 +16,14 @@ void main() {
 
     tearDown(() async => db.close());
 
-    test('newly created task starts as dirty (will be pushed to WebDAV)', () async {
-      final task = await repo.createTask(title: 'Nieuwe taak');
-      final raw = await repo.debugGetRawTask(task.id);
-      expect(raw?.syncState, equals('dirty'));
-    });
+    test(
+      'newly created task starts as dirty (will be pushed to WebDAV)',
+      () async {
+        final task = await repo.createTask(title: 'Nieuwe taak');
+        final raw = await repo.debugGetRawTask(task.id);
+        expect(raw?.syncState, equals('dirty'));
+      },
+    );
 
     test('updateTask marks a previously-clean task as dirty', () async {
       // Create and simulate sync (mark clean).
@@ -35,28 +38,34 @@ void main() {
       expect(afterEdit?.syncState, equals('dirty'));
     });
 
-    test('completeTask marks task as dirty so completion syncs to WebDAV', () async {
-      final task = await repo.createTask(title: 'Af te ronden taak');
-      await repo.debugMarkClean(task.id);
+    test(
+      'completeTask marks task as dirty so completion syncs to WebDAV',
+      () async {
+        final task = await repo.createTask(title: 'Af te ronden taak');
+        await repo.debugMarkClean(task.id);
 
-      await repo.completeTask(task.id);
-      final raw = await repo.debugGetRawTask(task.id);
-      // completeTask uses PersonalTasksCompanion which doesn't include syncState
-      // so we verify it was already handled by the task being clean or dirty.
-      // Completion is tracked separately via isCompleted + completedAt fields.
-      expect(raw?.isCompleted, isTrue);
-    });
+        await repo.completeTask(task.id);
+        final raw = await repo.debugGetRawTask(task.id);
+        // completeTask uses PersonalTasksCompanion which doesn't include syncState
+        // so we verify it was already handled by the task being clean or dirty.
+        // Completion is tracked separately via isCompleted + completedAt fields.
+        expect(raw?.isCompleted, isTrue);
+      },
+    );
 
-    test('deleteTask uses syncState=deleted tombstone for WebDAV clean-up', () async {
-      final task = await repo.createTask(title: 'Te verwijderen taak');
-      await repo.debugMarkClean(task.id);
+    test(
+      'deleteTask uses syncState=deleted tombstone for WebDAV clean-up',
+      () async {
+        final task = await repo.createTask(title: 'Te verwijderen taak');
+        await repo.debugMarkClean(task.id);
 
-      await repo.deleteTask(task.id);
-      // Task should still be in DB but with syncState=deleted.
-      final raw = await repo.debugGetRawTask(task.id);
-      expect(raw, isA<PersonalTaskRow>());
-      expect(raw?.syncState, equals('deleted'));
-    });
+        await repo.deleteTask(task.id);
+        // Task should still be in DB but with syncState=deleted.
+        final raw = await repo.debugGetRawTask(task.id);
+        expect(raw, isA<PersonalTaskRow>());
+        expect(raw?.syncState, equals('deleted'));
+      },
+    );
 
     test('task edited with empty notes saves null notes to DB', () async {
       // Create task with notes.
@@ -71,10 +80,7 @@ void main() {
     });
 
     test('task edited with new note value updates DB', () async {
-      final task = await repo.createTask(
-        title: 'Taak',
-        notes: 'Oud',
-      );
+      final task = await repo.createTask(title: 'Taak', notes: 'Oud');
       await repo.updateTask(task.copyWith(notes: 'Nieuw'));
       final raw = await repo.debugGetRawTask(task.id);
       expect(raw?.notes, equals('Nieuw'));

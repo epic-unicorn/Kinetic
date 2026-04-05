@@ -312,11 +312,7 @@ class _CategoryHeader extends StatelessWidget {
   final String label;
   final int index;
 
-  const _CategoryHeader({
-    super.key,
-    required this.label,
-    required this.index,
-  });
+  const _CategoryHeader({super.key, required this.label, required this.index});
 
   @override
   Widget build(BuildContext context) {
