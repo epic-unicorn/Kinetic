@@ -51,7 +51,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   void initState() {
     super.initState();
     final t = widget.task;
-    _titleCtrl = TextEditingController(text: t?.title ?? widget.initialTitle ?? '');
+    _titleCtrl = TextEditingController(
+      text: t?.title ?? widget.initialTitle ?? '',
+    );
     _notesCtrl = TextEditingController(text: t?.notes ?? '');
     _priority = t?.priority ?? TaskPriority.none;
     _dueDate = t?.dueDate;
