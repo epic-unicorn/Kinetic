@@ -122,6 +122,9 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _loadRepository = PartnerLoadRepository(db: widget.db);
 
     _initSync();
+    // Request notification permissions immediately so the Android dialog
+    // is shown on first launch rather than waiting for the first reminder.
+    unawaited(_notifSvc.init());
   }
 
   Future<void> _initSync() async {

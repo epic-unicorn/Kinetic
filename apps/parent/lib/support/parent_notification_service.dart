@@ -29,11 +29,9 @@ class ParentNotificationService implements NotificationService {
   static const _channelName = 'Taakopdrachten';
   static const _channelDesc = 'Herinneringen voor taken en opdrachten';
 
-  // Action IDs for snooze/postpone
-  static const _snooze5MinId = 'snooze_5min';
-  static const _snooze15MinId = 'snooze_15min';
+  // Action IDs for snooze
   static const _snooze1HourId = 'snooze_1hour';
-  static const _postpone1DayId = 'postpone_1day';
+  static const _snooze1DayId = 'snooze_1day';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -48,6 +46,9 @@ class ParentNotificationService implements NotificationService {
   ParentNotificationService({OnReminderActionCallback? onActionCallback})
     : _onActionCallback = onActionCallback;
 
+  @override
+  Future<void> init() => _ensureInitialized();
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     tz.initializeTimeZones();
@@ -56,7 +57,7 @@ class ParentNotificationService implements NotificationService {
 
     await _plugin.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
@@ -64,7 +65,10 @@ class ParentNotificationService implements NotificationService {
         ),
       ),
       onDidReceiveNotificationResponse: _handleNotificationAction,
-      onDidReceiveBackgroundNotificationResponse: _handleNotificationAction,
+      // onDidReceiveBackgroundNotificationResponse requires a top-level
+      // @pragma('vm:entry-point') function and cannot be an instance method.
+      // Background-tap actions are not supported; foreground tap/action
+      // handling is covered by onDidReceiveNotificationResponse above.
     );
 
     // Request Android 13+ POST_NOTIFICATIONS permission.
@@ -91,26 +95,16 @@ class ParentNotificationService implements NotificationService {
       channelDescription: _channelDesc,
       importance: Importance.high,
       priority: Priority.high,
-      icon: 'mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       actions: [
         AndroidNotificationAction(
-          _snooze5MinId,
-          'Snooze 5 min',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
-          _snooze15MinId,
-          'Snooze 15 min',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
           _snooze1HourId,
-          'Snooze 1 hour',
+          '1 uur',
           showsUserInterface: false,
         ),
         AndroidNotificationAction(
-          _postpone1DayId,
-          'Postpone 1 day',
+          _snooze1DayId,
+          '1 dag',
           showsUserInterface: false,
         ),
       ],
@@ -194,11 +188,9 @@ class ParentNotificationService implements NotificationService {
     await _ensureInitialized();
 
     final newTime = switch (actionId) {
-      _snooze5MinId => DateTime.now().add(const Duration(minutes: 5)),
-      _snooze15MinId => DateTime.now().add(const Duration(minutes: 15)),
       _snooze1HourId => DateTime.now().add(const Duration(hours: 1)),
-      _postpone1DayId => DateTime.now().add(const Duration(days: 1)),
-      _ => DateTime.now().add(const Duration(minutes: 5)), // default fallback
+      _snooze1DayId => DateTime.now().add(const Duration(days: 1)),
+      _ => DateTime.now().add(const Duration(hours: 1)),
     };
 
     await scheduleReminder(id: id, title: title, body: body, at: newTime);

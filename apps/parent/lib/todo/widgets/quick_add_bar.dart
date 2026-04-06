@@ -59,9 +59,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
       builder: (_) => TaskDetailSheet(
         repo: widget.repo,
         initialListId: widget.activeListId,
-        task: title.isEmpty
-            ? null
-            : PersonalTask.create(title: title, listId: widget.activeListId),
+        initialTitle: title.isEmpty ? null : title,
       ),
     );
   }

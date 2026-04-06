@@ -17,6 +17,7 @@ class TaskDetailSheet extends StatefulWidget {
   final PersonalTask? task;
   final TodoRepository repo;
   final String? initialListId;
+  final String? initialTitle;
   final bool hasFamilyKey;
 
   const TaskDetailSheet({
@@ -24,6 +25,7 @@ class TaskDetailSheet extends StatefulWidget {
     required this.repo,
     this.task,
     this.initialListId,
+    this.initialTitle,
     this.hasFamilyKey = false,
   });
 
@@ -49,7 +51,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   void initState() {
     super.initState();
     final t = widget.task;
-    _titleCtrl = TextEditingController(text: t?.title ?? '');
+    _titleCtrl = TextEditingController(text: t?.title ?? widget.initialTitle ?? '');
     _notesCtrl = TextEditingController(text: t?.notes ?? '');
     _priority = t?.priority ?? TaskPriority.none;
     _dueDate = t?.dueDate;
@@ -298,7 +300,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       context: context,
       initialTime: (!_isAllDay && _dueDate != null)
           ? TimeOfDay.fromDateTime(_dueDate!.toLocal())
-          : const TimeOfDay(hour: 9, minute: 0),
+          : TimeOfDay.fromDateTime(DateTime.now()),
     );
     if (!mounted) return;
     setState(() {
