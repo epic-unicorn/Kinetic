@@ -94,6 +94,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Het systeem heeft nog geen taken automatisch voor jou gesuggereerd.',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

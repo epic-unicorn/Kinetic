@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import '../encryption/kinetic_encryption.dart';
@@ -14,6 +15,7 @@ class WebDavEnrollment {
   /// given credentials.
   ///
   /// Returns `null` on success, or a human-readable error message on failure.
+  /// Times out after 10 seconds.
   static Future<String?> testConnection(
     String serverUrl,
     String username,
@@ -25,9 +27,16 @@ class WebDavEnrollment {
       password: password,
     );
     try {
-      final supported = await client.supportsWebDav();
+      final supported = await client.supportsWebDav().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+              'WebDAV connection test timed out after 10 seconds',
+            ),
+          );
       if (!supported) return 'Server does not appear to support WebDAV.';
       return null;
+    } on TimeoutException {
+      return 'Connection timed out. Check your server URL and network connection.';
     } on Exception catch (e) {
       return 'Could not connect: $e';
     } finally {
