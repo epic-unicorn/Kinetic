@@ -281,6 +281,24 @@ class TodoRepository {
   }
 
   Future<void> completeTask(String taskId) async {
+    // Check if the task has a recurrence rule — if so, advance due date instead.
+    final row = await (_db.select(_db.personalTasks)
+          ..where((t) => t.id.equals(taskId)))
+        .getSingleOrNull();
+    if (row != null && row.recurrenceRule != null && row.dueDate != null) {
+      final nextDue = _nextOccurrence(row.recurrenceRule!, row.dueDate!);
+      await (_db.update(_db.personalTasks)
+            ..where((t) => t.id.equals(taskId)))
+          .write(
+            PersonalTasksCompanion(
+              dueDate: Value(nextDue),
+              updatedAt: Value(DateTime.now().toUtc()),
+              syncState: const Value('dirty'),
+            ),
+          );
+      onWrite?.call();
+      return;
+    }
     await (_db.update(
       _db.personalTasks,
     )..where((t) => t.id.equals(taskId))).write(
@@ -293,6 +311,56 @@ class TodoRepository {
     );
     await _notifications?.cancelReminder(_notifId(taskId));
     onWrite?.call();
+  }
+
+  /// Compute the next occurrence date for a given RRULE and current due date.
+  static DateTime _nextOccurrence(String rrule, DateTime currentDue) {
+    final parts = Map.fromEntries(
+      rrule.split(';').map((p) {
+        final kv = p.split('=');
+        return MapEntry(kv[0], kv.length > 1 ? kv[1] : '');
+      }),
+    );
+    final freq = parts['FREQ'] ?? '';
+    final interval = int.tryParse(parts['INTERVAL'] ?? '') ?? 1;
+    final byDay = parts['BYDAY']?.split(',') ?? <String>[];
+
+    final base = currentDue.toLocal();
+
+    switch (freq) {
+      case 'DAILY':
+        if (byDay.isNotEmpty) {
+          // Weekdays only (MO,TU,WE,TH,FR)
+          var next = base.add(const Duration(days: 1));
+          while (next.weekday == DateTime.saturday ||
+              next.weekday == DateTime.sunday) {
+            next = next.add(const Duration(days: 1));
+          }
+          return next.toUtc();
+        }
+        return base.add(Duration(days: interval)).toUtc();
+      case 'WEEKLY':
+        return base.add(Duration(days: 7 * interval)).toUtc();
+      case 'MONTHLY':
+        final nextMonth = base.month + interval;
+        final yearOffset = (nextMonth - 1) ~/ 12;
+        final month = ((nextMonth - 1) % 12) + 1;
+        final year = base.year + yearOffset;
+        // Clamp day to valid range for the target month
+        final lastDay = DateTime(year, month + 1, 0).day;
+        final day = base.day.clamp(1, lastDay);
+        return DateTime(year, month, day, base.hour, base.minute).toUtc();
+      case 'YEARLY':
+        return DateTime(
+          base.year + interval,
+          base.month,
+          base.day,
+          base.hour,
+          base.minute,
+        ).toUtc();
+      default:
+        return base.add(const Duration(days: 1)).toUtc();
+    }
   }
 
   Future<void> uncompleteTask(String taskId) async {

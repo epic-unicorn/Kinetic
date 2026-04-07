@@ -7,13 +7,11 @@ void main() {
     test('all theme variants are defined', () {
       expect(AppTheme.light, isNotNull);
       expect(AppTheme.dark, isNotNull);
-      expect(AppTheme.custom, isNotNull);
     });
 
     test('theme labels are user-friendly', () {
       expect(AppTheme.light.label, equals('Licht'));
       expect(AppTheme.dark.label, equals('Donker'));
-      expect(AppTheme.custom.label, equals('Aangepast'));
     });
 
     test('all themes have different labels', () {
@@ -34,14 +32,6 @@ void main() {
 
     test('returns valid ThemeData for dark theme', () {
       final theme = buildTheme(AppTheme.dark);
-
-      expect(theme, isNotNull);
-      expect(theme.useMaterial3, isTrue);
-      expect(theme.brightness, equals(Brightness.dark));
-    });
-
-    test('returns valid ThemeData for custom theme', () {
-      final theme = buildTheme(AppTheme.custom);
 
       expect(theme, isNotNull);
       expect(theme.useMaterial3, isTrue);
@@ -192,9 +182,8 @@ void main() {
     });
 
     test('custom color palette is defined', () {
-      expect(kColorCustomDark, isNotNull);
-      expect(kColorCustomAccent, isNotNull);
-      expect(kColorCustomLight, isNotNull);
+      expect(kColorTeal, isNotNull);
+      expect(kColorGold, isNotNull);
     });
   });
 

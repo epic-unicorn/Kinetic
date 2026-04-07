@@ -4,7 +4,7 @@ import '../theme/app_themes.dart';
 
 /// ThemeProvider — manages app theme selection and persistence.
 class ThemeProvider extends ChangeNotifier {
-  AppTheme _currentTheme = AppTheme.dark;
+  AppTheme _currentTheme = AppTheme.light;
 
   AppTheme get currentTheme => _currentTheme;
 

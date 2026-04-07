@@ -106,6 +106,13 @@ class WebDavConfigRepository {
     await _store.write(key: _kPersonalKey, value: base64.encode(personalKey));
   }
 
+  /// Returns just the personal key bytes from secure storage, or null if not yet configured.
+  Future<Uint8List?> loadPersonalKeyBytes() async {
+    final base64str = await _store.read(key: _kPersonalKey);
+    if (base64str == null) return null;
+    return Uint8List.fromList(base64.decode(base64str));
+  }
+
   /// Removes the family key without touching any other config fields.
   ///
   /// Call this when leaving the family pairing.

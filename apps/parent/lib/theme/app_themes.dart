@@ -13,12 +13,7 @@ const kColorCharcoal = Color(0xFF393E41);
 const kColorWarmGrey = Color(0xFFD3D0CB);
 const kColorOffWhite = Color(0xFFE7E5DF);
 
-// Custom theme colors (user-provided)
-const kColorCustomDark = Color(0xFF272727);
-const kColorCustomAccent = Color(0xFFd4aa7d);
-const kColorCustomLight = Color(0xFFefd09e);
-const kColorCustomGray = Color(0xFFd2d8b3);
-const kColorCustomMuted = Color(0xFF90a9b7);
+// Custom theme colors removed
 
 // ---------------------------------------------------------------------------
 // Priority colours + labels
@@ -115,13 +110,12 @@ String _month(int m) => const [
 // Theme definitions
 // ---------------------------------------------------------------------------
 
-enum AppTheme { light, dark, custom }
+enum AppTheme { light, dark }
 
 extension AppThemeLabel on AppTheme {
   String get label => switch (this) {
     AppTheme.light => 'Licht',
     AppTheme.dark => 'Donker',
-    AppTheme.custom => 'Aangepast',
   };
 }
 
@@ -129,7 +123,6 @@ ThemeData buildTheme(AppTheme theme) {
   return switch (theme) {
     AppTheme.light => _buildLightTheme(),
     AppTheme.dark => _buildDarkTheme(),
-    AppTheme.custom => _buildCustomTheme(),
   };
 }
 
@@ -180,59 +173,18 @@ ThemeData _buildDarkTheme() {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: kColorKineticBlue,
     brightness: Brightness.dark,
+    surface: const Color(0xFF1E2030),
+    surfaceContainerLow: const Color(0xFF252839),
+    surfaceContainerHigh: const Color(0xFF2C3050),
   );
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: colorScheme.surface,
+    scaffoldBackgroundColor: const Color(0xFF1E2030),
     appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
-      elevation: 0,
-      centerTitle: false,
-    ),
-    cardTheme: CardThemeData(
-      color: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    listTileTheme: ListTileThemeData(
-      tileColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: colorScheme.primaryContainer,
-      foregroundColor: colorScheme.onPrimaryContainer,
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    ),
-    textTheme: _buildTextTheme(colorScheme.onSurface),
-    tabBarTheme: TabBarThemeData(
-      labelColor: colorScheme.primary,
-      unselectedLabelColor: colorScheme.onSurfaceVariant,
-      indicator: UnderlineTabIndicator(
-        borderSide: BorderSide(color: colorScheme.primary, width: 3),
-      ),
-    ),
-  );
-}
-
-ThemeData _buildCustomTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: kColorCustomAccent,
-    brightness: Brightness.dark,
-    surface: kColorCustomDark,
-  );
-
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: colorScheme,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: kColorCustomDark,
-    appBarTheme: AppBarTheme(
-      backgroundColor: kColorCustomDark,
+      backgroundColor: const Color(0xFF1E2030),
       foregroundColor: colorScheme.onSurface,
       elevation: 0,
       centerTitle: false,

@@ -10,6 +10,9 @@ class _FakeNotifService implements NotificationService {
   bool shouldThrow = false;
 
   @override
+  Future<void> init() async {}
+
+  @override
   Future<void> scheduleReminder({
     required int id,
     required String title,

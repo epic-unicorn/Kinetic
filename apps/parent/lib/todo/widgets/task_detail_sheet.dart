@@ -119,6 +119,35 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     }
   }
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Taak verwijderen?'),
+        content: Text(
+          '"${_titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : widget.task!.title}" wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.repo.deleteTask(widget.task!.id);
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -269,8 +298,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (widget.task != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    color: Theme.of(context).colorScheme.error,
+                    tooltip: 'Verwijderen',
+                    onPressed: _saving ? null : () => _confirmDelete(context),
+                  ),
+                const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Annuleren'),

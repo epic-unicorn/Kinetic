@@ -19,17 +19,17 @@ class SettingsRepository {
           .insert(
             AppSettingsCompanion(
               key: const Value('default'),
-              theme: const Value('dark'),
+              theme: const Value('light'),
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
-      return AppTheme.dark;
+      return AppTheme.light;
     }
 
     final themeStr = rows.first.theme;
     return AppTheme.values.firstWhere(
       (t) => t.name == themeStr,
-      orElse: () => AppTheme.dark,
+      orElse: () => AppTheme.light,
     );
   }
 
@@ -53,11 +53,11 @@ class SettingsRepository {
     ) async {
       if (row == null) {
         await loadTheme(); // Initialize if missing
-        return AppTheme.dark;
+        return AppTheme.light;
       }
       return AppTheme.values.firstWhere(
         (t) => t.name == row.theme,
-        orElse: () => AppTheme.dark,
+        orElse: () => AppTheme.light,
       );
     });
   }

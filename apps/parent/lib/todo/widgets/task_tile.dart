@@ -52,11 +52,13 @@ class TaskTile extends StatelessWidget {
     return Dismissible(
       key: ValueKey(task.id),
       direction: DismissDirection.startToEnd,
-      // ── Swipe right: toggle complete ──────────────────────────────────────
+      // ── Swipe right: toggle complete (or advance recurring task) ──────────
       background: _SwipeBackground(
         alignment: Alignment.centerLeft,
         color: Colors.green.shade700,
-        icon: task.isCompleted ? Icons.undo : Icons.check,
+        icon: task.isCompleted
+            ? Icons.undo
+            : (task.recurrenceRule != null ? Icons.repeat : Icons.check),
       ),
       confirmDismiss: (direction) async {
         // Toggle complete — don't actually dismiss the tile

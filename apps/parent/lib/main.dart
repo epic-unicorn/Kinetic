@@ -22,7 +22,7 @@ import 'todo/services/note_repository.dart';
 import 'todo/services/todo_repository.dart';
 
 // Global theme notifier — allows theme changes from anywhere in the app
-final themeNotifier = ValueNotifier<AppTheme>(AppTheme.dark);
+final themeNotifier = ValueNotifier<AppTheme>(AppTheme.light);
 
 enum SyncStatus { idle, syncing, error }
 

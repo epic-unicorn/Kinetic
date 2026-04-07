@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide Column;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
+import '../db/database_backup_service.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_header.dart';
 import '../theme/app_themes.dart';
@@ -56,9 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ValueListenableBuilder<AppTheme>(
         valueListenable: themeNotifier,
         builder: (context, currentTheme, _) {
-          final iconColor = currentTheme == AppTheme.custom
-              ? kColorCustomAccent
-              : kColorTeal;
+          final iconColor = kColorTeal;
           return ListView(
             children: [
               const _SectionHeader(label: 'Uiterlijk'),
@@ -133,6 +133,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: const Text('Herstel van een ander apparaat'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showImportPersonalKeyDialog(),
+              ),
+              ListTile(
+                leading: Icon(Icons.save_alt_outlined, color: iconColor),
+                title: const Text('Database exporteren'),
+                subtitle: const Text('Versleuteld back-upbestand opslaan'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _exportDatabase(),
+              ),
+              ListTile(
+                leading: Icon(Icons.file_upload_outlined, color: iconColor),
+                title: const Text('Database importeren'),
+                subtitle: const Text('Herstel vanuit back-upbestand'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _importDatabase(),
               ),
             ],
           );
@@ -287,6 +301,196 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Database export
+  // ---------------------------------------------------------------------------
+
+  Future<void> _exportDatabase() async {
+    // Load personal key (works with or without full WebDAV config).
+    final key = _config?.personalKeyBytes ??
+        await widget.configRepo.loadPersonalKeyBytes();
+    if (key == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Geen persoonlijke sleutel gevonden. Configureer eerst WebDAV.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    // Show progress indicator while encrypting.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Exporteren…'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final bytes = await DatabaseBackupService.exportToBytes(widget.db, key);
+      final now = DateTime.now();
+      final stamp =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final fileName = 'kinetic_backup_$stamp.kbak';
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close progress dialog
+
+      final savedPath = await FilePicker.platform.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+      );
+
+      if (!mounted) return;
+      if (savedPath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Back-up opgeslagen: $savedPath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // close progress dialog if still open
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij exporteren: $e')),
+        );
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Database import
+  // ---------------------------------------------------------------------------
+
+  Future<void> _importDatabase() async {
+    final key = _config?.personalKeyBytes ??
+        await widget.configRepo.loadPersonalKeyBytes();
+    if (key == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Geen persoonlijke sleutel gevonden. Configureer eerst WebDAV.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Ask user to pick a backup file.
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final fileBytes = result.files.first.bytes;
+    if (fileBytes == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kon het bestand niet lezen.')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    // Confirm before wiping existing data.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Database importeren?'),
+        content: const Text(
+          'Dit vervangt al je huidige taken en notities met de inhoud van het back-upbestand. Dit kan niet ongedaan worden gemaakt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Importeren'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // Show progress indicator while decrypting and restoring.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text('Importeren…'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await DatabaseBackupService.importFromBytes(widget.db, key, fileBytes);
+      if (mounted) {
+        Navigator.of(context).pop(); // close progress dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Database succesvol hersteld.')),
+        );
+      }
+    } on BackupKeyMismatchException {
+      if (mounted) {
+        Navigator.of(context).pop();
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Sleutel komt niet overeen'),
+            content: const Text(
+              'De herstelsleutel van dit apparaat komt niet overeen met de sleutel waarmee dit back-upbestand is versleuteld. '
+              'Importeer eerst de juiste persoonlijke sleutel via "Herstelsleutel importeren".',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Sluiten'),
+              ),
+            ],
+          ),
+        );
+      }
+    } on FormatException catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ongeldig back-upbestand: $e')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij importeren: $e')),
+        );
       }
     }
   }
