@@ -232,17 +232,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 onTap: _leaveFamily,
               ),
             ],
-            if (kDebugMode && paired)
-              ListTile(
-                leading: const Icon(Icons.bug_report, color: Colors.orange),
-                title: const Text('[DEBUG] Familiesleutel wissen'),
-                subtitle: const Text('Wist alleen de sleutel, geen data.'),
-                onTap: () async {
-                  await widget.configRepo.clearFamilyKey();
-                  await _loadConfig();
-                  widget.onConfigSaved?.call();
-                },
-              ),
           ],
         ],
       ),
