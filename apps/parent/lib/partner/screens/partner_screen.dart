@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 
 import '../../theme/app_header.dart';
+import '../../todo/models/enums.dart';
 import '../models/partner_proposal.dart';
 import '../services/partner_load_repository.dart';
 import '../services/partner_proposal_repository.dart';
@@ -417,14 +418,15 @@ class _PartnerScreenState extends State<PartnerScreen> {
     }
   }
 
-  Color _priorityColor(dynamic priority, ColorScheme scheme) {
-    final name = priority.name.toString();
-    if (name.contains('high') || name.contains('urgent')) {
-      return scheme.error;
-    } else if (name.contains('medium') || name.contains('normal')) {
-      return scheme.primary;
-    } else {
-      return scheme.outline;
+  Color _priorityColor(TaskPriority priority, ColorScheme scheme) {
+    switch (priority) {
+      case TaskPriority.high:
+        return scheme.error;
+      case TaskPriority.medium:
+        return scheme.primary;
+      case TaskPriority.low:
+      case TaskPriority.none:
+        return scheme.outline;
     }
   }
 
