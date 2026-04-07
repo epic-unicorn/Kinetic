@@ -9,7 +9,16 @@ import 'app_database.dart';
 
 // Magic sentinel at the start of every backup file.
 // 4 ASCII bytes 'KBAK' + 4-byte little-endian version = 1.
-final _kMagic = Uint8List.fromList([0x4B, 0x42, 0x41, 0x4B, 0x01, 0x00, 0x00, 0x00]);
+final _kMagic = Uint8List.fromList([
+  0x4B,
+  0x42,
+  0x41,
+  0x4B,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+]);
 
 /// Provides encrypted export and import of the local Drift database.
 ///
@@ -130,82 +139,90 @@ class DatabaseBackupService {
       // Restore lists
       for (final raw in (payload['lists'] as List<dynamic>? ?? [])) {
         final m = raw as Map<String, dynamic>;
-        await db.into(db.personalLists).insertOnConflictUpdate(
-          PersonalListsCompanion.insert(
-            id: m['id'] as String,
-            name: m['name'] as String,
-            colorValue: Value(m['colorValue'] as int),
-            iconCodePoint: Value(m['iconCodePoint'] as int),
-            isPrivateDefault: Value(m['isPrivateDefault'] as bool),
-            position: Value(m['position'] as int),
-            createdAt: DateTime.parse(m['createdAt'] as String),
-            updatedAt: DateTime.parse(m['updatedAt'] as String),
-          ),
-        );
+        await db
+            .into(db.personalLists)
+            .insertOnConflictUpdate(
+              PersonalListsCompanion.insert(
+                id: m['id'] as String,
+                name: m['name'] as String,
+                colorValue: Value(m['colorValue'] as int),
+                iconCodePoint: Value(m['iconCodePoint'] as int),
+                isPrivateDefault: Value(m['isPrivateDefault'] as bool),
+                position: Value(m['position'] as int),
+                createdAt: DateTime.parse(m['createdAt'] as String),
+                updatedAt: DateTime.parse(m['updatedAt'] as String),
+              ),
+            );
       }
 
       // Restore tasks
       for (final raw in (payload['tasks'] as List<dynamic>? ?? [])) {
         final m = raw as Map<String, dynamic>;
-        await db.into(db.personalTasks).insertOnConflictUpdate(
-          PersonalTasksCompanion.insert(
-            id: m['id'] as String,
-            title: m['title'] as String,
-            listId: Value(m['listId'] as String?),
-            notes: Value(m['notes'] as String?),
-            priority: Value(m['priority'] as int),
-            dueDate: Value(_parseDateTime(m['dueDate'])),
-            isAllDay: Value(m['isAllDay'] as bool),
-            recurrenceRule: Value(m['recurrenceRule'] as String?),
-            isCompleted: Value(m['isCompleted'] as bool),
-            completedAt: Value(_parseDateTime(m['completedAt'])),
-            isFlagged: Value(m['isFlagged'] as bool),
-            isPrivate: Value(m['isPrivate'] as bool),
-            kidsTaskId: Value(m['kidsTaskId'] as String?),
-            category: Value(m['category'] as String),
-            customCategory: Value(m['customCategory'] as String?),
-            remindAt: Value(_parseDateTime(m['remindAt'])),
-            sortOrder: Value(m['sortOrder'] as int),
-            webdavEtag: Value(m['webdavEtag'] as String?),
-            syncState: Value(m['syncState'] as String? ?? 'dirty'),
-            createdAt: DateTime.parse(m['createdAt'] as String),
-            updatedAt: DateTime.parse(m['updatedAt'] as String),
-          ),
-        );
+        await db
+            .into(db.personalTasks)
+            .insertOnConflictUpdate(
+              PersonalTasksCompanion.insert(
+                id: m['id'] as String,
+                title: m['title'] as String,
+                listId: Value(m['listId'] as String?),
+                notes: Value(m['notes'] as String?),
+                priority: Value(m['priority'] as int),
+                dueDate: Value(_parseDateTime(m['dueDate'])),
+                isAllDay: Value(m['isAllDay'] as bool),
+                recurrenceRule: Value(m['recurrenceRule'] as String?),
+                isCompleted: Value(m['isCompleted'] as bool),
+                completedAt: Value(_parseDateTime(m['completedAt'])),
+                isFlagged: Value(m['isFlagged'] as bool),
+                isPrivate: Value(m['isPrivate'] as bool),
+                kidsTaskId: Value(m['kidsTaskId'] as String?),
+                category: Value(m['category'] as String),
+                customCategory: Value(m['customCategory'] as String?),
+                remindAt: Value(_parseDateTime(m['remindAt'])),
+                sortOrder: Value(m['sortOrder'] as int),
+                webdavEtag: Value(m['webdavEtag'] as String?),
+                syncState: Value(m['syncState'] as String? ?? 'dirty'),
+                createdAt: DateTime.parse(m['createdAt'] as String),
+                updatedAt: DateTime.parse(m['updatedAt'] as String),
+              ),
+            );
       }
 
       // Restore notes
       for (final raw in (payload['notes'] as List<dynamic>? ?? [])) {
         final m = raw as Map<String, dynamic>;
-        await db.into(db.personalNotes).insertOnConflictUpdate(
-          PersonalNotesCompanion.insert(
-            id: m['id'] as String,
-            title: m['title'] as String,
-            body: Value(m['body'] as String),
-            isShared: Value(m['isShared'] as bool),
-            remindAt: Value(_parseDateTime(m['remindAt'])),
-            category: Value(m['category'] as String?),
-            sortOrder: Value(m['sortOrder'] as int),
-            webdavEtag: Value(m['webdavEtag'] as String?),
-            syncState: Value(m['syncState'] as String? ?? 'dirty'),
-            createdAt: DateTime.parse(m['createdAt'] as String),
-            updatedAt: DateTime.parse(m['updatedAt'] as String),
-          ),
-        );
+        await db
+            .into(db.personalNotes)
+            .insertOnConflictUpdate(
+              PersonalNotesCompanion.insert(
+                id: m['id'] as String,
+                title: m['title'] as String,
+                body: Value(m['body'] as String),
+                isShared: Value(m['isShared'] as bool),
+                remindAt: Value(_parseDateTime(m['remindAt'])),
+                category: Value(m['category'] as String?),
+                sortOrder: Value(m['sortOrder'] as int),
+                webdavEtag: Value(m['webdavEtag'] as String?),
+                syncState: Value(m['syncState'] as String? ?? 'dirty'),
+                createdAt: DateTime.parse(m['createdAt'] as String),
+                updatedAt: DateTime.parse(m['updatedAt'] as String),
+              ),
+            );
       }
 
       // Restore subtasks
       for (final raw in (payload['subtasks'] as List<dynamic>? ?? [])) {
         final m = raw as Map<String, dynamic>;
-        await db.into(db.personalSubtasks).insertOnConflictUpdate(
-          PersonalSubtasksCompanion.insert(
-            id: m['id'] as String,
-            taskId: m['taskId'] as String,
-            title: m['title'] as String,
-            isCompleted: Value(m['isCompleted'] as bool),
-            sortOrder: Value(m['sortOrder'] as int),
-          ),
-        );
+        await db
+            .into(db.personalSubtasks)
+            .insertOnConflictUpdate(
+              PersonalSubtasksCompanion.insert(
+                id: m['id'] as String,
+                taskId: m['taskId'] as String,
+                title: m['title'] as String,
+                isCompleted: Value(m['isCompleted'] as bool),
+                sortOrder: Value(m['sortOrder'] as int),
+              ),
+            );
       }
     });
   }

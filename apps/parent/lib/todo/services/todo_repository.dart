@@ -282,20 +282,20 @@ class TodoRepository {
 
   Future<void> completeTask(String taskId) async {
     // Check if the task has a recurrence rule — if so, advance due date instead.
-    final row = await (_db.select(_db.personalTasks)
-          ..where((t) => t.id.equals(taskId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.personalTasks,
+    )..where((t) => t.id.equals(taskId))).getSingleOrNull();
     if (row != null && row.recurrenceRule != null && row.dueDate != null) {
       final nextDue = _nextOccurrence(row.recurrenceRule!, row.dueDate!);
-      await (_db.update(_db.personalTasks)
-            ..where((t) => t.id.equals(taskId)))
-          .write(
-            PersonalTasksCompanion(
-              dueDate: Value(nextDue),
-              updatedAt: Value(DateTime.now().toUtc()),
-              syncState: const Value('dirty'),
-            ),
-          );
+      await (_db.update(
+        _db.personalTasks,
+      )..where((t) => t.id.equals(taskId))).write(
+        PersonalTasksCompanion(
+          dueDate: Value(nextDue),
+          updatedAt: Value(DateTime.now().toUtc()),
+          syncState: const Value('dirty'),
+        ),
+      );
       onWrite?.call();
       return;
     }

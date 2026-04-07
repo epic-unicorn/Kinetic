@@ -311,7 +311,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _exportDatabase() async {
     // Load personal key (works with or without full WebDAV config).
-    final key = _config?.personalKeyBytes ??
+    final key =
+        _config?.personalKeyBytes ??
         await widget.configRepo.loadPersonalKeyBytes();
     if (key == null) {
       if (!mounted) return;
@@ -365,9 +366,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // close progress dialog if still open
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij exporteren: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij exporteren: $e')));
       }
     }
   }
@@ -377,7 +378,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _importDatabase() async {
-    final key = _config?.personalKeyBytes ??
+    final key =
+        _config?.personalKeyBytes ??
         await widget.configRepo.loadPersonalKeyBytes();
     if (key == null) {
       if (!mounted) return;
@@ -481,16 +483,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } on FormatException catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ongeldig back-upbestand: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ongeldig back-upbestand: $e')));
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij importeren: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
       }
     }
   }
