@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../partner/services/partner_proposal_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
@@ -16,6 +17,8 @@ import 'category_sheet.dart';
 class TaskDetailSheet extends StatefulWidget {
   final PersonalTask? task;
   final TodoRepository repo;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
   final String? initialListId;
   final String? initialTitle;
   final bool hasFamilyKey;
@@ -24,6 +27,8 @@ class TaskDetailSheet extends StatefulWidget {
     super.key,
     required this.repo,
     this.task,
+    this.proposalRepo,
+    this.myParentId,
     this.initialListId,
     this.initialTitle,
     this.hasFamilyKey = false,
@@ -145,6 +150,72 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     );
     if (confirmed != true || !mounted) return;
     await widget.repo.deleteTask(widget.task!.id);
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _sendToPartner(BuildContext context) async {
+    final task = widget.task;
+    if (task == null || widget.proposalRepo == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Stuur naar partner?'),
+        content: Text(
+          '"${task.title}" wordt als voorstel naar je partner gestuurd en verdwijnt uit jouw lijst zodra zij/hij het accepteert.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sturen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.proposalRepo!.createManualProposal(
+      myParentId: widget.myParentId ?? '',
+      taskTitle: task.title,
+      taskNotes: task.notes,
+      taskCategory: task.category,
+      taskPriority: task.priority,
+      taskDueDate: task.dueDate,
+    );
+    // Task stays in the sender's list until partner accepts the proposal.
+    // When partner accepts, the sync orchestrator will detect the status change
+    // and clean up the task automatically.
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _sendToKids(BuildContext context) async {
+    final task = widget.task;
+    if (task == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Stuur naar kinderen?'),
+        content: Text(
+          '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sturen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.repo.sendToKids(task.id);
     if (mounted) Navigator.pop(context);
   }
 
@@ -274,6 +345,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               onTap: () => _pickRecurrence(context),
             ),
 
+          // ── Send to Partner — only when connected to family ──────────────
+          if (widget.hasFamilyKey && widget.task != null && widget.proposalRepo != null)
+            _MetaRow(
+              icon: Icons.people_outline,
+              label: 'Stuur naar partner',
+              active: false,
+              onTap: () => _sendToPartner(context),
+            ),
+
           // ── Send to Kids — only visible when connected to a family ─────────
           if (widget.hasFamilyKey && widget.task != null)
             if (widget.task!.kidsTaskId != null)
@@ -285,11 +365,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 onTap: null,
               )
             else
-              const _MetaRow(
+              _MetaRow(
                 icon: Icons.bolt,
-                label: 'Stuur naar kinderen (binnenkort)',
+                label: 'Stuur naar kinderen',
                 active: false,
-                onTap: null,
+                onTap: () => _sendToKids(context),
               ),
 
           const SizedBox(height: 8),

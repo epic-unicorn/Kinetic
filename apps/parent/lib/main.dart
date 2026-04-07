@@ -110,7 +110,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       notifications: _notifSvc,
       onWrite: _scheduleDebouncedSync,
     );
-    _proposalRepository = PartnerProposalRepository(db: widget.db);
+    _proposalRepository = PartnerProposalRepository(
+      db: widget.db,
+      todoRepository: _todoRepository,
+    );
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
 
     // Subscribe to the pending count so the nav badge stays live.
@@ -134,6 +137,12 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
       webDavConfigured.value = true;
 
+      // Re-subscribe badge count with myParentId so own outgoing proposals
+      // are excluded from the count.
+      _proposalCountSub?.cancel();
+      _proposalCountSub = _proposalRepository
+          .watchPendingCount(myParentId: config.parentId)
+          .listen((count) => pendingProposalCount.value = count);
       // Initialize partner load service using the same config
       final client = WebDavClient(
         baseUrl: config.baseUrl,
@@ -168,6 +177,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
         onTimeout: () =>
             throw TimeoutException('Sync operation timed out after 30 seconds'),
       );
+      // Refresh load metrics in the UI after successful sync
+      if (_syncOrchestrator != null) {
+        unawaited(_loadRepository.refreshFamilyLoad());
+      }
       syncStatus.value = SyncStatus.idle;
     } catch (e) {
       print('Sync error: $e');
@@ -211,6 +224,9 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                 final screens = <Widget>[
                   TasksScreen(
                     repo: _todoRepository,
+                    settingsRepo: widget.settingsRepo,
+                    proposalRepo: paired ? _proposalRepository : null,
+                    myParentId: _syncOrchestrator?.parentId,
                     syncStatus: hasWebDav ? syncStatus : null,
                     hasFamilyKey: paired,
                     onSyncRetry: _triggerSync,
@@ -219,9 +235,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     PartnerScreen(
                       proposalRepository: _proposalRepository,
                       loadRepository: _loadRepository,
+                      myParentId: _syncOrchestrator?.username,
                     ),
                   NotesScreen(
                     repo: _noteRepository,
+                    settingsRepo: widget.settingsRepo,
                     onSyncRetry: _triggerSync,
                     syncStatus: hasWebDav ? syncStatus : null,
                     hasFamilyKey: hasFamilyKey,

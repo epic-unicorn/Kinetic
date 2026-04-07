@@ -4,6 +4,7 @@ import 'package:parent/db/app_database.dart';
 import 'package:parent/partner/models/partner_proposal.dart';
 import 'package:parent/partner/services/partner_proposal_repository.dart';
 import 'package:parent/todo/models/enums.dart';
+import 'package:parent/todo/services/todo_repository.dart';
 import '../../helpers/test_database.dart';
 
 // ---------------------------------------------------------------------------
@@ -42,11 +43,13 @@ Future<PartnerProposalRow?> _getRaw(AppDatabase db, String id) async {
 
 void main() {
   late AppDatabase db;
+  late TodoRepository todoRepository;
   late PartnerProposalRepository repo;
 
   setUp(() {
     db = createTestDatabase();
-    repo = PartnerProposalRepository(db: db);
+    todoRepository = TodoRepository(db: db);
+    repo = PartnerProposalRepository(db: db, todoRepository: todoRepository);
   });
 
   tearDown(() => db.close());

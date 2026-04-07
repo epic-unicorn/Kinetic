@@ -2,6 +2,7 @@
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
+import 'enrollment/kids_enrollment_screen.dart';
 import 'sync/sync_orchestrator.dart';
 import 'sync/webdav_config_repository.dart';
 import 'task/screens/kids_home_screen.dart';
@@ -79,6 +80,8 @@ class _KidsAppShellState extends State<_KidsAppShell>
     with WidgetsBindingObserver {
   late final KidsTaskRepository _repository;
   KidsSyncOrchestrator? _orchestrator;
+  bool _enrolled = false;
+  bool _initDone = false;
 
   @override
   void initState() {
@@ -105,8 +108,11 @@ class _KidsAppShellState extends State<_KidsAppShell>
     final store = FlutterSecureKeyValueStore();
     final configRepo = WebDavConfigRepository(store);
     final config = await configRepo.load();
-    if (config != null && mounted) {
+    if (!mounted) return;
+    if (config != null) {
       setState(() {
+        _enrolled = true;
+        _initDone = true;
         _orchestrator = KidsSyncOrchestrator(
           db: widget.appDb,
           repo: _repository,
@@ -114,15 +120,72 @@ class _KidsAppShellState extends State<_KidsAppShell>
         );
       });
       unawaited(_orchestrator!.sync());
+    } else {
+      setState(() {
+        _enrolled = false;
+        _initDone = true;
+        _orchestrator = null;
+      });
+    }
+  }
+
+  Future<void> _leaveFamily() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Familie verlaten?'),
+        content: const Text(
+          'De koppeling met de familie wordt verwijderd. '
+          'Je lokale opdrachten blijven bewaard.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuleren'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Verlaten'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final store = FlutterSecureKeyValueStore();
+    final configRepo = WebDavConfigRepository(store);
+    await configRepo.clearEnrollment();
+    if (mounted) {
+      setState(() {
+        _enrolled = false;
+        _orchestrator = null;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_initDone) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_enrolled) {
+      return KidsEnrollmentScreen(
+        configRepo: WebDavConfigRepository(FlutterSecureKeyValueStore()),
+        onEnrolled: _initSync,
+      );
+    }
+
     return KidsHomeScreen(
       appDb: widget.appDb,
       repository: _repository,
       orchestrator: _orchestrator,
+      onLeaveFamily: _leaveFamily,
     );
   }
 }

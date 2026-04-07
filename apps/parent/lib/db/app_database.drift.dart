@@ -3467,6 +3467,30 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('dark'),
   );
+  static const VerificationMeta _taskCategoryOrderMeta = const VerificationMeta(
+    'taskCategoryOrder',
+  );
+  @override
+  late final GeneratedColumn<String> taskCategoryOrder =
+      GeneratedColumn<String>(
+        'task_category_order',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _noteCategoryOrderMeta = const VerificationMeta(
+    'noteCategoryOrder',
+  );
+  @override
+  late final GeneratedColumn<String> noteCategoryOrder =
+      GeneratedColumn<String>(
+        'note_category_order',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -3479,7 +3503,13 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [key, theme, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    key,
+    theme,
+    taskCategoryOrder,
+    noteCategoryOrder,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3502,6 +3532,24 @@ class $AppSettingsTable extends AppSettings
       context.handle(
         _themeMeta,
         theme.isAcceptableOrUnknown(data['theme']!, _themeMeta),
+      );
+    }
+    if (data.containsKey('task_category_order')) {
+      context.handle(
+        _taskCategoryOrderMeta,
+        taskCategoryOrder.isAcceptableOrUnknown(
+          data['task_category_order']!,
+          _taskCategoryOrderMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note_category_order')) {
+      context.handle(
+        _noteCategoryOrderMeta,
+        noteCategoryOrder.isAcceptableOrUnknown(
+          data['note_category_order']!,
+          _noteCategoryOrderMeta,
+        ),
       );
     }
     if (data.containsKey('updated_at')) {
@@ -3529,6 +3577,14 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}theme'],
       )!,
+      taskCategoryOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_category_order'],
+      ),
+      noteCategoryOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_category_order'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -3545,10 +3601,14 @@ class $AppSettingsTable extends AppSettings
 class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   final String key;
   final String theme;
+  final String? taskCategoryOrder;
+  final String? noteCategoryOrder;
   final DateTime updatedAt;
   const AppSettingsRow({
     required this.key,
     required this.theme,
+    this.taskCategoryOrder,
+    this.noteCategoryOrder,
     required this.updatedAt,
   });
   @override
@@ -3556,6 +3616,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     final map = <String, Expression>{};
     map['key'] = Variable<String>(key);
     map['theme'] = Variable<String>(theme);
+    if (!nullToAbsent || taskCategoryOrder != null) {
+      map['task_category_order'] = Variable<String>(taskCategoryOrder);
+    }
+    if (!nullToAbsent || noteCategoryOrder != null) {
+      map['note_category_order'] = Variable<String>(noteCategoryOrder);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -3564,6 +3630,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return AppSettingsCompanion(
       key: Value(key),
       theme: Value(theme),
+      taskCategoryOrder: taskCategoryOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskCategoryOrder),
+      noteCategoryOrder: noteCategoryOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(noteCategoryOrder),
       updatedAt: Value(updatedAt),
     );
   }
@@ -3576,6 +3648,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return AppSettingsRow(
       key: serializer.fromJson<String>(json['key']),
       theme: serializer.fromJson<String>(json['theme']),
+      taskCategoryOrder: serializer.fromJson<String?>(
+        json['taskCategoryOrder'],
+      ),
+      noteCategoryOrder: serializer.fromJson<String?>(
+        json['noteCategoryOrder'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -3585,20 +3663,39 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
       'theme': serializer.toJson<String>(theme),
+      'taskCategoryOrder': serializer.toJson<String?>(taskCategoryOrder),
+      'noteCategoryOrder': serializer.toJson<String?>(noteCategoryOrder),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
-  AppSettingsRow copyWith({String? key, String? theme, DateTime? updatedAt}) =>
-      AppSettingsRow(
-        key: key ?? this.key,
-        theme: theme ?? this.theme,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  AppSettingsRow copyWith({
+    String? key,
+    String? theme,
+    Value<String?> taskCategoryOrder = const Value.absent(),
+    Value<String?> noteCategoryOrder = const Value.absent(),
+    DateTime? updatedAt,
+  }) => AppSettingsRow(
+    key: key ?? this.key,
+    theme: theme ?? this.theme,
+    taskCategoryOrder: taskCategoryOrder.present
+        ? taskCategoryOrder.value
+        : this.taskCategoryOrder,
+    noteCategoryOrder: noteCategoryOrder.present
+        ? noteCategoryOrder.value
+        : this.noteCategoryOrder,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   AppSettingsRow copyWithCompanion(AppSettingsCompanion data) {
     return AppSettingsRow(
       key: data.key.present ? data.key.value : this.key,
       theme: data.theme.present ? data.theme.value : this.theme,
+      taskCategoryOrder: data.taskCategoryOrder.present
+          ? data.taskCategoryOrder.value
+          : this.taskCategoryOrder,
+      noteCategoryOrder: data.noteCategoryOrder.present
+          ? data.noteCategoryOrder.value
+          : this.noteCategoryOrder,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -3608,48 +3705,63 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return (StringBuffer('AppSettingsRow(')
           ..write('key: $key, ')
           ..write('theme: $theme, ')
+          ..write('taskCategoryOrder: $taskCategoryOrder, ')
+          ..write('noteCategoryOrder: $noteCategoryOrder, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(key, theme, updatedAt);
+  int get hashCode =>
+      Object.hash(key, theme, taskCategoryOrder, noteCategoryOrder, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AppSettingsRow &&
           other.key == this.key &&
           other.theme == this.theme &&
+          other.taskCategoryOrder == this.taskCategoryOrder &&
+          other.noteCategoryOrder == this.noteCategoryOrder &&
           other.updatedAt == this.updatedAt);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   final Value<String> key;
   final Value<String> theme;
+  final Value<String?> taskCategoryOrder;
+  final Value<String?> noteCategoryOrder;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const AppSettingsCompanion({
     this.key = const Value.absent(),
     this.theme = const Value.absent(),
+    this.taskCategoryOrder = const Value.absent(),
+    this.noteCategoryOrder = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.key = const Value.absent(),
     this.theme = const Value.absent(),
+    this.taskCategoryOrder = const Value.absent(),
+    this.noteCategoryOrder = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt);
   static Insertable<AppSettingsRow> custom({
     Expression<String>? key,
     Expression<String>? theme,
+    Expression<String>? taskCategoryOrder,
+    Expression<String>? noteCategoryOrder,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (key != null) 'key': key,
       if (theme != null) 'theme': theme,
+      if (taskCategoryOrder != null) 'task_category_order': taskCategoryOrder,
+      if (noteCategoryOrder != null) 'note_category_order': noteCategoryOrder,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3658,12 +3770,16 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   AppSettingsCompanion copyWith({
     Value<String>? key,
     Value<String>? theme,
+    Value<String?>? taskCategoryOrder,
+    Value<String?>? noteCategoryOrder,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
     return AppSettingsCompanion(
       key: key ?? this.key,
       theme: theme ?? this.theme,
+      taskCategoryOrder: taskCategoryOrder ?? this.taskCategoryOrder,
+      noteCategoryOrder: noteCategoryOrder ?? this.noteCategoryOrder,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3677,6 +3793,12 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     }
     if (theme.present) {
       map['theme'] = Variable<String>(theme.value);
+    }
+    if (taskCategoryOrder.present) {
+      map['task_category_order'] = Variable<String>(taskCategoryOrder.value);
+    }
+    if (noteCategoryOrder.present) {
+      map['note_category_order'] = Variable<String>(noteCategoryOrder.value);
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
@@ -3692,6 +3814,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     return (StringBuffer('AppSettingsCompanion(')
           ..write('key: $key, ')
           ..write('theme: $theme, ')
+          ..write('taskCategoryOrder: $taskCategoryOrder, ')
+          ..write('noteCategoryOrder: $noteCategoryOrder, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -6165,6 +6289,8 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
     AppSettingsCompanion Function({
       Value<String> key,
       Value<String> theme,
+      Value<String?> taskCategoryOrder,
+      Value<String?> noteCategoryOrder,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -6172,6 +6298,8 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
       Value<String> key,
       Value<String> theme,
+      Value<String?> taskCategoryOrder,
+      Value<String?> noteCategoryOrder,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -6192,6 +6320,16 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get theme => $composableBuilder(
     column: $table.theme,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskCategoryOrder => $composableBuilder(
+    column: $table.taskCategoryOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteCategoryOrder => $composableBuilder(
+    column: $table.noteCategoryOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6220,6 +6358,16 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taskCategoryOrder => $composableBuilder(
+    column: $table.taskCategoryOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteCategoryOrder => $composableBuilder(
+    column: $table.noteCategoryOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -6240,6 +6388,16 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get theme =>
       $composableBuilder(column: $table.theme, builder: (column) => column);
+
+  GeneratedColumn<String> get taskCategoryOrder => $composableBuilder(
+    column: $table.taskCategoryOrder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get noteCategoryOrder => $composableBuilder(
+    column: $table.noteCategoryOrder,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -6278,11 +6436,15 @@ class $$AppSettingsTableTableManager
               ({
                 Value<String> key = const Value.absent(),
                 Value<String> theme = const Value.absent(),
+                Value<String?> taskCategoryOrder = const Value.absent(),
+                Value<String?> noteCategoryOrder = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AppSettingsCompanion(
                 key: key,
                 theme: theme,
+                taskCategoryOrder: taskCategoryOrder,
+                noteCategoryOrder: noteCategoryOrder,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -6290,11 +6452,15 @@ class $$AppSettingsTableTableManager
               ({
                 Value<String> key = const Value.absent(),
                 Value<String> theme = const Value.absent(),
+                Value<String?> taskCategoryOrder = const Value.absent(),
+                Value<String?> noteCategoryOrder = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 key: key,
                 theme: theme,
+                taskCategoryOrder: taskCategoryOrder,
+                noteCategoryOrder: noteCategoryOrder,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),

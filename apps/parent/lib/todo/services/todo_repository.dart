@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../notifications/notification_service.dart';
 
@@ -425,6 +426,22 @@ class TodoRepository {
     )..where((t) => t.id.equals(taskId))).write(
       PersonalTasksCompanion(
         customCategory: Value(category),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    onWrite?.call();
+  }
+
+  /// Mark a task as delegated to the kids app. Sets [kidsTaskId] to a new UUID
+  /// and marks the task dirty so it gets pushed to the shared tasks folder.
+  Future<void> sendToKids(String taskId) async {
+    final kidsId = const Uuid().v4();
+    await (_db.update(
+      _db.personalTasks,
+    )..where((t) => t.id.equals(taskId))).write(
+      PersonalTasksCompanion(
+        kidsTaskId: Value(kidsId),
+        syncState: const Value('dirty'),
         updatedAt: Value(DateTime.now().toUtc()),
       ),
     );

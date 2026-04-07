@@ -237,6 +237,67 @@ class KineticEncryption {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Kids enrollment QR payload
+  // ---------------------------------------------------------------------------
+
+  /// Serialises the credentials needed for the kids app to connect to the
+  /// family WebDAV workspace into a compact JSON string for a QR code.
+  ///
+  /// Format:
+  /// ```json
+  /// {"v":1,"type":"kids","url":"https://...","user":"alice","pw":"secret","key":"<base64 32 bytes>"}
+  /// ```
+  static String exportKidsEnrollmentQrPayload(
+    Uint8List familyKey,
+    String serverUrl,
+    String username,
+    String password,
+  ) {
+    return jsonEncode({
+      'v': 1,
+      'type': 'kids',
+      'url': serverUrl,
+      'user': username,
+      'pw': password,
+      'key': base64.encode(familyKey),
+    });
+  }
+
+  /// Parses a QR payload produced by [exportKidsEnrollmentQrPayload].
+  ///
+  /// Returns a record with the decoded fields.
+  ///
+  /// Throws [FormatException] if the payload is malformed.
+  static ({
+    Uint8List familyKey,
+    String serverUrl,
+    String username,
+    String password,
+  }) importKidsEnrollmentQrPayload(String payload) {
+    final Map<String, dynamic> map;
+    try {
+      map = jsonDecode(payload) as Map<String, dynamic>;
+    } catch (e) {
+      throw FormatException('Invalid QR payload: $e');
+    }
+    if (map['type'] != 'kids') {
+      throw const FormatException('Not a kids enrollment QR code');
+    }
+    final keyBase64 = map['key'] as String?;
+    if (keyBase64 == null) throw const FormatException('Missing key field');
+    final bytes = base64.decode(keyBase64);
+    if (bytes.length != 32) {
+      throw FormatException('key must be 32 bytes, got ${bytes.length}');
+    }
+    return (
+      familyKey: Uint8List.fromList(bytes),
+      serverUrl: (map['url'] as String?) ?? '',
+      username: (map['user'] as String?) ?? '',
+      password: (map['pw'] as String?) ?? '',
+    );
+  }
+
   /// Parses a QR payload produced by [exportFamilyKeyQrPayload].
   ///
   /// Returns a record with the decoded [familyKey], the [serverUrl] embedded

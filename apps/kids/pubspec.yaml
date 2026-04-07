@@ -44,6 +44,9 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
 
+  # QR scanning for family enrollment
+  mobile_scanner: ^6.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

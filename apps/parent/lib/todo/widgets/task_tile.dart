@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../partner/services/partner_proposal_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
@@ -39,12 +40,16 @@ class TaskTile extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
 
   const TaskTile({
     super.key,
     required this.task,
     required this.repo,
     this.hasFamilyKey = false,
+    this.proposalRepo,
+    this.myParentId,
   });
 
   @override
@@ -74,6 +79,8 @@ class TaskTile extends StatelessWidget {
         task: task,
         repo: repo,
         hasFamilyKey: hasFamilyKey,
+        proposalRepo: proposalRepo,
+        myParentId: myParentId,
       ),
     );
   }
@@ -83,11 +90,15 @@ class _TaskTileContent extends StatefulWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
 
   const _TaskTileContent({
     required this.task,
     required this.repo,
     this.hasFamilyKey = false,
+    this.proposalRepo,
+    this.myParentId,
   });
 
   @override
@@ -279,6 +290,8 @@ class _TaskTileContentState extends State<_TaskTileContent> {
         task: widget.task,
         repo: widget.repo,
         hasFamilyKey: widget.hasFamilyKey,
+        proposalRepo: widget.proposalRepo,
+        myParentId: widget.myParentId,
       ),
     );
   }

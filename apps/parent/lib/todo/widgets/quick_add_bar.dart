@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
-import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
 import '../../todo/widgets/task_detail_sheet.dart';
 

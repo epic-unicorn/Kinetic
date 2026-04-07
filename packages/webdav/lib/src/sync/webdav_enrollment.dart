@@ -57,6 +57,9 @@ class WebDavEnrollment {
   ///     notes/
   ///   shared/
   ///     notes/
+  ///     tasks/
+  ///     proposals/
+  ///     load/
   /// ```
   static Future<void> setupDirectories(
     WebDavClient client,
@@ -69,6 +72,9 @@ class WebDavEnrollment {
       '/kinetic/$username/notes',
       '/kinetic/shared',
       '/kinetic/shared/notes',
+      '/kinetic/shared/tasks',
+      '/kinetic/shared/proposals',
+      '/kinetic/shared/load',
     ];
     for (final dir in dirs) {
       await client.mkcol(dir);

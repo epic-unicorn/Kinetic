@@ -202,6 +202,12 @@ class AppSettings extends Table {
   // Theme preference: 'light', 'dark', 'custom'
   TextColumn get theme => text().withDefault(const Constant('dark'))();
 
+  // JSON-encoded ordered list of task category labels (nullable = no saved order)
+  TextColumn get taskCategoryOrder => text().nullable()();
+
+  // JSON-encoded ordered list of note category labels (nullable = no saved order)
+  TextColumn get noteCategoryOrder => text().nullable()();
+
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

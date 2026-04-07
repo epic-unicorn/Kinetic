@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -51,6 +51,14 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(personalTasks, personalTasks.customCategory);
         await m.addColumn(personalNotes, personalNotes.category);
         await m.addColumn(personalNotes, personalNotes.sortOrder);
+      }
+      if (from < 8) {
+        await customStatement(
+          'ALTER TABLE app_settings ADD COLUMN task_category_order TEXT',
+        );
+        await customStatement(
+          'ALTER TABLE app_settings ADD COLUMN note_category_order TEXT',
+        );
       }
     },
   );

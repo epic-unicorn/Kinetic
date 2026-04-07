@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../main.dart';
+import '../../partner/services/partner_proposal_repository.dart';
+import '../../settings/settings_repository.dart';
 import '../../theme/app_header.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
@@ -14,6 +16,9 @@ import '../../todo/widgets/task_tile.dart';
 
 class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
+  final SettingsRepository? settingsRepo;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
   final ValueNotifier<SyncStatus>? syncStatus;
   final bool hasFamilyKey;
   final VoidCallback? onSyncRetry;
@@ -21,6 +26,9 @@ class TasksScreen extends StatefulWidget {
   const TasksScreen({
     super.key,
     required this.repo,
+    this.settingsRepo,
+    this.proposalRepo,
+    this.myParentId,
     this.syncStatus,
     this.hasFamilyKey = false,
     this.onSyncRetry,
@@ -83,7 +91,13 @@ class _TasksScreenState extends State<TasksScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _OpenTasksTab(repo: widget.repo, hasFamilyKey: widget.hasFamilyKey),
+          _OpenTasksTab(
+            repo: widget.repo,
+            hasFamilyKey: widget.hasFamilyKey,
+            settingsRepo: widget.settingsRepo,
+            proposalRepo: widget.proposalRepo,
+            myParentId: widget.myParentId,
+          ),
           _CompletedTasksTab(
             repo: widget.repo,
             hasFamilyKey: widget.hasFamilyKey,
@@ -151,15 +165,24 @@ class _TaskItem extends _ListItem {
 class _OpenTasksTab extends StatefulWidget {
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final SettingsRepository? settingsRepo;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
 
-  const _OpenTasksTab({required this.repo, this.hasFamilyKey = false});
+  const _OpenTasksTab({
+    required this.repo,
+    this.hasFamilyKey = false,
+    this.settingsRepo,
+    this.proposalRepo,
+    this.myParentId,
+  });
 
   @override
   State<_OpenTasksTab> createState() => _OpenTasksTabState();
 }
 
 class _OpenTasksTabState extends State<_OpenTasksTab> {
-  /// User-defined category order. Persists for the session.
+  /// User-defined category order. Persists across app restarts.
   /// Null entry represents the uncategorised bucket.
   List<String?> _categoryOrder = [];
 
@@ -174,6 +197,22 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
       if (!merged.contains(k)) merged.add(k);
     }
     return merged;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedOrder();
+  }
+
+  Future<void> _loadSavedOrder() async {
+    if (widget.settingsRepo == null) return;
+    final saved = await widget.settingsRepo!.loadTaskCategoryOrder();
+    if (mounted) setState(() => _categoryOrder = saved);
+  }
+
+  void _saveCategoryOrder(List<String?> order) {
+    widget.settingsRepo?.saveTaskCategoryOrder(order);
   }
 
   @override
@@ -249,6 +288,8 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
               repo: widget.repo,
               hasFamilyKey: widget.hasFamilyKey,
               dividerColor: dividerColor,
+              proposalRepo: widget.proposalRepo,
+              myParentId: widget.myParentId,
             );
           },
           onReorder: (oldIndex, newIndex) {
@@ -273,6 +314,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
         if (item is _HeaderItem) newOrder.add(item.category);
       }
       setState(() => _categoryOrder = newOrder);
+      _saveCategoryOrder(newOrder);
       return;
     }
 
@@ -357,6 +399,8 @@ class _DraggableTaskRow extends StatelessWidget {
   final TodoRepository repo;
   final bool hasFamilyKey;
   final Color dividerColor;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
 
   const _DraggableTaskRow({
     super.key,
@@ -365,6 +409,8 @@ class _DraggableTaskRow extends StatelessWidget {
     required this.repo,
     required this.hasFamilyKey,
     required this.dividerColor,
+    this.proposalRepo,
+    this.myParentId,
   });
 
   @override
@@ -373,7 +419,13 @@ class _DraggableTaskRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: TaskTile(task: task, repo: repo, hasFamilyKey: hasFamilyKey),
+          child: TaskTile(
+            task: task,
+            repo: repo,
+            hasFamilyKey: hasFamilyKey,
+            proposalRepo: proposalRepo,
+            myParentId: myParentId,
+          ),
         ),
         ReorderableDragStartListener(
           index: index,

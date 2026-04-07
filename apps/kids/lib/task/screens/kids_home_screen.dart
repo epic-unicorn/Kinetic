@@ -11,12 +11,14 @@ class KidsHomeScreen extends StatefulWidget {
   final AppDatabase appDb;
   final KidsTaskRepository? repository;
   final KidsSyncOrchestrator? orchestrator;
+  final VoidCallback? onLeaveFamily;
 
   const KidsHomeScreen({
     super.key,
     required this.appDb,
     this.repository,
     this.orchestrator,
+    this.onLeaveFamily,
   });
 
   @override
@@ -54,7 +56,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
           if (widget.orchestrator != null) ...[
             if (_syncing)
               const Padding(
-                padding: EdgeInsets.only(right: 16),
+                padding: EdgeInsets.only(right: 8),
                 child: SizedBox(
                   width: 20,
                   height: 20,
@@ -63,11 +65,29 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
               )
             else
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.sync),
                 onPressed: _sync,
                 tooltip: 'Synchroniseren',
               ),
           ],
+          if (widget.onLeaveFamily != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'leave') widget.onLeaveFamily!();
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'leave',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 18),
+                      SizedBox(width: 8),
+                      Text('Familie verlaten'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
       body: StreamBuilder<List<KidsTask>>(

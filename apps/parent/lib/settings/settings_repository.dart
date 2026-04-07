@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
@@ -60,5 +62,51 @@ class SettingsRepository {
         orElse: () => AppTheme.light,
       );
     });
+  }
+
+  // ── Category order persistence ─────────────────────────────────────────────
+
+  Future<List<String?>> loadTaskCategoryOrder() async {
+    final rows = await _db.select(_db.appSettings).get();
+    if (rows.isEmpty || rows.first.taskCategoryOrder == null) return [];
+    try {
+      final list = jsonDecode(rows.first.taskCategoryOrder!) as List<dynamic>;
+      return list.map((e) => e as String?).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveTaskCategoryOrder(List<String?> order) async {
+    final json = jsonEncode(order);
+    await _db.into(_db.appSettings).insertOnConflictUpdate(
+      AppSettingsCompanion(
+        key: const Value('default'),
+        taskCategoryOrder: Value(json),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<List<String?>> loadNoteCategoryOrder() async {
+    final rows = await _db.select(_db.appSettings).get();
+    if (rows.isEmpty || rows.first.noteCategoryOrder == null) return [];
+    try {
+      final list = jsonDecode(rows.first.noteCategoryOrder!) as List<dynamic>;
+      return list.map((e) => e as String?).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveNoteCategoryOrder(List<String?> order) async {
+    final json = jsonEncode(order);
+    await _db.into(_db.appSettings).insertOnConflictUpdate(
+      AppSettingsCompanion(
+        key: const Value('default'),
+        noteCategoryOrder: Value(json),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
   }
 }

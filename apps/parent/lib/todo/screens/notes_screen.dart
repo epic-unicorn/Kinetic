@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../main.dart';
+import '../../settings/settings_repository.dart';
 import '../../theme/app_header.dart';
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
@@ -11,6 +12,7 @@ import 'note_editor_screen.dart';
 /// Screen that displays all notes in a scrollable list with create/edit/delete.
 class NotesScreen extends StatefulWidget {
   final NoteRepository repo;
+  final SettingsRepository? settingsRepo;
   final ValueNotifier<SyncStatus>? syncStatus;
   final ValueNotifier<bool>? hasFamilyKey;
   final VoidCallback? onSyncRetry;
@@ -18,6 +20,7 @@ class NotesScreen extends StatefulWidget {
   const NotesScreen({
     super.key,
     required this.repo,
+    this.settingsRepo,
     this.syncStatus,
     this.hasFamilyKey,
     this.onSyncRetry,
@@ -153,6 +156,7 @@ class _NotesScreenState extends State<NotesScreen> {
               return _NoteGroupedList(
                 notes: notes,
                 repo: widget.repo,
+                settingsRepo: widget.settingsRepo,
                 showSharedBadge: paired,
               );
             },
@@ -201,11 +205,13 @@ class _NoteDataItem extends _NoteListItem {
 class _NoteGroupedList extends StatefulWidget {
   final List<PersonalNote> notes;
   final NoteRepository repo;
+  final SettingsRepository? settingsRepo;
   final bool showSharedBadge;
 
   const _NoteGroupedList({
     required this.notes,
     required this.repo,
+    this.settingsRepo,
     required this.showSharedBadge,
   });
 
@@ -214,6 +220,33 @@ class _NoteGroupedList extends StatefulWidget {
 }
 
 class _NoteGroupedListState extends State<_NoteGroupedList> {
+  List<String?> _categoryOrder = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedOrder();
+  }
+
+  Future<void> _loadSavedOrder() async {
+    if (widget.settingsRepo == null) return;
+    final saved = await widget.settingsRepo!.loadNoteCategoryOrder();
+    if (mounted) setState(() => _categoryOrder = saved);
+  }
+
+  void _saveCategoryOrder(List<String?> order) {
+    widget.settingsRepo?.saveNoteCategoryOrder(order);
+  }
+
+  List<String?> _mergeOrder(Iterable<String?> streamKeys) {
+    final known = Set<String?>.from(streamKeys);
+    final merged = _categoryOrder.where(known.contains).toList();
+    for (final k in streamKeys) {
+      if (!merged.contains(k)) merged.add(k);
+    }
+    return merged;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Group notes by category
@@ -222,12 +255,16 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
       groups.putIfAbsent(n.category, () => []).add(n);
     }
 
-    final groupKeys = groups.keys.toList()
-      ..sort((a, b) {
-        if (a == null) return -1;
-        if (b == null) return 1;
-        return a.compareTo(b);
+    // Use saved order merged with current categories
+    final merged = _mergeOrder(groups.keys);
+    if (merged.length != _categoryOrder.length ||
+        !merged.every(_categoryOrder.contains)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _categoryOrder = _mergeOrder(groups.keys));
       });
+    }
+
+    final groupKeys = merged.where(groups.containsKey).toList();
 
     final showHeaders = groupKeys.length > 1 || groupKeys.first != null;
 
@@ -243,7 +280,7 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 80),
       itemCount: flatItems.length,
       itemBuilder: (context, index) {
         final item = flatItems[index];
@@ -252,6 +289,7 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
           return _NoteCategoryHeader(
             key: ValueKey('header_${item.category}'),
             label: item.category ?? 'Geen categorie',
+            index: index,
           );
         }
 
@@ -291,8 +329,21 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
   }
 
   void _onReorder(List<_NoteListItem> items, int oldIndex, int newIndex) {
-    if (items[oldIndex] is _NoteHeaderItem) return;
     if (oldIndex < newIndex) newIndex -= 1;
+
+    if (items[oldIndex] is _NoteHeaderItem) {
+      // Header drag → reorder category blocks
+      final reordered = [...items]
+        ..removeAt(oldIndex)
+        ..insert(newIndex, items[oldIndex]);
+      final newOrder = <String?>[];
+      for (final item in reordered) {
+        if (item is _NoteHeaderItem) newOrder.add(item.category);
+      }
+      setState(() => _categoryOrder = newOrder);
+      _saveCategoryOrder(newOrder);
+      return;
+    }
 
     final reordered = [...items]
       ..removeAt(oldIndex)
@@ -323,21 +374,43 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
 
 class _NoteCategoryHeader extends StatelessWidget {
   final String label;
+  final int index;
 
-  const _NoteCategoryHeader({super.key, required this.label});
+  const _NoteCategoryHeader({
+    super.key,
+    required this.label,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(
-        label.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-          fontWeight: FontWeight.w600,
+    return Row(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 0, 4),
+            child: Text(
+              label.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
-      ),
+        ReorderableDragStartListener(
+          index: index,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 12, 0),
+            child: Icon(
+              Icons.drag_indicator,
+              size: 18,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -363,22 +436,28 @@ class _NoteTile extends StatelessWidget {
 
     return Card(
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(note.title),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        title: Text(
+          note.title,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
             if (preview.isNotEmpty)
               Text(
                 preview,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             if (note.remindAt != null ||
                 (note.isShared && showSharedBadge)) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   if (note.remindAt != null) ...[
@@ -393,7 +472,7 @@ class _NoteTile extends StatelessWidget {
                     const SizedBox(width: 12),
                   ],
                   if (note.isShared && showSharedBadge) ...[
-                    Icon(Icons.lock, size: 14, color: kColorTeal),
+                    Icon(Icons.people_outline, size: 14, color: kColorTeal),
                     const SizedBox(width: 4),
                     Text(
                       'Gedeeld',

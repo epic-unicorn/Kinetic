@@ -48,11 +48,21 @@ class KidsSyncOrchestrator {
 
   /// Pull tasks from parent (from /kinetic/shared/tasks/)
   Future<void> _pullRemoteTasks(WebDavSyncService service) async {
-    // WebDavSyncService.pullTasks() pulls from family shared folder by default
-    final iCalTasks = await service.pullTasks();
-    if (iCalTasks.isEmpty) return;
-
+    final iCalTasks = await service.pullSharedTasks();
+    
     final localList = await _db.select(_db.kidsTasks).get();
+    final remoteIds = iCalTasks.map((t) => t.uid).toSet();
+
+    // Detect and remove tasks that were deleted on the parent's device.
+    // If a task exists locally but not on the server, and it's clean (not dirty),
+    // then it was deleted by the parent and should be removed locally too.
+    for (final local in localList) {
+      if (local.syncState == 'clean' && !remoteIds.contains(local.id)) {
+        await _repo.hardDelete(local.id);
+      }
+    }
+
+    if (iCalTasks.isEmpty) return;
 
     for (final ical in iCalTasks) {
       final remoteTask = _iCalToKidsTask(ical);
@@ -82,7 +92,7 @@ class KidsSyncOrchestrator {
     for (final row in dirtyRows) {
       final ical = _taskRowToICal(row);
       try {
-        await service.pushTask(ical);
+        await service.pushSharedTask(ical);
         await _repo.markSynced(row.id, row.id);
       } catch (_) {
         // Leave dirty for retry
@@ -96,7 +106,7 @@ class KidsSyncOrchestrator {
 
     for (final row in deletedRows) {
       try {
-        await service.deleteTask(row.id);
+        await service.deleteSharedTask(row.id);
         await _repo.hardDelete(row.id);
       } catch (_) {}
     }

@@ -7,6 +7,7 @@ import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import 'family_key_scan_screen.dart';
 import 'family_key_share_screen.dart';
+import 'kids_enrollment_qr_screen.dart';
 
 // ---------------------------------------------------------------------------
 // FamilyScreen
@@ -192,6 +193,19 @@ class _FamilyScreenState extends State<FamilyScreen> {
               onTap: _importFamilyKey,
             ),
             if (paired) ...[
+              ListTile(
+                leading: const Icon(Icons.child_care, color: kColorTeal),
+                title: const Text('Kinderenapp koppelen'),
+                subtitle: const Text(
+                  'Laat de kinderenapp deze QR-code scannen.',
+                ),
+                trailing: const Icon(Icons.qr_code),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => KidsEnrollmentQrScreen(config: config),
+                  ),
+                ),
+              ),
               ListTile(
                 leading: const Icon(
                   Icons.file_download_outlined,

@@ -37,7 +37,8 @@ class WebDavSyncService {
     final tasks = <ICalTask>[];
     for (final entry in entries) {
       try {
-        final blob = await client.get(entry.href);
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
         final plain =
             await KineticEncryption.decrypt(blob, config.personalKeyBytes);
         final ical = utf8.decode(plain);
@@ -69,18 +70,45 @@ class WebDavSyncService {
   String get _personalNotesPath => '/kinetic/${config.username}/notes';
   String get _sharedNotesPath => '/kinetic/shared/notes';
 
+  /// Extracts the path-relative-to-baseUrl from a PROPFIND href.
+  /// PROPFIND responses include full paths like `/webdav/kinetic/shared/notes/file.ics`,
+  /// but client.get() needs just the kinetic-relative path like `/kinetic/shared/notes/file.ics`.
+  String _relativizeHref(String href) {
+    // Extract the path component from baseUrl.
+    final Uri baseUri = Uri.parse(client.baseUrl);
+    final basePath = baseUri.path;
+    // If href starts with basePath, remove it.
+    if (basePath.isNotEmpty && href.startsWith(basePath)) {
+      return href.substring(basePath.length);
+    }
+    return href;
+  }
+
   /// Pulls all personal notes (personal key) and shared notes (family key).
   Future<List<ICalNote>> pullNotes() async {
     final notes = <ICalNote>[];
     // Personal notes
     final personalEntries = await _listIcsFiles(_personalNotesPath);
+    print('Found ${personalEntries.length} personal note files');
     for (final entry in personalEntries) {
       try {
-        final blob = await client.get(entry.href);
+        final href = _relativizeHref(entry.href);
+        print('Attempting to GET personal note: $href');
+        final blob = await client.get(href);
         final plain =
             await KineticEncryption.decrypt(blob, config.personalKeyBytes);
         notes.add(ICalSerializer.vjournalToNote(utf8.decode(plain)));
+      } on WebDavException catch (e) {
+        // Skip 404s — file may have been deleted or PROPFIND returned stale entry
+        if (e.message.contains('404')) {
+          print('Personal note file not found (may be stale): ${entry.href}');
+          continue;
+        }
+        // Log other decryption failures for debugging, but continue
+        print('Error decrypting personal note from ${entry.href}: $e');
+        continue;
       } catch (e) {
+        print('Error decrypting personal note from ${entry.href}: $e');
         continue;
       }
     }
@@ -88,15 +116,30 @@ class WebDavSyncService {
     final familyKey = config.familyKeyBytes;
     if (familyKey != null) {
       final sharedEntries = await _listIcsFiles(_sharedNotesPath);
+      print('Found ${sharedEntries.length} shared note files');
       for (final entry in sharedEntries) {
         try {
-          final blob = await client.get(entry.href);
+          final href = _relativizeHref(entry.href);
+          print('Attempting to GET shared note: $href');
+          final blob = await client.get(href);
           final plain = await KineticEncryption.decrypt(blob, familyKey);
           notes.add(ICalSerializer.vjournalToNote(utf8.decode(plain)));
+        } on WebDavException catch (e) {
+          // Skip 404s — file may have been deleted or PROPFIND returned stale entry
+          if (e.message.contains('404')) {
+            print('Shared note file not found (may be stale): ${entry.href}');
+            continue;
+          }
+          // Log other decryption failures for debugging, but continue
+          print('Error decrypting shared note from ${entry.href}: $e');
+          continue;
         } catch (e) {
+          print('Error decrypting shared note from ${entry.href}: $e');
           continue;
         }
       }
+    } else {
+      print('No family key available, skipping shared notes');
     }
     return notes;
   }
@@ -187,6 +230,46 @@ class WebDavSyncService {
   }
 
   // ---------------------------------------------------------------------------
+  // Shared Tasks (parent→kids assignments)
+  // ---------------------------------------------------------------------------
+
+  String get _sharedTasksPath => '/kinetic/shared/tasks';
+
+  /// Pulls all shared tasks from `/kinetic/shared/tasks/` (family key encrypted).
+  /// Used by the kids app to receive parent-assigned tasks.
+  Future<List<ICalTask>> pullSharedTasks() async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return [];
+    final entries = await _listIcsFiles(_sharedTasksPath);
+    final tasks = <ICalTask>[];
+    for (final entry in entries) {
+      try {
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
+        final plain = await KineticEncryption.decrypt(blob, familyKey);
+        tasks.add(ICalSerializer.vtodoToTask(utf8.decode(plain)));
+      } catch (e) {
+        continue;
+      }
+    }
+    return tasks;
+  }
+
+  /// Encrypts [task] with the family key and PUTs it to `/kinetic/shared/tasks/{uid}.ics`.
+  Future<void> pushSharedTask(ICalTask task) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) throw StateError('Family key required to push shared tasks');
+    final ical = ICalSerializer.taskToVtodo(task);
+    final plain = Uint8List.fromList(utf8.encode(ical));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+    await client.put('$_sharedTasksPath/${task.uid}.ics', blob);
+  }
+
+  /// Deletes a shared task from `/kinetic/shared/tasks/{uid}.ics`.
+  Future<void> deleteSharedTask(String uid) =>
+      client.delete('$_sharedTasksPath/$uid.ics');
+
+  // ---------------------------------------------------------------------------
   // Proposals (JSON-based)
   // ---------------------------------------------------------------------------
 
@@ -203,7 +286,8 @@ class WebDavSyncService {
 
     for (final entry in entries) {
       try {
-        final blob = await client.get(entry.href);
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
         final plain = await KineticEncryption.decrypt(blob, familyKey);
         final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
         proposals.add(json);
@@ -215,6 +299,8 @@ class WebDavSyncService {
   }
 
   /// Encrypts [proposalJson] and PUTs it to `/kinetic/shared/proposals/{id}.json`.
+  /// Creates the directory on-demand if it doesn't exist (for backward compatibility
+  /// with accounts set up before this feature was added).
   Future<void> pushProposal(Map<String, dynamic> proposalJson) async {
     final familyKey = config.familyKeyBytes;
     if (familyKey == null)
@@ -223,7 +309,23 @@ class WebDavSyncService {
     final id = proposalJson['id'] as String;
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(proposalJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
-    await client.put('$_proposalsPath/$id.json', blob);
+    
+    try {
+      await client.put('$_proposalsPath/$id.json', blob);
+    } on WebDavException catch (e) {
+      // If directory doesn't exist, create it and retry.
+      if (e.message.contains('403') || e.message.contains('404')) {
+        try {
+          await client.mkcol(_proposalsPath);
+        } catch (_) {
+          // Directory may already exist, silently ignore.
+        }
+        // Retry the put after ensuring directory exists.
+        await client.put('$_proposalsPath/$id.json', blob);
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Deletes a proposal file from the server.
@@ -247,7 +349,8 @@ class WebDavSyncService {
 
     for (final entry in entries) {
       try {
-        final blob = await client.get(entry.href);
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
         final plain = await KineticEncryption.decrypt(blob, familyKey);
         final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
         metrics.add(json);
@@ -259,6 +362,8 @@ class WebDavSyncService {
   }
 
   /// Encrypts and PUTs load metrics to `/kinetic/shared/load/{parentId}.json`.
+  /// Creates the directory on-demand if it doesn't exist (for backward compatibility
+  /// with accounts set up before this feature was added).
   Future<void> pushLoadMetrics(Map<String, dynamic> metricsJson) async {
     final familyKey = config.familyKeyBytes;
     if (familyKey == null)
@@ -267,7 +372,23 @@ class WebDavSyncService {
     final parentId = metricsJson['parentId'] as String;
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(metricsJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
-    await client.put('$_loadPath/$parentId.json', blob);
+    
+    try {
+      await client.put('$_loadPath/$parentId.json', blob);
+    } on WebDavException catch (e) {
+      // If directory doesn't exist, create it and retry.
+      if (e.message.contains('403') || e.message.contains('404')) {
+        try {
+          await client.mkcol(_loadPath);
+        } catch (_) {
+          // Directory may already exist, silently ignore.
+        }
+        // Retry the put after ensuring directory exists.
+        await client.put('$_loadPath/$parentId.json', blob);
+      } else {
+        rethrow;
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

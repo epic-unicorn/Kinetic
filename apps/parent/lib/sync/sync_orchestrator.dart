@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
 import '../partner/models/partner_proposal.dart';
+import '../partner/services/load_analyzer.dart';
+import '../partner/services/load_sync_service.dart';
 import '../partner/services/proposal_analyzer.dart';
 import '../todo/models/enums.dart';
 
@@ -19,6 +21,12 @@ class SyncOrchestrator {
     : _db = db,
       _config = config;
 
+  /// The WebDAV username (used as the local parent ID).
+  String get username => _config.username;
+
+  /// The stable parent UUID (used to identify this parent in proposals).
+  String get parentId => _config.parentId;
+
   Future<void> sync() async {
     final client = WebDavClient(
       baseUrl: _config.baseUrl,
@@ -30,6 +38,7 @@ class SyncOrchestrator {
       await _syncTasks(service);
       await _syncNotes(service);
       await _syncProposals(service);
+      await _syncLoad(service);
     } finally {
       client.dispose();
     }
@@ -43,6 +52,7 @@ class SyncOrchestrator {
     await _syncTasks(service);
     await _syncNotes(service);
     await _syncProposals(service);
+    await _syncLoad(service);
   }
 
   // ---------------------------------------------------------------------------
@@ -118,6 +128,67 @@ class SyncOrchestrator {
         await service.pushTask(task);
       } catch (_) {}
     }
+
+    // 6. Push/sync tasks delegated to kids (shared tasks folder).
+    if (_config.familyKeyBytes != null) {
+      await _syncKidsTasks(service);
+    }
+  }
+
+  /// Pushes tasks with a kidsTaskId to the shared tasks folder and detects
+  /// completion from the kids side (auto-completes the parent's task).
+  Future<void> _syncKidsTasks(WebDavSyncService service) async {
+    // Push any dirty tasks that have a kidsTaskId.
+    final rows = await (_db.select(_db.personalTasks)
+          ..where(
+            (t) =>
+                t.kidsTaskId.isNotNull() &
+                t.syncState.equals('dirty'),
+          ))
+        .get();
+    for (final row in rows) {
+      final kidsTask = ICalTask(
+        uid: row.kidsTaskId!,
+        summary: row.title,
+        description: row.notes,
+        status: row.isCompleted
+            ? ICalTaskStatus.completed
+            : ICalTaskStatus.needsAction,
+        priority: _driftPriorityToICal(row.priority),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        dueAt: row.dueDate,
+      );
+      try {
+        await service.pushSharedTask(kidsTask);
+      } catch (_) {}
+    }
+
+    // Pull shared tasks to detect kids completing an assigned task.
+    final sharedTasks = await service.pullSharedTasks();
+    for (final sharedTask in sharedTasks) {
+      if (sharedTask.status != ICalTaskStatus.completed) continue;
+      // Find a parent task linked to this kids task that is still incomplete.
+      final linked = await (_db.select(_db.personalTasks)
+            ..where(
+              (t) =>
+                  t.kidsTaskId.equals(sharedTask.uid) &
+                  t.isCompleted.equals(false),
+            ))
+          .getSingleOrNull();
+      if (linked != null) {
+        await (_db.update(_db.personalTasks)
+              ..where((t) => t.id.equals(linked.id)))
+            .write(
+          PersonalTasksCompanion(
+            isCompleted: const Value(true),
+            completedAt: Value(sharedTask.updatedAt),
+            updatedAt: Value(sharedTask.updatedAt),
+            syncState: const Value('dirty'),
+          ),
+        );
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -133,14 +204,25 @@ class SyncOrchestrator {
     for (final row in dirtyRows) {
       final icalNote = _rowToICalNote(row);
       try {
+        // Push to the correct folder based on current isShared value
         await service.pushNote(icalNote);
+        
+        // If this note was previously synced, ensure there's no orphaned file
+        // in the "other" folder (could happen if isShared was toggled).
+        // Try to delete from the opposite location (silently ignore 404s).
+        try {
+          final oppositeIsShared = !icalNote.isShared;
+          await service.deleteNote(row.id, isShared: oppositeIsShared);
+        } catch (_) {
+          // File may not exist — that's fine.
+        }
+        
         await (_db.update(
           _db.personalNotes,
         )..where((t) => t.id.equals(row.id))).write(
-          PersonalNotesCompanion(
-            syncState: const Value('clean'),
-            updatedAt: Value(DateTime.now()),
-          ),
+          // Only clear the dirty flag — do NOT change updatedAt so that the
+          // iCal timestamp and the local timestamp remain in sync.
+          const PersonalNotesCompanion(syncState: Value('clean')),
         );
       } catch (e) {
         // Log the error instead of silently failing
@@ -165,20 +247,39 @@ class SyncOrchestrator {
 
     // 3. Pull from server.
     final remoteList = await service.pullNotes();
+    print('Pulled ${remoteList.length} notes from server (personal + shared)');
+    
+    final localList = await _db.select(_db.personalNotes).get();
+    final remoteIds = remoteList.map((n) => n.uid).toSet();
+
+    // 3a. Detect and remove shared notes that were deleted on the partner's device.
+    // If a shared note exists locally but not on the server, and it's clean (not dirty),
+    // then it was deleted remotely and should be removed locally too.
+    for (final local in localList) {
+      if (local.isShared && local.syncState == 'clean' && !remoteIds.contains(local.id)) {
+        print('Shared note deleted on partner device, removing locally: ${local.id}');
+        await (_db.delete(_db.personalNotes)..where((t) => t.id.equals(local.id))).go();
+      }
+    }
+
     if (remoteList.isEmpty) return;
 
-    final localList = await _db.select(_db.personalNotes).get();
-
-    // 4. Apply merged result using Last-Write-Wins.
+    // 4. Apply Last-Write-Wins merge: remote wins only when it is strictly
+    //    newer than the local copy AND the local copy is clean (unmodified).
+    //    If the local copy is dirty the user has unsaved changes — we keep
+    //    them and they will be pushed on the next sync cycle.
     for (final note in remoteList) {
       final existing = localList.where((r) => r.id == note.uid).firstOrNull;
       if (existing == null) {
         // New from server — insert.
+        print('Inserting new note from server: ${note.uid} (isShared=${note.isShared})');
         await _db
             .into(_db.personalNotes)
             .insertOnConflictUpdate(_icalNoteToCompanion(note, etag: null));
-      } else if (!existing.updatedAt.isAtSameMomentAs(note.updatedAt)) {
-        // Remote is different — update.
+      } else if (existing.syncState != 'dirty' &&
+          note.updatedAt.isAfter(existing.updatedAt)) {
+        // Remote is newer and local has no pending changes — adopt remote.
+        print('Updating existing note from server: ${note.uid} (isShared=${note.isShared})');
         await (_db.update(_db.personalNotes)
               ..where((t) => t.id.equals(note.uid)))
             .write(_icalNoteToCompanion(note, etag: existing.webdavEtag));
@@ -318,9 +419,39 @@ class SyncOrchestrator {
           .insertOnConflictUpdate(_proposalToCompanion(proposal));
     }
 
+    // 4a. Clean up tasks for accepted outgoing proposals.
+    // If a proposal sent by this device (fromParentId == myParentId) changed
+    // from pending to accepted, the task should be deleted from this device.
+    final myParentId = _config.parentId;
+    for (final proposal in merged) {
+      if (proposal.fromParentId != myParentId) continue; // Not ours
+      if (proposal.status != ProposalStatus.accepted) continue; // Not accepted
+      
+      // Find the local proposal's previous status
+      final localProposal = locals.where((p) => p.id == proposal.id).firstOrNull;
+      if (localProposal != null && localProposal.status == ProposalStatus.pending) {
+        // This proposal was just accepted — delete the corresponding task
+        // Search by title (since proposals don't have an explicit taskId link)
+        final task = await (_db.select(_db.personalTasks)
+              ..where((t) =>
+                  t.title.equals(proposal.taskTitle) &
+                  t.syncState.equals('clean') &
+                  t.isCompleted.equals(false)))
+            .getSingleOrNull();
+        
+        if (task != null) {
+          // Soft-delete the task (mark as deleted, keep for tombstone sync)
+          await (_db.update(_db.personalTasks)
+                ..where((t) => t.id.equals(task.id)))
+              .write(const PersonalTasksCompanion(
+                syncState: Value('deleted'),
+              ));
+        }
+      }
+    }
+
     // 5. Auto-generate new proposals if parentId is set (symmetric: each
     //    parent analyses their own tasks and proposes to the other).
-    final myParentId = _config.parentId;
     if (myParentId.isEmpty) return;
 
     final analyzer = ProposalAnalyzer(db: _db);
@@ -468,5 +599,18 @@ class SyncOrchestrator {
       }
     }
     return merged;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Load Metrics
+  // ---------------------------------------------------------------------------
+
+  Future<void> _syncLoad(WebDavSyncService service) async {
+    final analyzer = LoadAnalyzer(db: _db);
+    final syncService = LoadSyncService(service: service, analyzer: analyzer);
+    
+    // Push this device's user's current load metrics, then pull family load.
+    // Use parentId to consistently identify this parent (not the WebDAV username).
+    await syncService.syncLoad(_config.parentId, _config.username);
   }
 }

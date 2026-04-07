@@ -13,11 +13,13 @@ import '../services/partner_proposal_repository.dart';
 class PartnerScreen extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
   final PartnerLoadRepository? loadRepository;
+  final String? myParentId;
 
   const PartnerScreen({
     super.key,
     required this.proposalRepository,
     this.loadRepository,
+    this.myParentId,
   });
 
   @override
@@ -50,7 +52,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
 
   Widget _buildProposalsView(BuildContext context) {
     return StreamBuilder<List<PartnerProposal>>(
-      stream: widget.proposalRepository.watchPending(),
+      stream: widget.proposalRepository.watchPending(myParentId: widget.myParentId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
