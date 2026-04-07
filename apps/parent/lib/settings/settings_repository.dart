@@ -79,13 +79,15 @@ class SettingsRepository {
 
   Future<void> saveTaskCategoryOrder(List<String?> order) async {
     final json = jsonEncode(order);
-    await _db.into(_db.appSettings).insertOnConflictUpdate(
-      AppSettingsCompanion(
-        key: const Value('default'),
-        taskCategoryOrder: Value(json),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
+    await _db
+        .into(_db.appSettings)
+        .insertOnConflictUpdate(
+          AppSettingsCompanion(
+            key: const Value('default'),
+            taskCategoryOrder: Value(json),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
   }
 
   Future<List<String?>> loadNoteCategoryOrder() async {
@@ -101,12 +103,14 @@ class SettingsRepository {
 
   Future<void> saveNoteCategoryOrder(List<String?> order) async {
     final json = jsonEncode(order);
-    await _db.into(_db.appSettings).insertOnConflictUpdate(
-      AppSettingsCompanion(
-        key: const Value('default'),
-        noteCategoryOrder: Value(json),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
+    await _db
+        .into(_db.appSettings)
+        .insertOnConflictUpdate(
+          AppSettingsCompanion(
+            key: const Value('default'),
+            noteCategoryOrder: Value(json),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
   }
 }

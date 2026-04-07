@@ -346,7 +346,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             ),
 
           // ── Send to Partner — only when connected to family ──────────────
-          if (widget.hasFamilyKey && widget.task != null && widget.proposalRepo != null)
+          if (widget.hasFamilyKey &&
+              widget.task != null &&
+              widget.proposalRepo != null)
             _MetaRow(
               icon: Icons.people_outline,
               label: 'Stuur naar partner',
