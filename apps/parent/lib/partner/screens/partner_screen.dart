@@ -360,9 +360,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
             const SizedBox(height: 12),
             Text(
               'Kinderen',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             Row(

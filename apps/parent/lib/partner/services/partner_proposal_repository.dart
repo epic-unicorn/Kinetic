@@ -92,7 +92,8 @@ class PartnerProposalRepository {
     await _todoRepository.createTask(
       title: proposalRow.taskTitle,
       notes: proposalRow.taskNotes,
-      category: TaskCategory.other, // Use default category for accepted proposals
+      category:
+          TaskCategory.other, // Use default category for accepted proposals
       priority: TaskPriority.values[proposalRow.taskPriority],
       dueDate: proposalRow.taskDueDate,
       isPrivate: true, // Accepted proposals become personal tasks
@@ -207,21 +208,18 @@ class PartnerProposalRepository {
 
   /// Check if a task was accepted from a partner proposal.
   /// Returns true when the task title matches an accepted proposal from a partner.
-  Stream<bool> watchAcceptedProposalForTask({
-    required String taskTitle,
-  }) {
+  Stream<bool> watchAcceptedProposalForTask({required String taskTitle}) {
     final normalized = _normalizeTitle(taskTitle);
-    return (_db.select(_db.partnerProposals)
-          ..where((p) => p.status.equals('accepted')))
-        .watch()
-        .map((rows) {
-          for (final r in rows) {
-            if (_normalizeTitle(r.taskTitle) == normalized) {
-              return true;
-            }
-          }
-          return false;
-        });
+    return (_db.select(
+      _db.partnerProposals,
+    )..where((p) => p.status.equals('accepted'))).watch().map((rows) {
+      for (final r in rows) {
+        if (_normalizeTitle(r.taskTitle) == normalized) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   /// Manually send a task to your partner.

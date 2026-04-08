@@ -275,10 +275,9 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                   // ── Accepted from partner proposal ─────────────────────────
                   if (widget.proposalRepo != null)
                     StreamBuilder<bool>(
-                      stream: widget.proposalRepo!
-                          .watchAcceptedProposalForTask(
-                            taskTitle: widget.task.title,
-                          ),
+                      stream: widget.proposalRepo!.watchAcceptedProposalForTask(
+                        taskTitle: widget.task.title,
+                      ),
                       builder: (context, snapshot) {
                         if (snapshot.data == true) {
                           return const Padding(

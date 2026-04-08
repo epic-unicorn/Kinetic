@@ -45,7 +45,9 @@ class LoadAnalyzer {
     final childrenTasksSent = tasks.where((t) => t.kidsTaskId != null).length;
 
     // Count children tasks that are completed (where kidsTaskId is not null and isCompleted)
-    final childrenTasksCompleted = tasks.where((t) => t.kidsTaskId != null && t.isCompleted).length;
+    final childrenTasksCompleted = tasks
+        .where((t) => t.kidsTaskId != null && t.isCompleted)
+        .length;
 
     return FamilyLoadMetrics(
       parentId: selfId,

@@ -8,7 +8,8 @@ class FamilyLoadMetrics {
   final int pastDueTasksCount; // Tasks with dueDate before now
   final int totalCategoriesCount; // Number of unique categories in use
   final int notesCount; // Number of personal notes
-  final int childrenTasksSent; // Number of tasks sent to kids (kidsTaskId not null)
+  final int
+  childrenTasksSent; // Number of tasks sent to kids (kidsTaskId not null)
   final int childrenTasksCompleted; // Number of kids tasks that are completed
   final DateTime calculatedAt;
 
