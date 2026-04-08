@@ -68,7 +68,7 @@ class _TasksScreenState extends State<TasksScreen>
             ValueListenableBuilder<SyncStatus>(
               valueListenable: widget.syncStatus!,
               builder: (context, status, _) =>
-                  _SyncIcon(status: status, onRetryPressed: widget.onSyncRetry),
+                  _SyncIcon(status: status, onSyncPressed: widget.onSyncRetry),
             ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -120,9 +120,9 @@ class _TasksScreenState extends State<TasksScreen>
 
 class _SyncIcon extends StatelessWidget {
   final SyncStatus status;
-  final VoidCallback? onRetryPressed;
+  final VoidCallback? onSyncPressed;
 
-  const _SyncIcon({required this.status, this.onRetryPressed});
+  const _SyncIcon({required this.status, this.onSyncPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +135,7 @@ class _SyncIcon extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
         SyncStatus.error => GestureDetector(
-          onTap: onRetryPressed,
+          onTap: onSyncPressed,
           child: Tooltip(
             message: 'Sync mislukt, tap om opnieuw te proberen.',
             child: Icon(
@@ -144,7 +144,16 @@ class _SyncIcon extends StatelessWidget {
             ),
           ),
         ),
-        SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
+        SyncStatus.idle => GestureDetector(
+          onTap: onSyncPressed,
+          child: Tooltip(
+            message: 'Synchroniseren',
+            child: Icon(
+              Icons.cloud_done_outlined,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+        ),
       },
     );
   }

@@ -58,7 +58,13 @@ class SyncOrchestrator {
   // ---------------------------------------------------------------------------
 
   Future<void> _syncTasks(WebDavSyncService service) async {
-    // 1. Push dirty local tasks.
+    // 1a. Push dirty tasks delegated to kids FIRST (shared tasks folder).
+    //     Must happen before step 1b marks them clean.
+    if (_config.familyKeyBytes != null) {
+      await _syncKidsTasks(service);
+    }
+
+    // 1b. Push dirty local tasks (personal tasks folder).
     final dirtyRows = await (_db.select(
       _db.personalTasks,
     )..where((t) => t.syncState.equals('dirty'))).get();
@@ -127,10 +133,6 @@ class SyncOrchestrator {
       } catch (_) {}
     }
 
-    // 6. Push/sync tasks delegated to kids (shared tasks folder).
-    if (_config.familyKeyBytes != null) {
-      await _syncKidsTasks(service);
-    }
   }
 
   /// Pushes tasks with a kidsTaskId to the shared tasks folder and detects
@@ -143,10 +145,14 @@ class SyncOrchestrator {
             ))
             .get();
     for (final row in rows) {
+      // Build description with custom X-properties that the kids app parses.
+      final baseNotes = row.notes ?? '';
+      final description =
+          '$baseNotes;xKineticParentId:${row.id};xKineticCategory:${row.category};xKineticXpReward:10';
       final kidsTask = ICalTask(
         uid: row.kidsTaskId!,
         summary: row.title,
-        description: row.notes,
+        description: description,
         status: row.isCompleted
             ? ICalTaskStatus.completed
             : ICalTaskStatus.needsAction,
@@ -157,7 +163,18 @@ class SyncOrchestrator {
       );
       try {
         await service.pushSharedTask(kidsTask);
-      } catch (_) {}
+        // Mark the task clean so the personal-path push (step 1b) skips it
+        // and won't conflict with the shared-path version.
+        await (_db.update(_db.personalTasks)
+              ..where((t) => t.id.equals(row.id)))
+            .write(
+              const PersonalTasksCompanion(
+                syncState: Value('clean'),
+              ),
+            );
+      } catch (_) {
+        // Leave dirty for retry next cycle.
+      }
     }
 
     // Pull shared tasks to detect kids completing an assigned task.

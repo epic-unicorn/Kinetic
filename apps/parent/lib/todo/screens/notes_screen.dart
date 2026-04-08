@@ -59,7 +59,16 @@ class _NotesScreenState extends State<NotesScreen> {
                       ),
                     ),
                   ),
-                  SyncStatus.idle => const Icon(Icons.cloud_done_outlined),
+                  SyncStatus.idle => GestureDetector(
+                    onTap: widget.onSyncRetry,
+                    child: Tooltip(
+                      message: 'Synchroniseren',
+                      child: Icon(
+                        Icons.cloud_done_outlined,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
                 },
               ),
             ),
