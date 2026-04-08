@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:kinetic_webdav/kinetic_webdav.dart';
+import 'package:uuid/uuid.dart';
+
+import '../settings/models/enrolled_kid.dart';
 
 /// Secure-storage keys for WebDAV configuration.
 const _kServerUrl = 'kinetic_webdav_server_url';
@@ -10,6 +13,7 @@ const _kPassword = 'kinetic_webdav_password';
 const _kPersonalKey = 'kinetic_webdav_personal_key';
 const _kFamilyKey = 'kinetic_webdav_family_key';
 const _kParentId = 'kinetic_webdav_parent_id';
+const _kEnrolledKids = 'kinetic_enrolled_kids';
 
 /// Persists and loads [SyncConfig] from [SecureKeyValueStore].
 ///
@@ -118,6 +122,50 @@ class WebDavConfigRepository {
   /// Call this when leaving the family pairing.
   Future<void> clearFamilyKey() async {
     await _store.delete(key: _kFamilyKey);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Enrolled Kids
+  // ---------------------------------------------------------------------------
+
+  /// Returns the list of kids enrolled by this parent device.
+  Future<List<EnrolledKid>> loadEnrolledKids() async {
+    final json = await _store.read(key: _kEnrolledKids);
+    if (json == null) return [];
+    try {
+      final list = jsonDecode(json) as List<dynamic>;
+      return list
+          .map((e) => EnrolledKid.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Adds a new kid with [name] to the enrolled list and returns the
+  /// [EnrolledKid] that was created (including its generated ID).
+  Future<EnrolledKid> addEnrolledKid(String name) async {
+    final kid = EnrolledKid(
+      id: const Uuid().v4(),
+      name: name,
+      enrolledAt: DateTime.now().toUtc(),
+    );
+    final kids = await loadEnrolledKids();
+    kids.add(kid);
+    await _writeEnrolledKids(kids);
+    return kid;
+  }
+
+  /// Removes a kid by ID from the enrolled list.
+  Future<void> removeEnrolledKid(String kidId) async {
+    final kids = await loadEnrolledKids();
+    kids.removeWhere((k) => k.id == kidId);
+    await _writeEnrolledKids(kids);
+  }
+
+  Future<void> _writeEnrolledKids(List<EnrolledKid> kids) async {
+    final json = jsonEncode(kids.map((k) => k.toJson()).toList());
+    await _store.write(key: _kEnrolledKids, value: json);
   }
 
   // ---------------------------------------------------------------------------

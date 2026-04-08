@@ -2,27 +2,67 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 
 // ---------------------------------------------------------------------------
 // KidsEnrollmentQrScreen
 //
-// Shows a QR code that the kids app can scan to enroll in the family.
-// The payload includes server URL, username, password, and the family key.
-// Only reachable when a family key is present.
+// Two-step screen:
+//   1. User enters the child's name.
+//   2. QR code is shown; child scans it to enroll.
+// The child is registered in [configRepo] so the family screen can list and
+// manage enrolled children.
 // ---------------------------------------------------------------------------
 
-class KidsEnrollmentQrScreen extends StatelessWidget {
+class KidsEnrollmentQrScreen extends StatefulWidget {
   final SyncConfig config;
+  final WebDavConfigRepository? configRepo;
+  final VoidCallback? onKidRegistered;
 
-  const KidsEnrollmentQrScreen({super.key, required this.config});
+  const KidsEnrollmentQrScreen({
+    super.key,
+    required this.config,
+    this.configRepo,
+    this.onKidRegistered,
+  });
+
+  @override
+  State<KidsEnrollmentQrScreen> createState() => _KidsEnrollmentQrScreenState();
+}
+
+class _KidsEnrollmentQrScreenState extends State<KidsEnrollmentQrScreen> {
+  final _nameCtrl = TextEditingController();
+  String? _registeredName;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
 
   String get _qrPayload => KineticEncryption.exportKidsEnrollmentQrPayload(
-        config.familyKeyBytes!,
-        config.serverUrl,
-        config.username,
-        config.password,
-      );
+    widget.config.familyKeyBytes!,
+    widget.config.serverUrl,
+    widget.config.username,
+    widget.config.password,
+  );
+
+  Future<void> _registerAndShowQr() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _saving = true);
+    if (widget.configRepo != null) {
+      await widget.configRepo!.addEnrolledKid(name);
+      widget.onKidRegistered?.call();
+    }
+    if (mounted)
+      setState(() {
+        _registeredName = name;
+        _saving = false;
+      });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,94 +77,143 @@ class KidsEnrollmentQrScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
+          child: _registeredName == null
+              ? _buildNameStep(context, scheme, tt)
+              : _buildQrStep(context, scheme, tt),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNameStep(
+    BuildContext context,
+    ColorScheme scheme,
+    TextTheme tt,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Naam van het kind',
+          style: tt.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Voer de naam in van het kind dat je wilt koppelen.',
+          style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        TextField(
+          controller: _nameCtrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Naam kind',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.child_care),
+          ),
+          onSubmitted: (_) => _registerAndShowQr(),
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: _saving ? null : _registerAndShowQr,
+          child: _saving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Doorgaan naar QR-code'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQrStep(BuildContext context, ColorScheme scheme, TextTheme tt) {
+    return Column(
+      children: [
+        Text(
+          'QR-code voor ${_registeredName!}',
+          style: tt.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Open de kinderenapp op het toestel van ${_registeredName!} '
+          'en scan deze code.',
+          style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(20),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: QrImageView(
+              data: _qrPayload,
+              version: QrVersions.auto,
+              size: 220,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Colors.black,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: kColorTeal.withAlpha(15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: kColorTeal.withAlpha(60)),
+          ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Scan met de Kinetic-kinderenapp',
-                style: tt.titleMedium,
-                textAlign: TextAlign.center,
+              Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 18, color: kColorTeal),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Wat wordt er gedeeld?',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: kColorTeal,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               Text(
-                'Open de kinderenapp en volg de stappen om te koppelen. '
-                'Houd je scherm bij de hand.',
-                style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              // QR code
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(20),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: QrImageView(
-                    data: _qrPayload,
-                    version: QrVersions.auto,
-                    size: 220,
-                    backgroundColor: Colors.white,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: Colors.black,
-                    ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Info card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: kColorTeal.withAlpha(15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kColorTeal.withAlpha(60)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.info_outline,
-                            size: 18, color: kColorTeal),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Wat wordt er gedeeld?',
-                          style: tt.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: kColorTeal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Deze QR-code bevat je WebDAV-inloggegevens en '
-                      'de familiesleutel. Deel hem alleen met de kinderenapp '
-                      'op een vertrouwd apparaat.',
-                      style: tt.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+                'Deze QR-code bevat je WebDAV-inloggegevens en '
+                'de familiesleutel. Deel hem alleen met de kinderenapp '
+                'op een vertrouwd apparaat.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

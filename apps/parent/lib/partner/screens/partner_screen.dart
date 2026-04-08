@@ -2,6 +2,7 @@
 
 import '../../theme/app_header.dart';
 import '../../todo/models/enums.dart';
+import '../models/family_load_metrics.dart';
 import '../models/partner_proposal.dart';
 import '../services/partner_load_repository.dart';
 import '../services/partner_proposal_repository.dart';
@@ -52,7 +53,9 @@ class _PartnerScreenState extends State<PartnerScreen> {
 
   Widget _buildProposalsView(BuildContext context) {
     return StreamBuilder<List<PartnerProposal>>(
-      stream: widget.proposalRepository.watchPending(myParentId: widget.myParentId),
+      stream: widget.proposalRepository.watchPending(
+        myParentId: widget.myParentId,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -89,14 +92,14 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Geen suggesties',
+                  'Geen voorstellen',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Het systeem heeft nog geen taken automatisch voor jou gesuggereerd.',
+                  'Je partner heeft nog geen taken naar jou gestuurd.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -281,10 +284,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
     );
   }
 
-  Widget _buildLoadMetricCard(
-    BuildContext context,
-    dynamic metric, // FamilyLoadMetrics
-  ) {
+  Widget _buildLoadMetricCard(BuildContext context, FamilyLoadMetrics metric) {
     final scheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -300,7 +300,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    metric.parentName ?? 'Onbekende ouder',
+                    metric.parentName,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -334,7 +334,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                   child: Column(
                     children: [
                       Text(
-                        '${(metric.tasksByCategory?.length ?? 0)}',
+                        '${metric.tasksByCategory.length}',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: scheme.primary),
                       ),
@@ -347,7 +347,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
               ],
             ),
-            if ((metric.tasksByCategory?.isNotEmpty ?? false)) ...[
+            if (metric.tasksByCategory.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 'Per categorie',
@@ -359,7 +359,7 @@ class _PartnerScreenState extends State<PartnerScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: (metric.tasksByCategory?.entries ?? [])
+                children: metric.tasksByCategory.entries
                     .map(
                       (e) => Chip(
                         label: Text('${e.key}: ${e.value}'),

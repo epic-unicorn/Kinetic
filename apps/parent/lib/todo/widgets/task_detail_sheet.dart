@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../partner/services/partner_proposal_repository.dart';
+import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
@@ -22,6 +23,7 @@ class TaskDetailSheet extends StatefulWidget {
   final String? initialListId;
   final String? initialTitle;
   final bool hasFamilyKey;
+  final WebDavConfigRepository? configRepo;
 
   const TaskDetailSheet({
     super.key,
@@ -32,6 +34,7 @@ class TaskDetailSheet extends StatefulWidget {
     this.initialListId,
     this.initialTitle,
     this.hasFamilyKey = false,
+    this.configRepo,
   });
 
   @override
@@ -195,12 +198,59 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     final task = widget.task;
     if (task == null) return;
 
+    // If a configRepo is available, load enrolled kids to offer a picker.
+    String? selectedKidName;
+    if (widget.configRepo != null) {
+      final kids = await widget.configRepo!.loadEnrolledKids();
+      if (!mounted) return;
+      if (kids.length > 1) {
+        // Show kid picker dialog.
+        selectedKidName = await showDialog<String>(
+          context: context,
+          builder: (ctx) => SimpleDialog(
+            title: const Text('Stuur naar welk kind?'),
+            children: [
+              for (final kid in kids)
+                SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, kid.name),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.child_care, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          kid.name,
+                          style: Theme.of(ctx).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Text('Annuleren'),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (selectedKidName == null || !mounted) return;
+      } else if (kids.length == 1) {
+        selectedKidName = kids.first.name;
+      }
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Stuur naar kinderen?'),
         content: Text(
-          '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
+          selectedKidName != null
+              ? '"${task.title}" wordt als opdracht naar $selectedKidName gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
+              : '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
         ),
         actions: [
           TextButton(

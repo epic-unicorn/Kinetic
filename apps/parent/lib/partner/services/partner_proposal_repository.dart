@@ -96,7 +96,7 @@ class PartnerProposalRepository {
         (e) => e.name == proposalRow.taskCategory,
         orElse: () => TaskCategory.other,
       ),
-      priority: TaskPriority.values[proposalRow.taskPriority ?? 0],
+      priority: TaskPriority.values[proposalRow.taskPriority],
       dueDate: proposalRow.taskDueDate,
       isPrivate: true, // Accepted proposals become personal tasks
     );
@@ -180,6 +180,32 @@ class PartnerProposalRepository {
           .where((r) => myParentId == null || r.fromParentId != myParentId)
           .length,
     );
+  }
+
+  /// Watch the status of an outgoing proposal for the given task title sent
+  /// by [fromParentId].  Returns null when no matching proposal exists.
+  /// Returns [ProposalStatus.pending] when the proposal is active,
+  /// [ProposalStatus.rejected] or [ProposalStatus.dismissed] when declined.
+  Stream<ProposalStatus?> watchOutgoingProposalStatus({
+    required String taskTitle,
+    required String fromParentId,
+  }) {
+    final normalized = _normalizeTitle(taskTitle);
+    return (_db.select(_db.partnerProposals)
+          ..where((p) => p.fromParentId.equals(fromParentId))
+          ..orderBy([(p) => OrderingTerm.desc(p.updatedAt)]))
+        .watch()
+        .map((rows) {
+          for (final r in rows) {
+            if (_normalizeTitle(r.taskTitle) == normalized) {
+              return ProposalStatus.values.firstWhere(
+                (s) => s.name == r.status,
+                orElse: () => ProposalStatus.pending,
+              );
+            }
+          }
+          return null;
+        });
   }
 
   /// Manually send a task to your partner.

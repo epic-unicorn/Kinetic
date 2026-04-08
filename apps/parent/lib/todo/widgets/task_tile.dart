@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../partner/services/partner_proposal_repository.dart';
+import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
@@ -42,6 +43,7 @@ class TaskTile extends StatelessWidget {
   final bool hasFamilyKey;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
+  final WebDavConfigRepository? configRepo;
 
   const TaskTile({
     super.key,
@@ -50,6 +52,7 @@ class TaskTile extends StatelessWidget {
     this.hasFamilyKey = false,
     this.proposalRepo,
     this.myParentId,
+    this.configRepo,
   });
 
   @override
@@ -81,6 +84,7 @@ class TaskTile extends StatelessWidget {
         hasFamilyKey: hasFamilyKey,
         proposalRepo: proposalRepo,
         myParentId: myParentId,
+        configRepo: configRepo,
       ),
     );
   }
@@ -92,6 +96,7 @@ class _TaskTileContent extends StatefulWidget {
   final bool hasFamilyKey;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
+  final WebDavConfigRepository? configRepo;
 
   const _TaskTileContent({
     required this.task,
@@ -99,6 +104,7 @@ class _TaskTileContent extends StatefulWidget {
     this.hasFamilyKey = false,
     this.proposalRepo,
     this.myParentId,
+    this.configRepo,
   });
 
   @override
@@ -266,6 +272,42 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                         color: kColorWarmGrey,
                       ),
                     ),
+                  // ── Outgoing proposal status ───────────────────────────────
+                  if (widget.proposalRepo != null &&
+                      widget.myParentId != null &&
+                      widget.myParentId!.isNotEmpty)
+                    StreamBuilder<ProposalStatus?>(
+                      stream: widget.proposalRepo!.watchOutgoingProposalStatus(
+                        taskTitle: widget.task.title,
+                        fromParentId: widget.myParentId!,
+                      ),
+                      builder: (context, snapshot) {
+                        final status = snapshot.data;
+                        if (status == ProposalStatus.pending ||
+                            status == ProposalStatus.snoozed) {
+                          return const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(
+                              Icons.people_outline,
+                              size: 14,
+                              color: kColorTeal,
+                            ),
+                          );
+                        }
+                        if (status == ProposalStatus.rejected ||
+                            status == ProposalStatus.dismissed) {
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(
+                              Icons.person_off_outlined,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   // ── Mission badge ──────────────────────────────────────
                   if (widget.task.kidsTaskId != null)
                     const Padding(
@@ -292,6 +334,7 @@ class _TaskTileContentState extends State<_TaskTileContent> {
         hasFamilyKey: widget.hasFamilyKey,
         proposalRepo: widget.proposalRepo,
         myParentId: widget.myParentId,
+        configRepo: widget.configRepo,
       ),
     );
   }

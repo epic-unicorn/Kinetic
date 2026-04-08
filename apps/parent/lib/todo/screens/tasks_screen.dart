@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../partner/services/partner_proposal_repository.dart';
 import '../../settings/settings_repository.dart';
+import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_header.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
@@ -22,6 +23,7 @@ class TasksScreen extends StatefulWidget {
   final ValueNotifier<SyncStatus>? syncStatus;
   final bool hasFamilyKey;
   final VoidCallback? onSyncRetry;
+  final WebDavConfigRepository? configRepo;
 
   const TasksScreen({
     super.key,
@@ -32,6 +34,7 @@ class TasksScreen extends StatefulWidget {
     this.syncStatus,
     this.hasFamilyKey = false,
     this.onSyncRetry,
+    this.configRepo,
   });
 
   @override
@@ -76,6 +79,7 @@ class _TasksScreenState extends State<TasksScreen>
               builder: (_) => TaskDetailSheet(
                 repo: widget.repo,
                 hasFamilyKey: widget.hasFamilyKey,
+                configRepo: widget.configRepo,
               ),
             ),
           ),
@@ -97,6 +101,7 @@ class _TasksScreenState extends State<TasksScreen>
             settingsRepo: widget.settingsRepo,
             proposalRepo: widget.proposalRepo,
             myParentId: widget.myParentId,
+            configRepo: widget.configRepo,
           ),
           _CompletedTasksTab(
             repo: widget.repo,
@@ -168,6 +173,7 @@ class _OpenTasksTab extends StatefulWidget {
   final SettingsRepository? settingsRepo;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
+  final WebDavConfigRepository? configRepo;
 
   const _OpenTasksTab({
     required this.repo,
@@ -175,6 +181,7 @@ class _OpenTasksTab extends StatefulWidget {
     this.settingsRepo,
     this.proposalRepo,
     this.myParentId,
+    this.configRepo,
   });
 
   @override
@@ -290,6 +297,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
               dividerColor: dividerColor,
               proposalRepo: widget.proposalRepo,
               myParentId: widget.myParentId,
+              configRepo: widget.configRepo,
             );
           },
           onReorder: (oldIndex, newIndex) {
@@ -401,6 +409,7 @@ class _DraggableTaskRow extends StatelessWidget {
   final Color dividerColor;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
+  final WebDavConfigRepository? configRepo;
 
   const _DraggableTaskRow({
     super.key,
@@ -411,6 +420,7 @@ class _DraggableTaskRow extends StatelessWidget {
     required this.dividerColor,
     this.proposalRepo,
     this.myParentId,
+    this.configRepo,
   });
 
   @override
@@ -425,6 +435,7 @@ class _DraggableTaskRow extends StatelessWidget {
             hasFamilyKey: hasFamilyKey,
             proposalRepo: proposalRepo,
             myParentId: myParentId,
+            configRepo: configRepo,
           ),
         ),
         ReorderableDragStartListener(

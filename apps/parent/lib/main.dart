@@ -230,6 +230,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     syncStatus: hasWebDav ? syncStatus : null,
                     hasFamilyKey: paired,
                     onSyncRetry: _triggerSync,
+                    configRepo: _webDavConfig,
                   ),
                   if (paired)
                     PartnerScreen(

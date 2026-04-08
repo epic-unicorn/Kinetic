@@ -1,13 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
-import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
 import '../partner/models/partner_proposal.dart';
 import '../partner/services/load_analyzer.dart';
 import '../partner/services/load_sync_service.dart';
-import '../partner/services/proposal_analyzer.dart';
 import '../todo/models/enums.dart';
 
 /// Drives a full sync cycle against the WebDAV server.
@@ -139,13 +137,11 @@ class SyncOrchestrator {
   /// completion from the kids side (auto-completes the parent's task).
   Future<void> _syncKidsTasks(WebDavSyncService service) async {
     // Push any dirty tasks that have a kidsTaskId.
-    final rows = await (_db.select(_db.personalTasks)
-          ..where(
-            (t) =>
-                t.kidsTaskId.isNotNull() &
-                t.syncState.equals('dirty'),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.personalTasks)..where(
+              (t) => t.kidsTaskId.isNotNull() & t.syncState.equals('dirty'),
+            ))
+            .get();
     for (final row in rows) {
       final kidsTask = ICalTask(
         uid: row.kidsTaskId!,
@@ -169,17 +165,17 @@ class SyncOrchestrator {
     for (final sharedTask in sharedTasks) {
       if (sharedTask.status != ICalTaskStatus.completed) continue;
       // Find a parent task linked to this kids task that is still incomplete.
-      final linked = await (_db.select(_db.personalTasks)
-            ..where(
-              (t) =>
-                  t.kidsTaskId.equals(sharedTask.uid) &
-                  t.isCompleted.equals(false),
-            ))
-          .getSingleOrNull();
+      final linked =
+          await (_db.select(_db.personalTasks)..where(
+                (t) =>
+                    t.kidsTaskId.equals(sharedTask.uid) &
+                    t.isCompleted.equals(false),
+              ))
+              .getSingleOrNull();
       if (linked != null) {
-        await (_db.update(_db.personalTasks)
-              ..where((t) => t.id.equals(linked.id)))
-            .write(
+        await (_db.update(
+          _db.personalTasks,
+        )..where((t) => t.id.equals(linked.id))).write(
           PersonalTasksCompanion(
             isCompleted: const Value(true),
             completedAt: Value(sharedTask.updatedAt),
@@ -206,7 +202,7 @@ class SyncOrchestrator {
       try {
         // Push to the correct folder based on current isShared value
         await service.pushNote(icalNote);
-        
+
         // If this note was previously synced, ensure there's no orphaned file
         // in the "other" folder (could happen if isShared was toggled).
         // Try to delete from the opposite location (silently ignore 404s).
@@ -216,7 +212,7 @@ class SyncOrchestrator {
         } catch (_) {
           // File may not exist — that's fine.
         }
-        
+
         await (_db.update(
           _db.personalNotes,
         )..where((t) => t.id.equals(row.id))).write(
@@ -248,7 +244,7 @@ class SyncOrchestrator {
     // 3. Pull from server.
     final remoteList = await service.pullNotes();
     print('Pulled ${remoteList.length} notes from server (personal + shared)');
-    
+
     final localList = await _db.select(_db.personalNotes).get();
     final remoteIds = remoteList.map((n) => n.uid).toSet();
 
@@ -256,9 +252,15 @@ class SyncOrchestrator {
     // If a shared note exists locally but not on the server, and it's clean (not dirty),
     // then it was deleted remotely and should be removed locally too.
     for (final local in localList) {
-      if (local.isShared && local.syncState == 'clean' && !remoteIds.contains(local.id)) {
-        print('Shared note deleted on partner device, removing locally: ${local.id}');
-        await (_db.delete(_db.personalNotes)..where((t) => t.id.equals(local.id))).go();
+      if (local.isShared &&
+          local.syncState == 'clean' &&
+          !remoteIds.contains(local.id)) {
+        print(
+          'Shared note deleted on partner device, removing locally: ${local.id}',
+        );
+        await (_db.delete(
+          _db.personalNotes,
+        )..where((t) => t.id.equals(local.id))).go();
       }
     }
 
@@ -272,14 +274,18 @@ class SyncOrchestrator {
       final existing = localList.where((r) => r.id == note.uid).firstOrNull;
       if (existing == null) {
         // New from server — insert.
-        print('Inserting new note from server: ${note.uid} (isShared=${note.isShared})');
+        print(
+          'Inserting new note from server: ${note.uid} (isShared=${note.isShared})',
+        );
         await _db
             .into(_db.personalNotes)
             .insertOnConflictUpdate(_icalNoteToCompanion(note, etag: null));
       } else if (existing.syncState != 'dirty' &&
           note.updatedAt.isAfter(existing.updatedAt)) {
         // Remote is newer and local has no pending changes — adopt remote.
-        print('Updating existing note from server: ${note.uid} (isShared=${note.isShared})');
+        print(
+          'Updating existing note from server: ${note.uid} (isShared=${note.isShared})',
+        );
         await (_db.update(_db.personalNotes)
               ..where((t) => t.id.equals(note.uid)))
             .write(_icalNoteToCompanion(note, etag: existing.webdavEtag));
@@ -426,77 +432,30 @@ class SyncOrchestrator {
     for (final proposal in merged) {
       if (proposal.fromParentId != myParentId) continue; // Not ours
       if (proposal.status != ProposalStatus.accepted) continue; // Not accepted
-      
+
       // Find the local proposal's previous status
-      final localProposal = locals.where((p) => p.id == proposal.id).firstOrNull;
-      if (localProposal != null && localProposal.status == ProposalStatus.pending) {
+      final localProposal = locals
+          .where((p) => p.id == proposal.id)
+          .firstOrNull;
+      if (localProposal != null &&
+          localProposal.status == ProposalStatus.pending) {
         // This proposal was just accepted — delete the corresponding task
         // Search by title (since proposals don't have an explicit taskId link)
-        final task = await (_db.select(_db.personalTasks)
-              ..where((t) =>
-                  t.title.equals(proposal.taskTitle) &
-                  t.syncState.equals('clean') &
-                  t.isCompleted.equals(false)))
-            .getSingleOrNull();
-        
+        final task =
+            await (_db.select(_db.personalTasks)..where(
+                  (t) =>
+                      t.title.equals(proposal.taskTitle) &
+                      t.syncState.equals('clean') &
+                      t.isCompleted.equals(false),
+                ))
+                .getSingleOrNull();
+
         if (task != null) {
           // Soft-delete the task (mark as deleted, keep for tombstone sync)
           await (_db.update(_db.personalTasks)
                 ..where((t) => t.id.equals(task.id)))
-              .write(const PersonalTasksCompanion(
-                syncState: Value('deleted'),
-              ));
+              .write(const PersonalTasksCompanion(syncState: Value('deleted')));
         }
-      }
-    }
-
-    // 5. Auto-generate new proposals if parentId is set (symmetric: each
-    //    parent analyses their own tasks and proposes to the other).
-    if (myParentId.isEmpty) return;
-
-    final analyzer = ProposalAnalyzer(db: _db);
-    final candidates = await analyzer.findCandidates(myParentId);
-    final now = DateTime.now().toUtc();
-    const uuid = Uuid();
-
-    for (final task in candidates) {
-      final proposal = PartnerProposal(
-        id: uuid.v4(),
-        fromParentId: myParentId,
-        taskTitle: task.title,
-        taskNotes: task.notes,
-        taskCategory: TaskCategory.values.firstWhere(
-          (e) => e.name == task.category,
-          orElse: () => TaskCategory.other,
-        ),
-        taskPriority: TaskPriority.values[task.priority],
-        taskDueDate: task.dueDate,
-        status: ProposalStatus.pending,
-        receivedAt: now,
-        updatedAt: now,
-        autoGenerated: true,
-      );
-      // Persist locally with syncState='dirty' so it is pushed above on the
-      // next sync cycle. We push on the current cycle too:
-      await _db
-          .into(_db.partnerProposals)
-          .insertOnConflictUpdate(
-            _proposalToCompanion(
-              proposal,
-            ).copyWith(syncState: const Value('dirty')),
-          );
-      try {
-        await service.pushProposal(_proposalToJson(proposal));
-        await (_db.update(
-          _db.partnerProposals,
-        )..where((p) => p.id.equals(proposal.id))).write(
-          PartnerProposalsCompanion(
-            syncState: const Value('clean'),
-            updatedAt: Value(DateTime.now().toUtc()),
-          ),
-        );
-      } catch (_) {
-        // Will be pushed next cycle via the dirty push step.
       }
     }
   }
@@ -608,7 +567,7 @@ class SyncOrchestrator {
   Future<void> _syncLoad(WebDavSyncService service) async {
     final analyzer = LoadAnalyzer(db: _db);
     final syncService = LoadSyncService(service: service, analyzer: analyzer);
-    
+
     // Push this device's user's current load metrics, then pull family load.
     // Use parentId to consistently identify this parent (not the WebDAV username).
     await syncService.syncLoad(_config.parentId, _config.username);
