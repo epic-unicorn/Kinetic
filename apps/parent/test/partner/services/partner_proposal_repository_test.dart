@@ -82,7 +82,7 @@ void main() {
               id: 'mapped-1',
               fromParentId: 'partner-42',
               taskTitle: 'Afwas doen',
-              taskCategory: const Value('household'),
+              taskCategory: const Value('other'),
               taskPriority: const Value(2),
               status: const Value('pending'),
               receivedAt: now,
@@ -95,7 +95,6 @@ void main() {
       final p = proposals.first;
       expect(p.fromParentId, equals('partner-42'));
       expect(p.taskTitle, equals('Afwas doen'));
-      expect(p.taskCategory, equals(TaskCategory.household));
       expect(p.taskPriority, equals(TaskPriority.medium));
       expect(p.status, equals(ProposalStatus.pending));
     });

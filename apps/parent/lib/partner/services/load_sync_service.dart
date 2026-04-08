@@ -51,7 +51,12 @@ class LoadSyncService {
       'parentName': metrics.parentName,
       'taskCount': metrics.taskCount,
       'urgentCount': metrics.urgentCount,
-      'tasksByCategory': metrics.tasksByCategory,
+      'openTasksCount': metrics.openTasksCount,
+      'pastDueTasksCount': metrics.pastDueTasksCount,
+      'totalCategoriesCount': metrics.totalCategoriesCount,
+      'notesCount': metrics.notesCount,
+      'childrenTasksSent': metrics.childrenTasksSent,
+      'childrenTasksCompleted': metrics.childrenTasksCompleted,
       'calculatedAt': metrics.calculatedAt.toIso8601String(),
     };
   }
@@ -62,7 +67,12 @@ class LoadSyncService {
       parentName: json['parentName'] as String,
       taskCount: json['taskCount'] as int,
       urgentCount: json['urgentCount'] as int,
-      tasksByCategory: Map<String, int>.from(json['tasksByCategory'] as Map),
+      openTasksCount: json['openTasksCount'] as int? ?? 0,
+      pastDueTasksCount: json['pastDueTasksCount'] as int? ?? 0,
+      totalCategoriesCount: json['totalCategoriesCount'] as int? ?? 0,
+      notesCount: json['notesCount'] as int? ?? 0,
+      childrenTasksSent: json['childrenTasksSent'] as int? ?? 0,
+      childrenTasksCompleted: json['childrenTasksCompleted'] as int? ?? 0,
       calculatedAt: DateTime.parse(json['calculatedAt'] as String),
     );
   }

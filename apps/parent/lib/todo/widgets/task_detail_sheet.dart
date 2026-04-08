@@ -48,7 +48,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   late TaskPriority _priority;
   DateTime? _dueDate;
   bool _isAllDay = true;
-  bool _isPrivate = false;
   String? _recurrenceRule;
   String? _listId;
   String? _customCategory;
@@ -66,7 +65,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     _priority = t?.priority ?? TaskPriority.none;
     _dueDate = t?.dueDate;
     _isAllDay = t?.isAllDay ?? true;
-    _isPrivate = t?.isPrivate ?? false;
     _recurrenceRule = t?.recurrenceRule;
     _listId = t?.listId ?? widget.initialListId;
     _customCategory = t?.customCategory;
@@ -95,7 +93,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           dueDate: _dueDate,
           isAllDay: _isAllDay,
           recurrenceRule: _recurrenceRule,
-          isPrivate: _isPrivate,
+          isPrivate: false,
           customCategory: _customCategory,
         );
       } else {
@@ -108,7 +106,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             dueDate: _dueDate,
             isAllDay: _isAllDay,
             recurrenceRule: _recurrenceRule,
-            isPrivate: _isPrivate,
+            isPrivate: false,
             listId: _listId,
             customCategory: _customCategory,
             clearCustomCategory: _customCategory == null,
@@ -184,7 +182,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       myParentId: widget.myParentId ?? '',
       taskTitle: task.title,
       taskNotes: task.notes,
-      taskCategory: task.category,
       taskPriority: task.priority,
       taskDueDate: task.dueDate,
     );
@@ -368,12 +365,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 ? priorityColor(_priority)
                 : null,
             onTap: () => _pickPriority(context),
-          ),
-          _MetaRow(
-            icon: _isPrivate ? Icons.lock : Icons.lock_open_outlined,
-            label: _isPrivate ? 'Privé (niet voorgesteld)' : 'Privé',
-            active: _isPrivate,
-            onTap: () => setState(() => _isPrivate = !_isPrivate),
           ),
           _MetaRow(
             icon: Icons.label_outline,

@@ -466,9 +466,6 @@ class SyncOrchestrator {
       fromParentId: row.fromParentId,
       taskTitle: row.taskTitle,
       taskNotes: row.taskNotes,
-      taskCategory: TaskCategory.values.firstWhere(
-        (e) => e.name == row.taskCategory,
-      ),
       taskPriority: TaskPriority.values[row.taskPriority],
       taskDueDate: row.taskDueDate,
       status: ProposalStatus.values.firstWhere((e) => e.name == row.status),
@@ -483,7 +480,6 @@ class SyncOrchestrator {
     'fromParentId': p.fromParentId,
     'taskTitle': p.taskTitle,
     'taskNotes': p.taskNotes,
-    'taskCategory': p.taskCategory.name,
     'taskPriority': p.taskPriority.index,
     'taskDueDate': p.taskDueDate?.toIso8601String(),
     'status': p.status.name,
@@ -498,9 +494,6 @@ class SyncOrchestrator {
       fromParentId: json['fromParentId'] as String,
       taskTitle: json['taskTitle'] as String,
       taskNotes: json['taskNotes'] as String?,
-      taskCategory: TaskCategory.values.firstWhere(
-        (e) => e.name == json['taskCategory'],
-      ),
       taskPriority: TaskPriority.values[json['taskPriority'] as int],
       taskDueDate: json['taskDueDate'] != null
           ? DateTime.parse(json['taskDueDate'] as String)
@@ -522,7 +515,7 @@ class SyncOrchestrator {
       fromParentId: Value(p.fromParentId),
       taskTitle: Value(p.taskTitle),
       taskNotes: Value(p.taskNotes),
-      taskCategory: Value(p.taskCategory.name),
+      taskCategory: const Value('other'),
       taskPriority: Value(p.taskPriority.index),
       taskDueDate: Value(p.taskDueDate),
       status: Value(p.status.name),

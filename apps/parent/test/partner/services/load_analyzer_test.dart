@@ -52,7 +52,12 @@ void main() {
       expect(metrics.parentName, equals('Mama'));
       expect(metrics.taskCount, equals(0));
       expect(metrics.urgentCount, equals(0));
-      expect(metrics.tasksByCategory, isEmpty);
+      expect(metrics.openTasksCount, equals(0));
+      expect(metrics.pastDueTasksCount, equals(0));
+      expect(metrics.totalCategoriesCount, equals(0));
+      expect(metrics.notesCount, equals(0));
+      expect(metrics.childrenTasksSent, equals(0));
+      expect(metrics.childrenTasksCompleted, equals(0));
     });
 
     test('counts only non-completed tasks', () async {
@@ -152,8 +157,7 @@ void main() {
       await _insertTask(db, id: 't3', title: 'Gezondheid', category: 'health');
 
       final metrics = await analyzer.getMyLoad('p', 'P');
-      expect(metrics.tasksByCategory['household'], equals(2));
-      expect(metrics.tasksByCategory['health'], equals(1));
+      expect(metrics.totalCategoriesCount, equals(2));
     });
 
     test('excludes completed tasks from category counts', () async {
@@ -167,7 +171,7 @@ void main() {
       );
 
       final metrics = await analyzer.getMyLoad('p', 'P');
-      expect(metrics.tasksByCategory['household'], equals(1));
+      expect(metrics.totalCategoriesCount, equals(1));
     });
   });
 

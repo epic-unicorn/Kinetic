@@ -12,6 +12,7 @@ class LoadAnalyzer {
   Future<FamilyLoadMetrics> getMyLoad(String selfId, String selfName) async {
     final now = DateTime.now().toUtc();
     final tasks = await _db.select(_db.personalTasks).get();
+    final notes = await _db.select(_db.personalNotes).get();
 
     // Count non-completed tasks
     final nonCompleted = tasks.where((t) => !t.isCompleted).toList();
@@ -24,19 +25,39 @@ class LoadAnalyzer {
       return diff >= 0 && diff <= 7;
     }).length;
 
-    // Count tasks by category
-    final tasksByCategory = <String, int>{};
-    for (final task in nonCompleted) {
-      final cat = task.category;
-      tasksByCategory[cat] = (tasksByCategory[cat] ?? 0) + 1;
+    // Count past due tasks (dueDate before now)
+    final pastDueCount = nonCompleted.where((t) {
+      if (t.dueDate == null) return false;
+      return t.dueDate!.isBefore(now);
+    }).length;
+
+    // Count unique categories in use
+    final categoriesInUse = <String>{};
+    for (final task in tasks.where((t) => !t.isCompleted)) {
+      categoriesInUse.add(task.category);
     }
+    final totalCategoriesCount = categoriesInUse.length;
+
+    // Count personal notes
+    final notesCount = notes.length;
+
+    // Count children tasks sent (where kidsTaskId is not null)
+    final childrenTasksSent = tasks.where((t) => t.kidsTaskId != null).length;
+
+    // Count children tasks that are completed (where kidsTaskId is not null and isCompleted)
+    final childrenTasksCompleted = tasks.where((t) => t.kidsTaskId != null && t.isCompleted).length;
 
     return FamilyLoadMetrics(
       parentId: selfId,
       parentName: selfName,
       taskCount: taskCount,
       urgentCount: urgentCount,
-      tasksByCategory: tasksByCategory,
+      openTasksCount: taskCount,
+      pastDueTasksCount: pastDueCount,
+      totalCategoriesCount: totalCategoriesCount,
+      notesCount: notesCount,
+      childrenTasksSent: childrenTasksSent,
+      childrenTasksCompleted: childrenTasksCompleted,
       calculatedAt: now,
     );
   }

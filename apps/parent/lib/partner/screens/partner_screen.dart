@@ -184,11 +184,6 @@ class _PartnerScreenState extends State<PartnerScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Chip(
-                  label: Text(proposal.taskCategory.name),
-                  visualDensity: VisualDensity.compact,
-                ),
-                const SizedBox(width: 8),
                 if (proposal.taskDueDate != null)
                   Chip(
                     label: Text(_formatDate(proposal.taskDueDate!)),
@@ -334,7 +329,22 @@ class _PartnerScreenState extends State<PartnerScreen> {
                   child: Column(
                     children: [
                       Text(
-                        '${metric.tasksByCategory.length}',
+                        '${metric.pastDueTasksCount}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: scheme.primary),
+                      ),
+                      Text(
+                        'Te laat',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${metric.totalCategoriesCount}',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(color: scheme.primary),
                       ),
@@ -347,28 +357,64 @@ class _PartnerScreenState extends State<PartnerScreen> {
                 ),
               ],
             ),
-            if (metric.tasksByCategory.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Per categorie',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+            const SizedBox(height: 12),
+            Text(
+              'Kinderen',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: metric.tasksByCategory.entries
-                    .map(
-                      (e) => Chip(
-                        label: Text('${e.key}: ${e.value}'),
-                        visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${metric.childrenTasksSent}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: scheme.primary),
                       ),
-                    )
-                    .toList(),
-              ),
-            ],
+                      Text(
+                        'Verstuurd',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${metric.childrenTasksCompleted}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: scheme.primary),
+                      ),
+                      Text(
+                        'Afgerond',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${metric.notesCount}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(color: scheme.primary),
+                      ),
+                      Text(
+                        'Notities',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

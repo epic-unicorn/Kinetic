@@ -272,6 +272,27 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                         color: kColorWarmGrey,
                       ),
                     ),
+                  // ── Accepted from partner proposal ─────────────────────────
+                  if (widget.proposalRepo != null)
+                    StreamBuilder<bool>(
+                      stream: widget.proposalRepo!
+                          .watchAcceptedProposalForTask(
+                            taskTitle: widget.task.title,
+                          ),
+                      builder: (context, snapshot) {
+                        if (snapshot.data == true) {
+                          return const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(
+                              Icons.person_add_outlined,
+                              size: 14,
+                              color: kColorTeal,
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   // ── Outgoing proposal status ───────────────────────────────
                   if (widget.proposalRepo != null &&
                       widget.myParentId != null &&
