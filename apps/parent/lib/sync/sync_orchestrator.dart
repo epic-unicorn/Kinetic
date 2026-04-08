@@ -132,7 +132,6 @@ class SyncOrchestrator {
         await service.pushTask(task);
       } catch (_) {}
     }
-
   }
 
   /// Pushes tasks with a kidsTaskId to the shared tasks folder and detects
@@ -165,13 +164,8 @@ class SyncOrchestrator {
         await service.pushSharedTask(kidsTask);
         // Mark the task clean so the personal-path push (step 1b) skips it
         // and won't conflict with the shared-path version.
-        await (_db.update(_db.personalTasks)
-              ..where((t) => t.id.equals(row.id)))
-            .write(
-              const PersonalTasksCompanion(
-                syncState: Value('clean'),
-              ),
-            );
+        await (_db.update(_db.personalTasks)..where((t) => t.id.equals(row.id)))
+            .write(const PersonalTasksCompanion(syncState: Value('clean')));
       } catch (_) {
         // Leave dirty for retry next cycle.
       }
