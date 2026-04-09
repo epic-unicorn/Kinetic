@@ -408,7 +408,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       label: const Text('Opdracht aangemaakt ✓'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: kColorTeal,
-                        side: BorderSide(color: kColorTeal.withValues(alpha: 0.5)),
+                        side: BorderSide(
+                          color: kColorTeal.withValues(alpha: 0.5),
+                        ),
                       ),
                       onPressed: null,
                     )

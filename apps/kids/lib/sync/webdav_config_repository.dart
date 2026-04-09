@@ -39,7 +39,8 @@ class WebDavConfigRepository {
 
     // Personal key is unused by kids but required by SyncConfig. Generate a
     // random one-time dummy and persist it so subsequent loads are stable.
-    final personalKeyBase64 = await _store.read(key: _kPersonalKey) ??
+    final personalKeyBase64 =
+        await _store.read(key: _kPersonalKey) ??
         await _generateAndStorePersonalKey();
 
     final personalKeyBytes = Uint8List.fromList(
@@ -89,7 +90,9 @@ class WebDavConfigRepository {
 
   Future<String> _generateAndStorePersonalKey() async {
     final rng = Random.secure();
-    final bytes = Uint8List.fromList(List.generate(32, (_) => rng.nextInt(256)));
+    final bytes = Uint8List.fromList(
+      List.generate(32, (_) => rng.nextInt(256)),
+    );
     final encoded = base64.encode(bytes);
     await _store.write(key: _kPersonalKey, value: encoded);
     return encoded;

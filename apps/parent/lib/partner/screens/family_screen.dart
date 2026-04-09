@@ -45,10 +45,7 @@ class FamilyScreen extends StatelessWidget {
               proposalRepository: proposalRepository,
               myParentId: myParentId,
             ),
-            _KidsTasksTab(
-              configRepo: configRepo,
-              syncConfig: syncConfig,
-            ),
+            _KidsTasksTab(configRepo: configRepo, syncConfig: syncConfig),
           ],
         ),
       ),
@@ -64,10 +61,7 @@ class _ProposalsTab extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
   final String? myParentId;
 
-  const _ProposalsTab({
-    required this.proposalRepository,
-    this.myParentId,
-  });
+  const _ProposalsTab({required this.proposalRepository, this.myParentId});
 
   @override
   State<_ProposalsTab> createState() => _ProposalsTabState();
@@ -145,7 +139,9 @@ class _ProposalsTabState extends State<_ProposalsTab> {
     final priorityColor = _priorityColor(proposal.taskPriority, scheme);
     final dueSoon =
         proposal.taskDueDate != null &&
-        proposal.taskDueDate!.isBefore(DateTime.now().add(const Duration(days: 3)));
+        proposal.taskDueDate!.isBefore(
+          DateTime.now().add(const Duration(days: 3)),
+        );
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -182,15 +178,19 @@ class _ProposalsTabState extends State<_ProposalsTab> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: priorityColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     proposal.taskPriority.name,
-                    style: Theme.of(context).textTheme.labelSmall
-                        ?.copyWith(color: priorityColor),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: priorityColor),
                   ),
                 ),
               ],
@@ -249,27 +249,27 @@ class _ProposalsTabState extends State<_ProposalsTab> {
   Future<void> _acceptProposal(String proposalId) async {
     await widget.proposalRepository.accept(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voorstel geaccepteerd')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voorstel geaccepteerd')));
     }
   }
 
   Future<void> _snoozeProposal(String proposalId) async {
     await widget.proposalRepository.snooze(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voorstel uitgesteld')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voorstel uitgesteld')));
     }
   }
 
   Future<void> _dismissProposal(String proposalId) async {
     await widget.proposalRepository.dismiss(proposalId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voorstel afgewezen')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voorstel afgewezen')));
     }
   }
 
@@ -277,7 +277,9 @@ class _ProposalsTabState extends State<_ProposalsTab> {
     await widget.proposalRepository.reject(proposal.id, proposal.taskTitle);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gemeld als slecht voorstel — we leren hiervan')),
+        const SnackBar(
+          content: Text('Gemeld als slecht voorstel — we leren hiervan'),
+        ),
       );
     }
   }
@@ -330,7 +332,10 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
       username: widget.syncConfig.username,
       password: widget.syncConfig.password,
     );
-    final service = WebDavSyncService(client: client, config: widget.syncConfig);
+    final service = WebDavSyncService(
+      client: client,
+      config: widget.syncConfig,
+    );
     try {
       final tasks = await service.pullSharedTasks();
       return _KidsTasksData(tasks: tasks, enrolledKids: enrolledKids);
@@ -361,8 +366,11 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 48,
-                    color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(height: 16),
                 const Text('Fout bij laden van kinderopdrachten'),
                 const SizedBox(height: 12),
@@ -382,8 +390,11 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.child_care_outlined, size: 56,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.child_care_outlined,
+                  size: 56,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Geen kinderopdrachten',
@@ -412,9 +423,10 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
           if (targetId == null || targetId.isEmpty) {
             label = 'Iedereen';
           } else {
-            final kid = data.enrolledKids
-                .cast<EnrolledKid?>()
-                .firstWhere((k) => k?.id == targetId, orElse: () => null);
+            final kid = data.enrolledKids.cast<EnrolledKid?>().firstWhere(
+              (k) => k?.id == targetId,
+              orElse: () => null,
+            );
             label = kid?.name ?? targetId;
           }
           grouped.putIfAbsent(label, () => []).add(task);
@@ -435,8 +447,7 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                     ),
                   ),
                 ),
-                for (final task in entry.value)
-                  _KidsTaskTile(task: task),
+                for (final task in entry.value) _KidsTaskTile(task: task),
               ],
             ],
           ),

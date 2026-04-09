@@ -111,9 +111,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
           ListTile(
             leading: const Icon(Icons.child_care, color: kColorTeal),
             title: const Text('Kinderenapp koppelen'),
-            subtitle: const Text(
-              'Laat de kinderenapp de QR-code scannen.',
-            ),
+            subtitle: const Text('Laat de kinderenapp de QR-code scannen.'),
             trailing: const Icon(Icons.qr_code),
             onTap: _enrollKid,
           ),

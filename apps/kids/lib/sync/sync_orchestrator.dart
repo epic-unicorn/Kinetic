@@ -18,6 +18,7 @@ class KidsSyncOrchestrator {
   final AppDatabase _db;
   final KidsTaskRepository _repo;
   final SyncConfig _config;
+
   /// The kid's own ID as assigned by the parent during enrollment.
   /// If empty, all shared tasks are accepted (backwards-compatible).
   final String _myKidId;
@@ -54,7 +55,7 @@ class KidsSyncOrchestrator {
   /// Pull tasks from parent (from /kinetic/shared/tasks/)
   Future<void> _pullRemoteTasks(WebDavSyncService service) async {
     final iCalTasks = await service.pullSharedTasks();
-    
+
     final localList = await _db.select(_db.kidsTasks).get();
     final remoteIds = iCalTasks.map((t) => t.uid).toSet();
 

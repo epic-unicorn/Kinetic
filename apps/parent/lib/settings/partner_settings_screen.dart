@@ -170,8 +170,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
             const SizedBox(height: 8),
             if (!paired) ...[
               ListTile(
-                leading:
-                    const Icon(Icons.people_outline, color: kColorTeal),
+                leading: const Icon(Icons.people_outline, color: kColorTeal),
                 title: const Text('Familiesleutel delen via QR'),
                 subtitle: const Text(
                   'Laat je partner de QR-code scannen om samen te werken.',
@@ -180,8 +179,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                 onTap: _exportFamilyKey,
               ),
               ListTile(
-                leading:
-                    const Icon(Icons.qr_code_scanner, color: kColorTeal),
+                leading: const Icon(Icons.qr_code_scanner, color: kColorTeal),
                 title: const Text('Familiesleutel scannen'),
                 subtitle: const Text(
                   'Scan de QR-code op het apparaat van je partner.',
@@ -217,8 +215,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                 ),
                 title: Text(
                   'Partner ontkoppelen',
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 subtitle: const Text(
                   'Verwijder de familiesleutel en gedeelde notities van dit apparaat.',

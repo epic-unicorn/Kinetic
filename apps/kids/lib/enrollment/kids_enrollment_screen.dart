@@ -18,6 +18,7 @@ import '../sync/webdav_config_repository.dart';
 
 class KidsEnrollmentScreen extends StatefulWidget {
   final WebDavConfigRepository configRepo;
+
   /// Called after successful enrollment. If provided, the widget calls this
   /// callback instead of popping the navigator.
   final VoidCallback? onEnrolled;
@@ -78,7 +79,8 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
       String username,
       String password,
       String kidId,
-    }) data,
+    })
+    data,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -155,19 +157,13 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Familie koppelen'),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: const Text('Familie koppelen'), centerTitle: false),
       body: Column(
         children: [
           Expanded(
             child: Stack(
               children: [
-                MobileScanner(
-                  controller: _scanner,
-                  onDetect: _onDetect,
-                ),
+                MobileScanner(controller: _scanner, onDetect: _onDetect),
                 // Overlay with scan area indicator
                 Center(
                   child: Container(
@@ -203,9 +199,7 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
                   'Open de Kinetic-app van je ouder, ga naar '
                   'Instellingen → Familie → Kinderenapp koppelen '
                   'en scan de QR-code.',
-                  style: tt.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -237,10 +231,9 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: scheme.onSurfaceVariant),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         Expanded(
           child: Text(
