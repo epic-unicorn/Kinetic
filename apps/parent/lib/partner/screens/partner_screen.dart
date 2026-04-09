@@ -23,13 +23,10 @@ class PartnerScreen extends StatefulWidget {
 }
 
 class _PartnerScreenState extends State<PartnerScreen> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: AppHeader(title: 'Partner'),
-      ),
+      appBar: AppBar(title: AppHeader(title: 'Partner')),
       body: _buildProposalsView(context),
     );
   }
