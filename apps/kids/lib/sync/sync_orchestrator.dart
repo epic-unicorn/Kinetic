@@ -18,14 +18,19 @@ class KidsSyncOrchestrator {
   final AppDatabase _db;
   final KidsTaskRepository _repo;
   final SyncConfig _config;
+  /// The kid's own ID as assigned by the parent during enrollment.
+  /// If empty, all shared tasks are accepted (backwards-compatible).
+  final String _myKidId;
 
   KidsSyncOrchestrator({
     required AppDatabase db,
     required KidsTaskRepository repo,
     required SyncConfig config,
+    String myKidId = '',
   }) : _db = db,
        _repo = repo,
-       _config = config;
+       _config = config,
+       _myKidId = myKidId;
 
   /// Main sync cycle: pull remote tasks, push local changes
   Future<void> sync() async {
@@ -65,6 +70,18 @@ class KidsSyncOrchestrator {
     if (iCalTasks.isEmpty) return;
 
     for (final ical in iCalTasks) {
+      // If the task targets a specific kid, skip it unless it's meant for this device.
+      final targetKidId = _extractCustomProperty(
+        ical.description,
+        'xKineticTargetKidId',
+      );
+      if (targetKidId != null &&
+          targetKidId.isNotEmpty &&
+          _myKidId.isNotEmpty &&
+          targetKidId != _myKidId) {
+        continue;
+      }
+
       final remoteTask = _iCalToKidsTask(ical);
       final existing = localList
           .where((r) => r.id == remoteTask.id)

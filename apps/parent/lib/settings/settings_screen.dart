@@ -7,12 +7,13 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
-import '../db/database_backup_service.dart';
+import '../db/full_backup_service.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_header.dart';
 import '../theme/app_themes.dart';
 import '../main.dart';
-import 'family_screen.dart';
+import 'kids_settings_screen.dart';
+import 'partner_settings_screen.dart';
 import 'settings_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -98,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const _SectionHeader(label: 'Familie'),
                 ListTile(
                   leading: Icon(Icons.people_outline, color: iconColor),
-                  title: const Text('Familie'),
+                  title: const Text('Partner'),
                   subtitle: Text(
                     _config?.familyKeyBytes != null
                         ? 'Partner gekoppeld'
@@ -108,8 +109,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => FamilyScreen(
+                        builder: (_) => PartnerSettingsScreen(
                           db: widget.db,
+                          configRepo: widget.configRepo,
+                          onConfigSaved: widget.onConfigSaved,
+                        ),
+                      ),
+                    );
+                    _loadConfig();
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.child_care, color: iconColor),
+                  title: const Text('Kinderen'),
+                  subtitle: const Text('Koppel de kinderenapp'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => KidsSettingsScreen(
                           configRepo: widget.configRepo,
                           onConfigSaved: widget.onConfigSaved,
                         ),
@@ -122,31 +140,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const _SectionHeader(label: 'Back-up & Herstel'),
               ListTile(
                 leading: Icon(Icons.backup_outlined, color: iconColor),
-                title: const Text('Herstelsleutel exporteren'),
-                subtitle: const Text('Bewaar je persoonlijke sleutel veilig'),
+                title: const Text('Back-up exporteren'),
+                subtitle: const Text(
+                  'Exporteer database en herstelsleutel als één bestand',
+                ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _exportRecoveryKey(),
+                onTap: () => _exportFullBackup(),
               ),
               ListTile(
                 leading: Icon(Icons.restore_outlined, color: iconColor),
-                title: const Text('Herstelsleutel importeren'),
-                subtitle: const Text('Herstel van een ander apparaat'),
+                title: const Text('Back-up importeren'),
+                subtitle: const Text('Herstel vanuit een back-upbestand'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showImportPersonalKeyDialog(),
-              ),
-              ListTile(
-                leading: Icon(Icons.save_alt_outlined, color: iconColor),
-                title: const Text('Database exporteren'),
-                subtitle: const Text('Versleuteld back-upbestand opslaan'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _exportDatabase(),
-              ),
-              ListTile(
-                leading: Icon(Icons.file_upload_outlined, color: iconColor),
-                title: const Text('Database importeren'),
-                subtitle: const Text('Herstel vanuit back-upbestand'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _importDatabase(),
+                onTap: () => _importFullBackup(),
               ),
             ],
           );
@@ -184,133 +190,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _exportRecoveryKey() async {
-    if (_config == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WebDAV niet geconfigureerd')),
-      );
-      return;
-    }
-    final json = KineticEncryption.exportRecoveryJson(
-      _config!.personalKeyBytes,
-      _config!.username,
-    );
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Herstelsleutel'),
-        content: SingleChildScrollView(
-          child: SelectableText(
-            json,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Sluiten'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showImportPersonalKeyDialog() async {
-    // Personal key import is independent of WebDAV configuration
-    final textCtrl = TextEditingController();
-    final importResult = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Herstelsleutel importeren'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Plak je herstelsleutel JSON hier in:',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: textCtrl,
-                maxLines: 10,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  hintText: '{"key":"...",..}',
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Importeren'),
-          ),
-        ],
-      ),
-    );
-
-    if (importResult ?? false) {
-      await _importPersonalKey(textCtrl.text.trim());
-    }
-    textCtrl.dispose();
-  }
-
-  Future<void> _importPersonalKey(String jsonString) async {
-    try {
-      final importedKey = KineticEncryption.importRecoveryJson(jsonString);
-
-      if (_config != null) {
-        // WebDAV is configured: update the full config with the imported personal key
-        await widget.configRepo.save(
-          SyncConfig(
-            serverUrl: _config!.serverUrl,
-            username: _config!.username,
-            password: _config!.password,
-            parentId: _config!.parentId,
-            personalKeyBytes: importedKey,
-            familyKeyBytes: _config!.familyKeyBytes,
-          ),
-        );
-      } else {
-        // WebDAV not configured: save just the personal key for later use
-        await widget.configRepo.savePersonalKey(importedKey);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Persoonlijke sleutel succesvol geïmporteerd.'),
-          ),
-        );
-        _loadConfig();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
-      }
-    }
-  }
-
   // ---------------------------------------------------------------------------
-  // Database export
+  // Combined backup export (database + personal key in one .kbak2 package)
   // ---------------------------------------------------------------------------
 
-  Future<void> _exportDatabase() async {
-    // Load personal key (works with or without full WebDAV config).
+  Future<void> _exportFullBackup() async {
     final key =
         _config?.personalKeyBytes ??
         await widget.configRepo.loadPersonalKeyBytes();
@@ -327,7 +211,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     if (!mounted) return;
-    // Show progress indicator while encrypting.
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -343,14 +226,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
-      final bytes = await DatabaseBackupService.exportToBytes(widget.db, key);
+      final bytes = await FullBackupService.exportToBytes(
+        widget.db,
+        key,
+        usernameHint: _config?.username ?? '',
+      );
       final now = DateTime.now();
       final stamp =
           '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-      final fileName = 'kinetic_backup_$stamp.kbak';
+      final fileName = 'kinetic_backup_$stamp.kbak2';
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // close progress dialog
+      Navigator.of(context).pop();
 
       final savedPath = await FilePicker.platform.saveFile(
         fileName: fileName,
@@ -365,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop(); // close progress dialog if still open
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Fout bij exporteren: $e')));
@@ -374,26 +261,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Database import
+  // Combined backup import
   // ---------------------------------------------------------------------------
 
-  Future<void> _importDatabase() async {
-    final key =
-        _config?.personalKeyBytes ??
-        await widget.configRepo.loadPersonalKeyBytes();
-    if (key == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Geen persoonlijke sleutel gevonden. Configureer eerst WebDAV.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Ask user to pick a backup file.
+  Future<void> _importFullBackup() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: false,
@@ -411,13 +282,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     if (!mounted) return;
-    // Confirm before wiping existing data.
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Database importeren?'),
+        title: const Text('Back-up importeren?'),
         content: const Text(
-          'Dit vervangt al je huidige taken en notities met de inhoud van het back-upbestand. Dit kan niet ongedaan worden gemaakt.',
+          'Dit vervangt al je huidige taken, notities en persoonlijke sleutel '
+          'met de inhoud van het back-upbestand. Dit kan niet ongedaan worden gemaakt.',
         ),
         actions: [
           TextButton(
@@ -437,7 +308,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    // Show progress indicator while decrypting and restoring.
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -453,31 +323,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
-      await DatabaseBackupService.importFromBytes(widget.db, key, fileBytes);
-      if (mounted) {
-        Navigator.of(context).pop(); // close progress dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Database succesvol hersteld.')),
-        );
-      }
-    } on BackupKeyMismatchException {
+      await FullBackupService.importFromBytes(
+        widget.db,
+        widget.configRepo,
+        fileBytes,
+      );
       if (mounted) {
         Navigator.of(context).pop();
-        showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Sleutel komt niet overeen'),
-            content: const Text(
-              'De herstelsleutel van dit apparaat komt niet overeen met de sleutel waarmee dit back-upbestand is versleuteld. '
-              'Importeer eerst de juiste persoonlijke sleutel via "Herstelsleutel importeren".',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Sluiten'),
-              ),
-            ],
-          ),
+        await _loadConfig();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Back-up succesvol hersteld.')),
         );
       }
     } on FormatException catch (e) {

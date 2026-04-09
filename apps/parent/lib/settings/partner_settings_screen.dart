@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
@@ -7,23 +6,20 @@ import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import 'family_key_scan_screen.dart';
 import 'family_key_share_screen.dart';
-import 'kids_enrollment_qr_screen.dart';
-import 'models/enrolled_kid.dart';
 
 // ---------------------------------------------------------------------------
-// FamilyScreen
+// PartnerSettingsScreen
 //
-// Dedicated screen for family key management (pairing, QR share/scan,
-// backup export, and leaving the family).  Only reachable from
-// SettingsScreen when a WebDAV connection is configured.
+// Manages partner pairing: share/scan family key QR, backup family key,
+// and leaving the family.  Only reachable when WebDAV is configured.
 // ---------------------------------------------------------------------------
 
-class FamilyScreen extends StatefulWidget {
+class PartnerSettingsScreen extends StatefulWidget {
   final AppDatabase db;
   final WebDavConfigRepository configRepo;
   final VoidCallback? onConfigSaved;
 
-  const FamilyScreen({
+  const PartnerSettingsScreen({
     super.key,
     required this.db,
     required this.configRepo,
@@ -31,28 +27,21 @@ class FamilyScreen extends StatefulWidget {
   });
 
   @override
-  State<FamilyScreen> createState() => _FamilyScreenState();
+  State<PartnerSettingsScreen> createState() => _PartnerSettingsScreenState();
 }
 
-class _FamilyScreenState extends State<FamilyScreen> {
+class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   SyncConfig? _config;
-  List<EnrolledKid> _enrolledKids = [];
 
   @override
   void initState() {
     super.initState();
     _loadConfig();
-    _loadEnrolledKids();
   }
 
   Future<void> _loadConfig() async {
     final config = await widget.configRepo.load();
     if (mounted) setState(() => _config = config);
-  }
-
-  Future<void> _loadEnrolledKids() async {
-    final kids = await widget.configRepo.loadEnrolledKids();
-    if (mounted) setState(() => _enrolledKids = kids);
   }
 
   Future<void> _exportFamilyKey() async {
@@ -132,7 +121,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Familie verlaten?'),
+        title: const Text('Partner ontkoppelen?'),
         content: const Text(
           'Alle gedeelde notities worden van dit apparaat verwijderd. '
           'Je eigen taken en privé-notities blijven behouden. '
@@ -149,59 +138,21 @@ class _FamilyScreenState extends State<FamilyScreen> {
               foregroundColor: Theme.of(ctx).colorScheme.error,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Familie verlaten'),
+            child: const Text('Verlaten'),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
 
-    // Delete shared notes from local DB
     await (widget.db.delete(
       widget.db.personalNotes,
     )..where((n) => n.isShared.equals(true))).go();
-    // Delete incoming partner proposals
     await widget.db.delete(widget.db.partnerProposals).go();
-    // Remove the family key from secure storage
     await widget.configRepo.clearFamilyKey();
     if (!mounted) return;
     widget.onConfigSaved?.call();
-    // Pop back to settings — the Familie tile subtitle will update on return
     Navigator.of(context).pop();
-  }
-
-  Future<void> _confirmRemoveKid(EnrolledKid kid) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${kid.name} verwijderen?'),
-        content: Text(
-          '${kid.name} wordt uit de familielijst verwijderd. '
-          'De kinderenapp kan daarna geen familietaken meer ontvangen tenzij opnieuw gekoppeld.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verwijderen'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await widget.configRepo.removeEnrolledKid(kid.id);
-    await _loadEnrolledKids();
-  }
-
-  String _formatDate(DateTime dt) {
-    final local = dt.toLocal();
-    return '${local.day}-${local.month}-${local.year}';
   }
 
   @override
@@ -210,17 +161,17 @@ class _FamilyScreenState extends State<FamilyScreen> {
     final paired = config?.familyKeyBytes != null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Familie'), centerTitle: false),
+      appBar: AppBar(title: const Text('Partner'), centerTitle: false),
       body: ListView(
         children: [
           if (config != null) ...[
             const SizedBox(height: 8),
             _PartnerStatusBanner(paired: paired),
             const SizedBox(height: 8),
-            // Hide QR share/scan when already paired — use backup export instead
             if (!paired) ...[
               ListTile(
-                leading: const Icon(Icons.people_outline, color: kColorTeal),
+                leading:
+                    const Icon(Icons.people_outline, color: kColorTeal),
                 title: const Text('Familiesleutel delen via QR'),
                 subtitle: const Text(
                   'Laat je partner de QR-code scannen om samen te werken.',
@@ -229,7 +180,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 onTap: _exportFamilyKey,
               ),
               ListTile(
-                leading: const Icon(Icons.qr_code_scanner, color: kColorTeal),
+                leading:
+                    const Icon(Icons.qr_code_scanner, color: kColorTeal),
                 title: const Text('Familiesleutel scannen'),
                 subtitle: const Text(
                   'Scan de QR-code op het apparaat van je partner.',
@@ -239,54 +191,14 @@ class _FamilyScreenState extends State<FamilyScreen> {
             ],
             if (paired) ...[
               ListTile(
-                leading: const Icon(Icons.child_care, color: kColorTeal),
-                title: const Text('Kinderenapp koppelen'),
+                leading: const Icon(Icons.qr_code, color: kColorTeal),
+                title: const Text('Familiesleutel opnieuw delen'),
                 subtitle: const Text(
-                  'Laat de kinderenapp deze QR-code scannen.',
+                  'Deel de sleutel met een nieuw apparaat van je partner.',
                 ),
                 trailing: const Icon(Icons.qr_code),
-                onTap: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => KidsEnrollmentQrScreen(
-                        config: config,
-                        configRepo: widget.configRepo,
-                        onKidRegistered: _loadEnrolledKids,
-                      ),
-                    ),
-                  );
-                },
+                onTap: _exportFamilyKey,
               ),
-              // ── Enrolled kids ────────────────────────────────────────────
-              if (_enrolledKids.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    'INGESCHREVEN KINDEREN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ),
-                for (final kid in _enrolledKids)
-                  ListTile(
-                    leading: const Icon(Icons.face, color: kColorTeal),
-                    title: Text(kid.name),
-                    subtitle: Text(
-                      'Gekoppeld op ${_formatDate(kid.enrolledAt)}',
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.person_remove_outlined,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      tooltip: 'Verwijder uit familie',
-                      onPressed: () => _confirmRemoveKid(kid),
-                    ),
-                  ),
-              ],
               ListTile(
                 leading: const Icon(
                   Icons.file_download_outlined,
@@ -304,8 +216,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 title: Text(
-                  'Familie verlaten',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  'Partner ontkoppelen',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 subtitle: const Text(
                   'Verwijder de familiesleutel en gedeelde notities van dit apparaat.',
@@ -319,10 +232,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Partner pairing status banner
-// ---------------------------------------------------------------------------
 
 class _PartnerStatusBanner extends StatelessWidget {
   final bool paired;

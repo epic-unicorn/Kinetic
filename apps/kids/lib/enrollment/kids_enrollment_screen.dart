@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -71,10 +73,11 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
 
   Future<void> _showConfirmDialog(
     ({
+      Uint8List familyKey,
       String serverUrl,
       String username,
       String password,
-      dynamic familyKey,
+      String kidId,
     }) data,
   ) async {
     final confirmed = await showDialog<bool>(
@@ -128,6 +131,7 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
       username: data.username,
       password: data.password,
       familyKey: data.familyKey,
+      kidId: data.kidId,
     );
 
     if (mounted) {

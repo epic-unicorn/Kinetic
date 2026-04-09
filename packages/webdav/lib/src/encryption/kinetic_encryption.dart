@@ -246,14 +246,15 @@ class KineticEncryption {
   ///
   /// Format:
   /// ```json
-  /// {"v":1,"type":"kids","url":"https://...","user":"alice","pw":"secret","key":"<base64 32 bytes>"}
+  /// {"v":1,"type":"kids","url":"https://...","user":"alice","pw":"secret","key":"<base64 32 bytes>","kid":"<uuid>"}
   /// ```
   static String exportKidsEnrollmentQrPayload(
     Uint8List familyKey,
     String serverUrl,
     String username,
-    String password,
-  ) {
+    String password, {
+    required String kidId,
+  }) {
     return jsonEncode({
       'v': 1,
       'type': 'kids',
@@ -261,6 +262,7 @@ class KineticEncryption {
       'user': username,
       'pw': password,
       'key': base64.encode(familyKey),
+      'kid': kidId,
     });
   }
 
@@ -274,6 +276,7 @@ class KineticEncryption {
     String serverUrl,
     String username,
     String password,
+    String kidId,
   }) importKidsEnrollmentQrPayload(String payload) {
     final Map<String, dynamic> map;
     try {
@@ -295,6 +298,7 @@ class KineticEncryption {
       serverUrl: (map['url'] as String?) ?? '',
       username: (map['user'] as String?) ?? '',
       password: (map['pw'] as String?) ?? '',
+      kidId: (map['kid'] as String?) ?? '',
     );
   }
 

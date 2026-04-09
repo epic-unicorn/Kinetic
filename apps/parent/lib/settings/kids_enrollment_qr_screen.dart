@@ -34,6 +34,7 @@ class KidsEnrollmentQrScreen extends StatefulWidget {
 class _KidsEnrollmentQrScreenState extends State<KidsEnrollmentQrScreen> {
   final _nameCtrl = TextEditingController();
   String? _registeredName;
+  String? _registeredKidId;
   bool _saving = false;
 
   @override
@@ -47,19 +48,23 @@ class _KidsEnrollmentQrScreenState extends State<KidsEnrollmentQrScreen> {
     widget.config.serverUrl,
     widget.config.username,
     widget.config.password,
+    kidId: _registeredKidId!,
   );
 
   Future<void> _registerAndShowQr() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
+    String kidId = '';
     if (widget.configRepo != null) {
-      await widget.configRepo!.addEnrolledKid(name);
+      final kid = await widget.configRepo!.addEnrolledKid(name);
+      kidId = kid.id;
       widget.onKidRegistered?.call();
     }
     if (mounted)
       setState(() {
         _registeredName = name;
+        _registeredKidId = kidId;
         _saving = false;
       });
   }

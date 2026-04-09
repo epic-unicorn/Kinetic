@@ -134,6 +134,9 @@ class PersonalTask {
   /// Set when this task has been converted to a kids mission.
   final String? kidsTaskId;
 
+  /// ID of the specific enrolled kid this mission was targeted at; null = all.
+  final String? targetKidId;
+
   final TaskCategory category;
 
   /// User-defined category label for grouping in the tasks list; null = uncategorized.
@@ -160,6 +163,7 @@ class PersonalTask {
     required this.isFlagged,
     required this.isPrivate,
     this.kidsTaskId,
+    this.targetKidId,
     required this.category,
     this.customCategory,
     this.remindAt,
@@ -243,6 +247,7 @@ class PersonalTask {
       isFlagged: isFlagged ?? this.isFlagged,
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
+      targetKidId: targetKidId ?? this.targetKidId,
       category: category ?? this.category,
       customCategory: clearCustomCategory
           ? null

@@ -11,6 +11,7 @@ const _kUsername = 'kinetic_webdav_username';
 const _kPassword = 'kinetic_webdav_password';
 const _kPersonalKey = 'kinetic_webdav_personal_key';
 const _kFamilyKey = 'kinetic_webdav_family_key';
+const _kKidId = 'kinetic_kid_id';
 
 /// Loads [SyncConfig] from [SecureKeyValueStore].
 ///
@@ -62,12 +63,19 @@ class WebDavConfigRepository {
     required String username,
     required String password,
     required Uint8List familyKey,
+    required String kidId,
   }) async {
     await _store.write(key: _kServerUrl, value: serverUrl);
     await _store.write(key: _kUsername, value: username);
     await _store.write(key: _kPassword, value: password);
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
+    if (kidId.isNotEmpty) {
+      await _store.write(key: _kKidId, value: kidId);
+    }
   }
+
+  /// Returns the kid's own ID as assigned by the parent during enrollment.
+  Future<String?> loadKidId() => _store.read(key: _kKidId);
 
   /// Removes all enrollment credentials, returning the app to unenrolled state.
   Future<void> clearEnrollment() async {
@@ -76,6 +84,7 @@ class WebDavConfigRepository {
     await _store.delete(key: _kPassword);
     await _store.delete(key: _kPersonalKey);
     await _store.delete(key: _kFamilyKey);
+    await _store.delete(key: _kKidId);
   }
 
   Future<String> _generateAndStorePersonalKey() async {

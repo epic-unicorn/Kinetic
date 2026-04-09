@@ -5,7 +5,7 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
-import 'partner/screens/partner_screen.dart';
+import 'partner/screens/family_screen.dart';
 import 'partner/services/partner_proposal_repository.dart';
 import 'settings/settings_repository.dart';
 import 'settings/settings_screen.dart';
@@ -206,9 +206,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     configRepo: _webDavConfig,
                   ),
                   if (paired)
-                    PartnerScreen(
+                    FamilyScreen(
                       proposalRepository: _proposalRepository,
                       myParentId: _syncOrchestrator?.username,
+                      configRepo: _webDavConfig,
+                      syncConfig: _syncOrchestrator!.config,
                     ),
                   NotesScreen(
                     repo: _noteRepository,
@@ -236,14 +238,14 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                       icon: Badge(
                         isLabelVisible: pendingCount > 0,
                         label: Text('$pendingCount'),
-                        child: const Icon(Icons.people_outline),
+                        child: const Icon(Icons.family_restroom),
                       ),
                       selectedIcon: Badge(
                         isLabelVisible: pendingCount > 0,
                         label: Text('$pendingCount'),
-                        child: const Icon(Icons.people),
+                        child: const Icon(Icons.family_restroom_outlined),
                       ),
-                      label: 'Partner',
+                      label: 'Familie',
                     ),
                   const NavigationDestination(
                     icon: Icon(Icons.note_outlined),

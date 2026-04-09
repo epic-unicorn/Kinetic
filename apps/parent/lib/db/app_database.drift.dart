@@ -680,6 +680,17 @@ class $PersonalTasksTable extends PersonalTasks
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _targetKidIdMeta = const VerificationMeta(
+    'targetKidId',
+  );
+  @override
+  late final GeneratedColumn<String> targetKidId = GeneratedColumn<String>(
+    'target_kid_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _categoryMeta = const VerificationMeta(
     'category',
   );
@@ -786,6 +797,7 @@ class $PersonalTasksTable extends PersonalTasks
     isFlagged,
     isPrivate,
     kidsTaskId,
+    targetKidId,
     category,
     customCategory,
     remindAt,
@@ -895,6 +907,15 @@ class $PersonalTasksTable extends PersonalTasks
         kidsTaskId.isAcceptableOrUnknown(
           data['kids_task_id']!,
           _kidsTaskIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_kid_id')) {
+      context.handle(
+        _targetKidIdMeta,
+        targetKidId.isAcceptableOrUnknown(
+          data['target_kid_id']!,
+          _targetKidIdMeta,
         ),
       );
     }
@@ -1014,6 +1035,10 @@ class $PersonalTasksTable extends PersonalTasks
         DriftSqlType.string,
         data['${effectivePrefix}kids_task_id'],
       ),
+      targetKidId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_kid_id'],
+      ),
       category: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}category'],
@@ -1069,6 +1094,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   final bool isFlagged;
   final bool isPrivate;
   final String? kidsTaskId;
+  final String? targetKidId;
   final String category;
   final String? customCategory;
 
@@ -1098,6 +1124,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     required this.isFlagged,
     required this.isPrivate,
     this.kidsTaskId,
+    this.targetKidId,
     required this.category,
     this.customCategory,
     this.remindAt,
@@ -1134,6 +1161,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     map['is_private'] = Variable<bool>(isPrivate);
     if (!nullToAbsent || kidsTaskId != null) {
       map['kids_task_id'] = Variable<String>(kidsTaskId);
+    }
+    if (!nullToAbsent || targetKidId != null) {
+      map['target_kid_id'] = Variable<String>(targetKidId);
     }
     map['category'] = Variable<String>(category);
     if (!nullToAbsent || customCategory != null) {
@@ -1179,6 +1209,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       kidsTaskId: kidsTaskId == null && nullToAbsent
           ? const Value.absent()
           : Value(kidsTaskId),
+      targetKidId: targetKidId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetKidId),
       category: Value(category),
       customCategory: customCategory == null && nullToAbsent
           ? const Value.absent()
@@ -1215,6 +1248,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       isFlagged: serializer.fromJson<bool>(json['isFlagged']),
       isPrivate: serializer.fromJson<bool>(json['isPrivate']),
       kidsTaskId: serializer.fromJson<String?>(json['kidsTaskId']),
+      targetKidId: serializer.fromJson<String?>(json['targetKidId']),
       category: serializer.fromJson<String>(json['category']),
       customCategory: serializer.fromJson<String?>(json['customCategory']),
       remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
@@ -1242,6 +1276,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       'isFlagged': serializer.toJson<bool>(isFlagged),
       'isPrivate': serializer.toJson<bool>(isPrivate),
       'kidsTaskId': serializer.toJson<String?>(kidsTaskId),
+      'targetKidId': serializer.toJson<String?>(targetKidId),
       'category': serializer.toJson<String>(category),
       'customCategory': serializer.toJson<String?>(customCategory),
       'remindAt': serializer.toJson<DateTime?>(remindAt),
@@ -1267,6 +1302,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     bool? isFlagged,
     bool? isPrivate,
     Value<String?> kidsTaskId = const Value.absent(),
+    Value<String?> targetKidId = const Value.absent(),
     String? category,
     Value<String?> customCategory = const Value.absent(),
     Value<DateTime?> remindAt = const Value.absent(),
@@ -1291,6 +1327,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isFlagged: isFlagged ?? this.isFlagged,
     isPrivate: isPrivate ?? this.isPrivate,
     kidsTaskId: kidsTaskId.present ? kidsTaskId.value : this.kidsTaskId,
+    targetKidId: targetKidId.present ? targetKidId.value : this.targetKidId,
     category: category ?? this.category,
     customCategory: customCategory.present
         ? customCategory.value
@@ -1325,6 +1362,9 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       kidsTaskId: data.kidsTaskId.present
           ? data.kidsTaskId.value
           : this.kidsTaskId,
+      targetKidId: data.targetKidId.present
+          ? data.targetKidId.value
+          : this.targetKidId,
       category: data.category.present ? data.category.value : this.category,
       customCategory: data.customCategory.present
           ? data.customCategory.value
@@ -1356,6 +1396,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ..write('isFlagged: $isFlagged, ')
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
+          ..write('targetKidId: $targetKidId, ')
           ..write('category: $category, ')
           ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
@@ -1383,6 +1424,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isFlagged,
     isPrivate,
     kidsTaskId,
+    targetKidId,
     category,
     customCategory,
     remindAt,
@@ -1409,6 +1451,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           other.isFlagged == this.isFlagged &&
           other.isPrivate == this.isPrivate &&
           other.kidsTaskId == this.kidsTaskId &&
+          other.targetKidId == this.targetKidId &&
           other.category == this.category &&
           other.customCategory == this.customCategory &&
           other.remindAt == this.remindAt &&
@@ -1433,6 +1476,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
   final Value<bool> isFlagged;
   final Value<bool> isPrivate;
   final Value<String?> kidsTaskId;
+  final Value<String?> targetKidId;
   final Value<String> category;
   final Value<String?> customCategory;
   final Value<DateTime?> remindAt;
@@ -1456,6 +1500,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isFlagged = const Value.absent(),
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
+    this.targetKidId = const Value.absent(),
     this.category = const Value.absent(),
     this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
@@ -1480,6 +1525,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isFlagged = const Value.absent(),
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
+    this.targetKidId = const Value.absent(),
     this.category = const Value.absent(),
     this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
@@ -1507,6 +1553,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Expression<bool>? isFlagged,
     Expression<bool>? isPrivate,
     Expression<String>? kidsTaskId,
+    Expression<String>? targetKidId,
     Expression<String>? category,
     Expression<String>? customCategory,
     Expression<DateTime>? remindAt,
@@ -1531,6 +1578,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       if (isFlagged != null) 'is_flagged': isFlagged,
       if (isPrivate != null) 'is_private': isPrivate,
       if (kidsTaskId != null) 'kids_task_id': kidsTaskId,
+      if (targetKidId != null) 'target_kid_id': targetKidId,
       if (category != null) 'category': category,
       if (customCategory != null) 'custom_category': customCategory,
       if (remindAt != null) 'remind_at': remindAt,
@@ -1557,6 +1605,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Value<bool>? isFlagged,
     Value<bool>? isPrivate,
     Value<String?>? kidsTaskId,
+    Value<String?>? targetKidId,
     Value<String>? category,
     Value<String?>? customCategory,
     Value<DateTime?>? remindAt,
@@ -1581,6 +1630,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       isFlagged: isFlagged ?? this.isFlagged,
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
+      targetKidId: targetKidId ?? this.targetKidId,
       category: category ?? this.category,
       customCategory: customCategory ?? this.customCategory,
       remindAt: remindAt ?? this.remindAt,
@@ -1635,6 +1685,9 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     if (kidsTaskId.present) {
       map['kids_task_id'] = Variable<String>(kidsTaskId.value);
     }
+    if (targetKidId.present) {
+      map['target_kid_id'] = Variable<String>(targetKidId.value);
+    }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
@@ -1681,6 +1734,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
           ..write('isFlagged: $isFlagged, ')
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
+          ..write('targetKidId: $targetKidId, ')
           ..write('category: $category, ')
           ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
@@ -4555,6 +4609,7 @@ typedef $$PersonalTasksTableCreateCompanionBuilder =
       Value<bool> isFlagged,
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
+      Value<String?> targetKidId,
       Value<String> category,
       Value<String?> customCategory,
       Value<DateTime?> remindAt,
@@ -4580,6 +4635,7 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<bool> isFlagged,
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
+      Value<String?> targetKidId,
       Value<String> category,
       Value<String?> customCategory,
       Value<DateTime?> remindAt,
@@ -4709,6 +4765,11 @@ class $$PersonalTasksTableFilterComposer
 
   ColumnFilters<String> get kidsTaskId => $composableBuilder(
     column: $table.kidsTaskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetKidId => $composableBuilder(
+    column: $table.targetKidId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4870,6 +4931,11 @@ class $$PersonalTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get targetKidId => $composableBuilder(
+    column: $table.targetKidId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get category => $composableBuilder(
     column: $table.category,
     builder: (column) => ColumnOrderings(column),
@@ -4984,6 +5050,11 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<String> get kidsTaskId => $composableBuilder(
     column: $table.kidsTaskId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetKidId => $composableBuilder(
+    column: $table.targetKidId,
     builder: (column) => column,
   );
 
@@ -5105,6 +5176,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isFlagged = const Value.absent(),
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
+                Value<String?> targetKidId = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
@@ -5128,6 +5200,7 @@ class $$PersonalTasksTableTableManager
                 isFlagged: isFlagged,
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
+                targetKidId: targetKidId,
                 category: category,
                 customCategory: customCategory,
                 remindAt: remindAt,
@@ -5153,6 +5226,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isFlagged = const Value.absent(),
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
+                Value<String?> targetKidId = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
@@ -5176,6 +5250,7 @@ class $$PersonalTasksTableTableManager
                 isFlagged: isFlagged,
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
+                targetKidId: targetKidId,
                 category: category,
                 customCategory: customCategory,
                 remindAt: remindAt,

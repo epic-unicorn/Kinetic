@@ -103,6 +103,21 @@ class WebDavConfigRepository {
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
   }
 
+  /// Ensures a family key exists in secure storage, generating one if absent.
+  ///
+  /// Call this before generating a kids enrollment QR — the key is required
+  /// even when no partner is paired yet (the family key is shared later).
+  /// Returns the (possibly newly generated) key bytes.
+  Future<Uint8List> ensureFamilyKey() async {
+    final existing = await _store.read(key: _kFamilyKey);
+    if (existing != null) {
+      return Uint8List.fromList(base64.decode(existing));
+    }
+    final newKey = KineticEncryption.generateFamilyKey();
+    await _store.write(key: _kFamilyKey, value: base64.encode(newKey));
+    return newKey;
+  }
+
   /// Stores a new personal key without touching any other config fields.
   ///
   /// Use this when importing a personal key backup, independent of WebDAV.

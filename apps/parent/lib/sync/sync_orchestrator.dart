@@ -23,6 +23,9 @@ class SyncOrchestrator {
   /// The stable parent UUID (used to identify this parent in proposals).
   String get parentId => _config.parentId;
 
+  /// The full sync config (used by screens that need WebDAV access).
+  SyncConfig get config => _config;
+
   Future<void> sync() async {
     final client = WebDavClient(
       baseUrl: _config.baseUrl,
@@ -142,8 +145,11 @@ class SyncOrchestrator {
     for (final row in rows) {
       // Build description with custom X-properties that the kids app parses.
       final baseNotes = row.notes ?? '';
+      final targetKidPart = row.targetKidId != null
+          ? ';xKineticTargetKidId:${row.targetKidId}'
+          : '';
       final description =
-          '$baseNotes;xKineticParentId:${row.id};xKineticCategory:${row.category};xKineticXpReward:10';
+          '$baseNotes;xKineticParentId:${row.id};xKineticCategory:${row.category};xKineticXpReward:10$targetKidPart';
       final kidsTask = ICalTask(
         uid: row.kidsTaskId!,
         summary: row.title,

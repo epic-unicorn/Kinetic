@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../partner/services/partner_proposal_repository.dart';
+import '../../settings/models/enrolled_kid.dart';
 import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
@@ -196,20 +197,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (task == null) return;
 
     // If a configRepo is available, load enrolled kids to offer a picker.
-    String? selectedKidName;
+    EnrolledKid? selectedKid;
     if (widget.configRepo != null) {
       final kids = await widget.configRepo!.loadEnrolledKids();
       if (!mounted) return;
       if (kids.length > 1) {
         // Show kid picker dialog.
-        selectedKidName = await showDialog<String>(
+        selectedKid = await showDialog<EnrolledKid>(
           context: context,
           builder: (ctx) => SimpleDialog(
             title: const Text('Stuur naar welk kind?'),
             children: [
               for (final kid in kids)
                 SimpleDialogOption(
-                  onPressed: () => Navigator.pop(ctx, kid.name),
+                  onPressed: () => Navigator.pop(ctx, kid),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
@@ -234,9 +235,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             ],
           ),
         );
-        if (selectedKidName == null || !mounted) return;
+        if (selectedKid == null || !mounted) return;
       } else if (kids.length == 1) {
-        selectedKidName = kids.first.name;
+        selectedKid = kids.first;
       }
     }
 
@@ -245,8 +246,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       builder: (ctx) => AlertDialog(
         title: const Text('Stuur naar kinderen?'),
         content: Text(
-          selectedKidName != null
-              ? '"${task.title}" wordt als opdracht naar $selectedKidName gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
+          selectedKid != null
+              ? '"${task.title}" wordt als opdracht naar ${selectedKid.name} gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
               : '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
         ),
         actions: [
@@ -262,7 +263,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await widget.repo.sendToKids(task.id);
+    await widget.repo.sendToKids(task.id, targetKidId: selectedKid?.id);
     if (mounted) Navigator.pop(context);
   }
 
@@ -386,34 +387,41 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               onTap: () => _pickRecurrence(context),
             ),
 
-          // ── Send to Partner — only when connected to family ──────────────
-          if (widget.hasFamilyKey &&
-              widget.task != null &&
-              widget.proposalRepo != null)
-            _MetaRow(
-              icon: Icons.people_outline,
-              label: 'Stuur naar partner',
-              active: false,
-              onTap: () => _sendToPartner(context),
-            ),
-
-          // ── Send to Kids — only visible when connected to a family ─────────
-          if (widget.hasFamilyKey && widget.task != null)
-            if (widget.task!.kidsTaskId != null)
-              const _MetaRow(
-                icon: Icons.bolt,
-                label: 'Opdracht aangemaakt ✓',
-                color: kColorTeal,
-                active: true,
-                onTap: null,
-              )
-            else
-              _MetaRow(
-                icon: Icons.bolt,
-                label: 'Stuur naar kinderen',
-                active: false,
-                onTap: () => _sendToKids(context),
+          // ── Family action buttons (partner + kids) ───────────────────────
+          if (widget.hasFamilyKey && widget.task != null) ...[
+            const Divider(height: 16, indent: 20, endIndent: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.proposalRepo != null)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.people_outline, size: 18),
+                      label: const Text('Stuur naar partner'),
+                      onPressed: _saving ? null : () => _sendToPartner(context),
+                    ),
+                  const SizedBox(height: 8),
+                  if (widget.task!.kidsTaskId != null)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.bolt, size: 18),
+                      label: const Text('Opdracht aangemaakt ✓'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kColorTeal,
+                        side: BorderSide(color: kColorTeal.withValues(alpha: 0.5)),
+                      ),
+                      onPressed: null,
+                    )
+                  else
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.bolt, size: 18),
+                      label: const Text('Stuur naar kinderen'),
+                      onPressed: _saving ? null : () => _sendToKids(context),
+                    ),
+                ],
               ),
+            ),
+          ],
 
           const SizedBox(height: 8),
 

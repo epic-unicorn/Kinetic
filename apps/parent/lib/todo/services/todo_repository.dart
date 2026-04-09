@@ -434,13 +434,15 @@ class TodoRepository {
 
   /// Mark a task as delegated to the kids app. Sets [kidsTaskId] to a new UUID
   /// and marks the task dirty so it gets pushed to the shared tasks folder.
-  Future<void> sendToKids(String taskId) async {
+  /// Optional [targetKidId] limits the task to a specific enrolled kid.
+  Future<void> sendToKids(String taskId, {String? targetKidId}) async {
     final kidsId = const Uuid().v4();
     await (_db.update(
       _db.personalTasks,
     )..where((t) => t.id.equals(taskId))).write(
       PersonalTasksCompanion(
         kidsTaskId: Value(kidsId),
+        targetKidId: Value(targetKidId),
         syncState: const Value('dirty'),
         updatedAt: Value(DateTime.now().toUtc()),
       ),
@@ -657,6 +659,7 @@ class TodoRepository {
     isFlagged: r.isFlagged,
     isPrivate: r.isPrivate,
     kidsTaskId: r.kidsTaskId,
+    targetKidId: r.targetKidId,
     category: TaskCategory.values.byName(r.category),
     customCategory: r.customCategory,
     remindAt: r.remindAt,
@@ -682,6 +685,7 @@ class TodoRepository {
         kidsTaskId: Value(t.kidsTaskId),
         category: Value(t.category.name),
         customCategory: Value(t.customCategory),
+        targetKidId: Value(t.targetKidId),
         remindAt: Value(t.remindAt),
         sortOrder: Value(t.sortOrder),
         createdAt: Value(t.createdAt),

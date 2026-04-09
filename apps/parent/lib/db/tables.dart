@@ -60,6 +60,9 @@ class PersonalTasks extends Table {
   // Set when this task was delegated to a child (kids task id)
   TextColumn get kidsTaskId => text().nullable()();
 
+  // ID of the specific enrolled kid this task was targeted at; null = all kids
+  TextColumn get targetKidId => text().nullable()();
+
   // Auto-detected: household / health / admin / school / finance / other
   TextColumn get category => text().withDefault(const Constant('other'))();
 

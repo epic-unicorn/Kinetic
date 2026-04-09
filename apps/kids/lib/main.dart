@@ -108,6 +108,7 @@ class _KidsAppShellState extends State<_KidsAppShell>
     final store = FlutterSecureKeyValueStore();
     final configRepo = WebDavConfigRepository(store);
     final config = await configRepo.load();
+    final kidId = await configRepo.loadKidId() ?? '';
     if (!mounted) return;
     if (config != null) {
       setState(() {
@@ -117,6 +118,7 @@ class _KidsAppShellState extends State<_KidsAppShell>
           db: widget.appDb,
           repo: _repository,
           config: config,
+          myKidId: kidId,
         );
       });
       unawaited(_orchestrator!.sync());
