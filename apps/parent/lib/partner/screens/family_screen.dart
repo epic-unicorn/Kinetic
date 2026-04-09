@@ -10,7 +10,7 @@ import '../services/partner_proposal_repository.dart';
 
 /// FamilyScreen — proposals from partner (Voorstellen tab) and
 /// kids assignments overview (Kinderen tab).
-/// 
+///
 /// Tabs are conditionally shown based on connection status.
 class FamilyScreen extends StatelessWidget {
   final PartnerProposalRepository proposalRepository;

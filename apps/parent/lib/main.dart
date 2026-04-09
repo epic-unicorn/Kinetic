@@ -128,10 +128,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     final config = await _webDavConfig.load();
     final isPaired = await _webDavConfig.isPartnerPaired();
     final kidsCount = (await _webDavConfig.loadEnrolledKids()).length;
-    
+
     partnerPaired.value = isPaired;
     enrolledKidsCount.value = kidsCount;
-    
+
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
       webDavConfigured.value = true;
@@ -239,36 +239,36 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                       ),
                     ];
 
-                final destinations = <NavigationDestination>[
-                  const NavigationDestination(
-                    icon: Icon(Icons.check_circle_outline),
-                    selectedIcon: Icon(Icons.check_circle),
-                    label: 'Taken',
-                  ),
-                  if (hasFamily)
-                    NavigationDestination(
-                      icon: Badge(
-                        isLabelVisible: pendingCount > 0,
-                        label: Text('$pendingCount'),
-                        child: const Icon(Icons.family_restroom),
+                    final destinations = <NavigationDestination>[
+                      const NavigationDestination(
+                        icon: Icon(Icons.check_circle_outline),
+                        selectedIcon: Icon(Icons.check_circle),
+                        label: 'Taken',
                       ),
-                      selectedIcon: Badge(
-                        isLabelVisible: pendingCount > 0,
-                        label: Text('$pendingCount'),
-                        child: const Icon(Icons.family_restroom_outlined),
+                      if (hasFamily)
+                        NavigationDestination(
+                          icon: Badge(
+                            isLabelVisible: pendingCount > 0,
+                            label: Text('$pendingCount'),
+                            child: const Icon(Icons.family_restroom),
+                          ),
+                          selectedIcon: Badge(
+                            isLabelVisible: pendingCount > 0,
+                            label: Text('$pendingCount'),
+                            child: const Icon(Icons.family_restroom_outlined),
+                          ),
+                          label: 'Familie',
+                        ),
+                      const NavigationDestination(
+                        icon: Icon(Icons.note_outlined),
+                        selectedIcon: Icon(Icons.note),
+                        label: 'Notities',
                       ),
-                      label: 'Familie',
-                    ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.note_outlined),
-                    selectedIcon: Icon(Icons.note),
-                    label: 'Notities',
-                  ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.settings_outlined),
-                    selectedIcon: Icon(Icons.settings),
-                    label: 'Instellingen',
-                  ),
+                      const NavigationDestination(
+                        icon: Icon(Icons.settings_outlined),
+                        selectedIcon: Icon(Icons.settings),
+                        label: 'Instellingen',
+                      ),
                     ];
 
                     // Clamp selected index in case the Familie tab disappears
@@ -278,7 +278,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     );
 
                     return Scaffold(
-                      body: IndexedStack(index: clampedIndex, children: screens),
+                      body: IndexedStack(
+                        index: clampedIndex,
+                        children: screens,
+                      ),
                       bottomNavigationBar: NavigationBar(
                         selectedIndex: clampedIndex,
                         onDestinationSelected: (i) =>

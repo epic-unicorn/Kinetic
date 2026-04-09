@@ -43,7 +43,11 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   Future<void> _loadConfig() async {
     final config = await widget.configRepo.load();
     final paired = await widget.configRepo.isPartnerPaired();
-    if (mounted) setState(() { _config = config; _partnerPaired = paired; });
+    if (mounted)
+      setState(() {
+        _config = config;
+        _partnerPaired = paired;
+      });
   }
 
   Future<void> _exportFamilyKey() async {
