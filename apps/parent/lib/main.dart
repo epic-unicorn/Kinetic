@@ -87,6 +87,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   final enrolledKidsCount = ValueNotifier<int>(0);
   final webDavConfigured = ValueNotifier<bool>(false);
   final pendingProposalCount = ValueNotifier<int>(0);
+  /// Incremented after every successful sync — lets the Kinderen tab reload.
+  final _syncDoneCount = ValueNotifier<int>(0);
   StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
@@ -129,9 +131,9 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     final isPaired = await _webDavConfig.isPartnerPaired();
     final kidsCount = (await _webDavConfig.loadEnrolledKids()).length;
 
-    partnerPaired.value = isPaired;
-    enrolledKidsCount.value = kidsCount;
-
+    // Create the orchestrator FIRST so that when the ValueNotifiers below
+    // trigger a rebuild, _syncOrchestrator!.config already contains the
+    // updated config (including the family key for enrolled kids).
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
       webDavConfigured.value = true;
@@ -142,12 +144,18 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       _proposalCountSub = _proposalRepository
           .watchPendingCount(myParentId: config.parentId)
           .listen((count) => pendingProposalCount.value = count);
-      _triggerSync(); // fire-and-forget initial sync
     } else {
       _syncOrchestrator = null;
       webDavConfigured.value = false;
       syncStatus.value = SyncStatus.idle;
     }
+
+    // Set notifiers after the orchestrator is ready so any rebuild triggered
+    // by these changes sees the correct config.
+    partnerPaired.value = isPaired;
+    enrolledKidsCount.value = kidsCount;
+
+    if (config != null) _triggerSync(); // fire-and-forget initial sync
   }
 
   Future<void> _triggerSync() async {
@@ -161,6 +169,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
             throw TimeoutException('Sync operation timed out after 30 seconds'),
       );
       syncStatus.value = SyncStatus.idle;
+      _syncDoneCount.value++;
     } catch (e) {
       print('Sync error: $e');
       syncStatus.value = SyncStatus.error;
@@ -223,6 +232,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                           syncConfig: _syncOrchestrator!.config,
                           partnerPaired: paired,
                           enrolledKidsCount: kidsCount,
+                          syncDoneCount: _syncDoneCount,
                         ),
                       NotesScreen(
                         repo: _noteRepository,

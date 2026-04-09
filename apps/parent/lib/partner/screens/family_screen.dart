@@ -12,13 +12,16 @@ import '../services/partner_proposal_repository.dart';
 /// kids assignments overview (Kinderen tab).
 ///
 /// Tabs are conditionally shown based on connection status.
-class FamilyScreen extends StatelessWidget {
+/// The Kinderen tab reloads whenever it becomes the active tab so that data
+/// pushed during a background sync is visible without a manual refresh.
+class FamilyScreen extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
   final String? myParentId;
   final WebDavConfigRepository configRepo;
   final SyncConfig syncConfig;
   final bool partnerPaired;
   final int enrolledKidsCount;
+  final ValueNotifier<int>? syncDoneCount;
 
   const FamilyScreen({
     super.key,
@@ -28,19 +31,87 @@ class FamilyScreen extends StatelessWidget {
     required this.syncConfig,
     required this.partnerPaired,
     required this.enrolledKidsCount,
+    this.syncDoneCount,
   });
 
-  int _getTabCount() {
-    int count = 0;
-    if (partnerPaired) count++;
-    if (enrolledKidsCount > 0) count++;
-    return count;
+  @override
+  State<FamilyScreen> createState() => _FamilyScreenState();
+}
+
+class _FamilyScreenState extends State<FamilyScreen>
+    with SingleTickerProviderStateMixin {
+  TabController? _tabs;
+  final _kidsKey = GlobalKey<_KidsTasksTabState>();
+
+  int get _tabCount {
+    int c = 0;
+    if (widget.partnerPaired) c++;
+    if (widget.enrolledKidsCount > 0) c++;
+    return c;
+  }
+
+  // Index of the Kinderen tab within the current tab bar (depends on whether
+  // the Voorstellen tab is also present).
+  int get _kidsTabIndex => widget.partnerPaired ? 1 : 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _rebuildController();
+    widget.syncDoneCount?.addListener(_onSyncDone);
+  }
+
+  @override
+  void didUpdateWidget(FamilyScreen old) {
+    super.didUpdateWidget(old);
+    if (old.syncDoneCount != widget.syncDoneCount) {
+      old.syncDoneCount?.removeListener(_onSyncDone);
+      widget.syncDoneCount?.addListener(_onSyncDone);
+    }
+    if (_tabCount != (_tabs?.length ?? 0)) {
+      _tabs?.removeListener(_onTabChanged);
+      _tabs?.dispose();
+      _rebuildController();
+    }
+  }
+
+  void _onSyncDone() {
+    if (widget.enrolledKidsCount > 0 &&
+        _tabs != null &&
+        _tabs!.index == _kidsTabIndex) {
+      _kidsKey.currentState?._reload();
+    }
+  }
+
+  void _rebuildController() {
+    final count = _tabCount;
+    if (count > 0) {
+      _tabs = TabController(length: count, vsync: this)
+        ..addListener(_onTabChanged);
+    } else {
+      _tabs = null;
+    }
+  }
+
+  void _onTabChanged() {
+    if (_tabs == null || _tabs!.indexIsChanging) return;
+    if (widget.enrolledKidsCount > 0 && _tabs!.index == _kidsTabIndex) {
+      _kidsKey.currentState?._reload();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.syncDoneCount?.removeListener(_onSyncDone);
+    _tabs?.removeListener(_onTabChanged);
+    _tabs?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final tabCount = _getTabCount();
-    if (tabCount == 0) {
+    final count = _tabCount;
+    if (count == 0) {
       return Scaffold(
         appBar: AppBar(
           title: AppHeader(title: 'Familie', centerTitle: false),
@@ -76,32 +147,35 @@ class FamilyScreen extends StatelessWidget {
       );
     }
 
-    return DefaultTabController(
-      length: tabCount,
-      child: Scaffold(
-        appBar: AppBar(
-          title: AppHeader(title: 'Familie', centerTitle: false),
-          centerTitle: false,
-          bottom: TabBar(
-            tabs: [
-              if (partnerPaired)
-                const Tab(icon: Icon(Icons.swap_horiz), text: 'Voorstellen'),
-              if (enrolledKidsCount > 0)
-                const Tab(icon: Icon(Icons.child_care), text: 'Kinderen'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            if (partnerPaired)
-              _ProposalsTab(
-                proposalRepository: proposalRepository,
-                myParentId: myParentId,
-              ),
-            if (enrolledKidsCount > 0)
-              _KidsTasksTab(configRepo: configRepo, syncConfig: syncConfig),
+    return Scaffold(
+      appBar: AppBar(
+        title: AppHeader(title: 'Familie', centerTitle: false),
+        centerTitle: false,
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: [
+            if (widget.partnerPaired)
+              const Tab(icon: Icon(Icons.swap_horiz), text: 'Voorstellen'),
+            if (widget.enrolledKidsCount > 0)
+              const Tab(icon: Icon(Icons.child_care), text: 'Kinderen'),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        children: [
+          if (widget.partnerPaired)
+            _ProposalsTab(
+              proposalRepository: widget.proposalRepository,
+              myParentId: widget.myParentId,
+            ),
+          if (widget.enrolledKidsCount > 0)
+            _KidsTasksTab(
+              key: _kidsKey,
+              configRepo: widget.configRepo,
+              syncConfig: widget.syncConfig,
+            ),
+        ],
       ),
     );
   }
@@ -364,7 +438,7 @@ class _KidsTasksTab extends StatefulWidget {
   final WebDavConfigRepository configRepo;
   final SyncConfig syncConfig;
 
-  const _KidsTasksTab({required this.configRepo, required this.syncConfig});
+  const _KidsTasksTab({super.key, required this.configRepo, required this.syncConfig});
 
   @override
   State<_KidsTasksTab> createState() => _KidsTasksTabState();
@@ -377,6 +451,14 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
   void initState() {
     super.initState();
     _future = _load();
+  }
+
+  @override
+  void didUpdateWidget(_KidsTasksTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.syncConfig != widget.syncConfig) {
+      _future = _load();
+    }
   }
 
   Future<_KidsTasksData> _load() async {

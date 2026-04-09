@@ -49,7 +49,11 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
 
   Future<void> _confirmAndSave() async {
     setState(() => _saving = true);
-    await widget.configRepo.saveFamilyKey(_config.familyKeyBytes!);
+    // Only persist the key when it was freshly generated — if a key already
+    // existed we just need to mark that the partner has scanned it.
+    if (widget.config.familyKeyBytes == null) {
+      await widget.configRepo.saveFamilyKey(_config.familyKeyBytes!);
+    }
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -170,9 +174,9 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
 
                 const Spacer(),
 
-                // Confirm button — only shown for a newly generated key that
-                // has not yet been saved.
-                if (isNewKey && !_keySaved) ...[
+                // Confirm button — shown until the user confirms the partner
+                // has scanned (regardless of whether the key is new or existing).
+                if (!_keySaved) ...[
                   FilledButton.icon(
                     onPressed: _saving ? null : _confirmAndSave,
                     icon: _saving

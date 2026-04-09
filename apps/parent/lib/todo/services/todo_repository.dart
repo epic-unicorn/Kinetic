@@ -300,6 +300,22 @@ class TodoRepository {
       onWrite?.call();
       return;
     }
+
+    // If this task was sent to kids (has a kidsTaskId), mark it for deletion
+    // so it's removed from the shared folder and the kids' view when sync runs.
+    if (row != null && row.kidsTaskId != null) {
+      await (_db.update(
+        _db.personalTasks,
+      )..where((t) => t.id.equals(taskId))).write(
+        PersonalTasksCompanion(
+          syncState: const Value('deleted'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+      );
+      onWrite?.call();
+      return;
+    }
+
     await (_db.update(
       _db.personalTasks,
     )..where((t) => t.id.equals(taskId))).write(

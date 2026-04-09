@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent/todo/models/personal_task.dart';
-import 'package:parent/todo/models/enums.dart';
 import 'package:parent/todo/services/todo_repository.dart';
 import 'package:parent/notifications/notification_service.dart';
 import '../../helpers/test_database.dart';

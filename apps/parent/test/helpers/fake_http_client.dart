@@ -64,10 +64,7 @@ class FakeHttpClient extends http.BaseClient {
     if (request is http.Request) {
       bodyBytes = request.bodyBytes;
     } else {
-      final collected = await request.finalize().toBytes();
-      bodyBytes = collected is Uint8List
-          ? collected
-          : Uint8List.fromList(collected);
+      bodyBytes = await request.finalize().toBytes();
     }
 
     switch (method) {

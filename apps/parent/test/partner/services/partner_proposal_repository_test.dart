@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parent/db/app_database.dart';
-import 'package:parent/partner/models/partner_proposal.dart';
 import 'package:parent/partner/services/partner_proposal_repository.dart';
 import 'package:parent/todo/models/enums.dart';
 import 'package:parent/todo/services/todo_repository.dart';

@@ -64,9 +64,13 @@ class SyncOrchestrator {
     }
 
     // 1b. Push dirty local tasks (personal tasks folder).
+    //     Exclude tasks that have a kidsTaskId — those belong in the shared
+    //     tasks folder (handled by step 1a) and must not be pushed here.
     final dirtyRows = await (_db.select(
       _db.personalTasks,
-    )..where((t) => t.syncState.equals('dirty'))).get();
+    )..where(
+        (t) => t.syncState.equals('dirty') & t.kidsTaskId.isNull(),
+      )).get();
 
     for (final row in dirtyRows) {
       final icalTask = _rowToICalTask(row);
@@ -86,6 +90,7 @@ class SyncOrchestrator {
     }
 
     // 2. Push locally-deleted tasks (tombstones stored with syncState='deleted').
+    //    Also delete from shared folder if the task was sent to kids.
     final deletedRows = await (_db.select(
       _db.personalTasks,
     )..where((t) => t.syncState.equals('deleted'))).get();
@@ -93,6 +98,14 @@ class SyncOrchestrator {
     for (final row in deletedRows) {
       try {
         await service.deleteTask(row.id);
+        // If this task was sent to kids, remove it from the shared folder too.
+        if (row.kidsTaskId != null) {
+          try {
+            await service.deleteSharedTask(row.kidsTaskId!);
+          } catch (_) {
+            // Ignore if file doesn't exist on server.
+          }
+        }
         await (_db.delete(
           _db.personalTasks,
         )..where((t) => t.id.equals(row.id))).go();
