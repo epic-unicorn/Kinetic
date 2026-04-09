@@ -87,6 +87,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   final enrolledKidsCount = ValueNotifier<int>(0);
   final webDavConfigured = ValueNotifier<bool>(false);
   final pendingProposalCount = ValueNotifier<int>(0);
+
   /// Incremented after every successful sync — lets the Kinderen tab reload.
   final _syncDoneCount = ValueNotifier<int>(0);
   StreamSubscription<int>? _proposalCountSub;

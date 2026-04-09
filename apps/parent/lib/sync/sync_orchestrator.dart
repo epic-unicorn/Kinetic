@@ -68,9 +68,7 @@ class SyncOrchestrator {
     //     tasks folder (handled by step 1a) and must not be pushed here.
     final dirtyRows = await (_db.select(
       _db.personalTasks,
-    )..where(
-        (t) => t.syncState.equals('dirty') & t.kidsTaskId.isNull(),
-      )).get();
+    )..where((t) => t.syncState.equals('dirty') & t.kidsTaskId.isNull())).get();
 
     for (final row in dirtyRows) {
       final icalTask = _rowToICalTask(row);

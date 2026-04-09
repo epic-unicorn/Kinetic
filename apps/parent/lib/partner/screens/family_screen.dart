@@ -438,7 +438,11 @@ class _KidsTasksTab extends StatefulWidget {
   final WebDavConfigRepository configRepo;
   final SyncConfig syncConfig;
 
-  const _KidsTasksTab({super.key, required this.configRepo, required this.syncConfig});
+  const _KidsTasksTab({
+    super.key,
+    required this.configRepo,
+    required this.syncConfig,
+  });
 
   @override
   State<_KidsTasksTab> createState() => _KidsTasksTabState();
