@@ -4,8 +4,6 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
 import '../partner/models/partner_proposal.dart';
-import '../partner/services/load_analyzer.dart';
-import '../partner/services/load_sync_service.dart';
 import '../todo/models/enums.dart';
 
 /// Drives a full sync cycle against the WebDAV server.
@@ -36,7 +34,6 @@ class SyncOrchestrator {
       await _syncTasks(service);
       await _syncNotes(service);
       await _syncProposals(service);
-      await _syncLoad(service);
     } finally {
       client.dispose();
     }
@@ -50,7 +47,6 @@ class SyncOrchestrator {
     await _syncTasks(service);
     await _syncNotes(service);
     await _syncProposals(service);
-    await _syncLoad(service);
   }
 
   // ---------------------------------------------------------------------------
@@ -562,18 +558,5 @@ class SyncOrchestrator {
       }
     }
     return merged;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Load Metrics
-  // ---------------------------------------------------------------------------
-
-  Future<void> _syncLoad(WebDavSyncService service) async {
-    final analyzer = LoadAnalyzer(db: _db);
-    final syncService = LoadSyncService(service: service, analyzer: analyzer);
-
-    // Push this device's user's current load metrics, then pull family load.
-    // Use parentId to consistently identify this parent (not the WebDAV username).
-    await syncService.syncLoad(_config.parentId, _config.username);
   }
 }

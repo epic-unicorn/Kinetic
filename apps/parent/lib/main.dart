@@ -6,10 +6,7 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
 import 'partner/screens/partner_screen.dart';
-import 'partner/services/partner_load_repository.dart';
 import 'partner/services/partner_proposal_repository.dart';
-import 'partner/services/load_analyzer.dart';
-import 'partner/services/load_sync_service.dart';
 import 'settings/settings_repository.dart';
 import 'settings/settings_screen.dart';
 import 'support/parent_notification_service.dart';
@@ -83,7 +80,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final TodoRepository _todoRepository;
   late final NoteRepository _noteRepository;
   late final PartnerProposalRepository _proposalRepository;
-  late final PartnerLoadRepository _loadRepository;
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
@@ -121,9 +117,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       (count) => pendingProposalCount.value = count,
     );
 
-    // Initialize load repository (service will be set later in _initSync)
-    _loadRepository = PartnerLoadRepository(db: widget.db);
-
     _initSync();
     // Request notification permissions immediately so the Android dialog
     // is shown on first launch rather than waiting for the first reminder.
@@ -143,22 +136,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       _proposalCountSub = _proposalRepository
           .watchPendingCount(myParentId: config.parentId)
           .listen((count) => pendingProposalCount.value = count);
-      // Initialize partner load service using the same config
-      final client = WebDavClient(
-        baseUrl: config.baseUrl,
-        username: config.username,
-        password: config.password,
-      );
-      final webdavService = WebDavSyncService(client: client, config: config);
-      final analyzer = LoadAnalyzer(db: widget.db);
-      final loadService = LoadSyncService(
-        service: webdavService,
-        analyzer: analyzer,
-      );
-      _loadRepository.setLoadService(loadService);
-      // Note: client is kept alive for the duration of the app lifecycle
-      // It will be cleaned up when the app terminates
-
       _triggerSync(); // fire-and-forget initial sync
     } else {
       _syncOrchestrator = null;
@@ -177,10 +154,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
         onTimeout: () =>
             throw TimeoutException('Sync operation timed out after 30 seconds'),
       );
-      // Refresh load metrics in the UI after successful sync
-      if (_syncOrchestrator != null) {
-        unawaited(_loadRepository.refreshFamilyLoad());
-      }
       syncStatus.value = SyncStatus.idle;
     } catch (e) {
       print('Sync error: $e');
@@ -235,7 +208,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                   if (paired)
                     PartnerScreen(
                       proposalRepository: _proposalRepository,
-                      loadRepository: _loadRepository,
                       myParentId: _syncOrchestrator?.username,
                     ),
                   NotesScreen(

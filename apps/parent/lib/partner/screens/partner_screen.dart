@@ -2,24 +2,19 @@
 
 import '../../theme/app_header.dart';
 import '../../todo/models/enums.dart';
-import '../models/family_load_metrics.dart';
 import '../models/partner_proposal.dart';
-import '../services/partner_load_repository.dart';
 import '../services/partner_proposal_repository.dart';
 
-/// PartnerScreen — task proposals and family workload coordination.
+/// PartnerScreen — task proposals from the partner.
 ///
-/// Shows proposals from the other parent with accept/snooze/dismiss actions,
-/// plus family member workload metrics for fair task distribution.
+/// Shows proposals from the other parent with accept/snooze/dismiss actions.
 class PartnerScreen extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
-  final PartnerLoadRepository? loadRepository;
   final String? myParentId;
 
   const PartnerScreen({
     super.key,
     required this.proposalRepository,
-    this.loadRepository,
     this.myParentId,
   });
 
@@ -28,26 +23,14 @@ class PartnerScreen extends StatefulWidget {
 }
 
 class _PartnerScreenState extends State<PartnerScreen> {
-  bool _showLoadMetrics = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: AppHeader(title: 'Partner'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _showLoadMetrics ? Icons.assessment : Icons.assessment_outlined,
-            ),
-            onPressed: _toggleLoadMetrics,
-            tooltip: 'Familie taakverdeling',
-          ),
-        ],
       ),
-      body: _showLoadMetrics
-          ? _buildLoadMetricsView(context)
-          : _buildProposalsView(context),
+      body: _buildProposalsView(context),
     );
   }
 
@@ -230,202 +213,6 @@ class _PartnerScreenState extends State<PartnerScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildLoadMetricsView(BuildContext context) {
-    if (widget.loadRepository == null) {
-      return Center(
-        child: Text(
-          'Taakverdeling niet beschikbaar',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
-    }
-
-    return ListenableBuilder(
-      listenable: widget.loadRepository!,
-      builder: (context, _) {
-        final metrics = widget.loadRepository!.familyLoad;
-
-        if (metrics.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.scale_outlined,
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Geen familiedata',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: metrics.length,
-          padding: const EdgeInsets.all(16),
-          itemBuilder: (context, index) {
-            final metric = metrics[index];
-            return _buildLoadMetricCard(context, metric);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildLoadMetricCard(BuildContext context, FamilyLoadMetrics metric) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.person_outline, color: scheme.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    metric.parentName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Text(
-                  '${metric.taskCount} taken',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(color: scheme.primary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.urgentCount}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.error),
-                      ),
-                      Text(
-                        'Urgent',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.pastDueTasksCount}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.primary),
-                      ),
-                      Text(
-                        'Te laat',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.totalCategoriesCount}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.primary),
-                      ),
-                      Text(
-                        'Categorieën',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Kinderen',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.childrenTasksSent}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.primary),
-                      ),
-                      Text(
-                        'Verstuurd',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.childrenTasksCompleted}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.primary),
-                      ),
-                      Text(
-                        'Afgerond',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${metric.notesCount}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: scheme.primary),
-                      ),
-                      Text(
-                        'Notities',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _toggleLoadMetrics() {
-    setState(() => _showLoadMetrics = !_showLoadMetrics);
-    if (_showLoadMetrics && widget.loadRepository != null) {
-      widget.loadRepository!.refreshFamilyLoad();
-    }
   }
 
   Future<void> _acceptProposal(String proposalId) async {
