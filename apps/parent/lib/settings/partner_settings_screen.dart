@@ -32,6 +32,7 @@ class PartnerSettingsScreen extends StatefulWidget {
 
 class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   SyncConfig? _config;
+  bool _partnerPaired = false;
 
   @override
   void initState() {
@@ -41,7 +42,8 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
 
   Future<void> _loadConfig() async {
     final config = await widget.configRepo.load();
-    if (mounted) setState(() => _config = config);
+    final paired = await widget.configRepo.isPartnerPaired();
+    if (mounted) setState(() { _config = config; _partnerPaired = paired; });
   }
 
   Future<void> _exportFamilyKey() async {
@@ -55,6 +57,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
       ),
     );
     if ((keyWasGenerated ?? false) && mounted) {
+      await widget.configRepo.setPartnerPaired(true);
       await _loadConfig();
       widget.onConfigSaved?.call();
     }
@@ -71,6 +74,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
       ),
     );
     if (result == true && mounted) {
+      await widget.configRepo.setPartnerPaired(true);
       await _loadConfig();
       widget.onConfigSaved?.call();
     }
@@ -158,7 +162,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final config = _config;
-    final paired = config?.familyKeyBytes != null;
+    final paired = _partnerPaired;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Partner'), centerTitle: false),

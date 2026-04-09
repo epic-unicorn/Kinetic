@@ -36,6 +36,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   SyncConfig? _config;
+  bool _partnerPaired = false;
+  int _enrolledKidsCount = 0;
 
   @override
   void initState() {
@@ -45,7 +47,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadConfig() async {
     final config = await widget.configRepo.load();
-    if (mounted) setState(() => _config = config);
+    final paired = await widget.configRepo.isPartnerPaired();
+    final kids = await widget.configRepo.loadEnrolledKids();
+    if (mounted)
+      setState(() {
+        _config = config;
+        _partnerPaired = paired;
+        _enrolledKidsCount = kids.length;
+      });
   }
 
   @override
@@ -101,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: Icon(Icons.people_outline, color: iconColor),
                   title: const Text('Partner'),
                   subtitle: Text(
-                    _config?.familyKeyBytes != null
+                    _partnerPaired
                         ? 'Partner gekoppeld'
                         : 'Koppel met je partner',
                   ),
@@ -122,7 +131,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: Icon(Icons.child_care, color: iconColor),
                   title: const Text('Kinderen'),
-                  subtitle: const Text('Koppel de kinderenapp'),
+                  subtitle: Text(
+                    _enrolledKidsCount > 0
+                        ? '$_enrolledKidsCount kind${_enrolledKidsCount == 1 ? '' : 'eren'} gekoppeld'
+                        : 'Koppel de kinderenapp',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
                     await Navigator.of(context).push(
@@ -142,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 leading: Icon(Icons.backup_outlined, color: iconColor),
                 title: const Text('Back-up exporteren'),
                 subtitle: const Text(
-                  'Exporteer database en herstelsleutel als één bestand',
+                  'Exporteer database en sleutel in één bestand',
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _exportFullBackup(),

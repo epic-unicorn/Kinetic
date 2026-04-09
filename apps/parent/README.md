@@ -1,15 +1,43 @@
 # Kinetic Link — Parent App
 
-Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate with your co-parent via task proposals, and optionally sync to a WebDAV server.
+Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate with your co-parent via task proposals, manage children's assigned tasks overview, and optionally sync to a WebDAV server.
 
 ## Screens
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence. |
-| **Partner** | Incoming task proposals (accept/snooze/dismiss) + family workload metrics. |
+| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
+| **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: Incoming task proposals (accept/snooze/dismiss). **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
 | **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. |
-| **Instellingen** | WebDAV config, connection test, theme selector. **Back-up & Herstel** section for recovery key export/import. |
+| **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). |
+
+## Family Setup
+
+### Partner Pairing
+1. Settings → Familie → Partner → "Familiesleutel delen via QR"
+2. Partner scans QR on their device
+3. Partnership activated; proposals sync automatically
+4. "Partner gekoppeld" status shown in Settings
+
+### Kids Enrollment
+Each child device enrolls independently:
+1. Settings → Familie → Kinderen → "Kinderenapp koppelen"
+2. Generate QR with family key + unique kid UUID
+3. Child device scans QR to enroll
+4. Child receives tasks targeted to their UUID
+5. Enrollment count shown in Settings
+
+## Data Model
+
+### Tasks
+- `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in xKineticTargetKidId iCal property
+- Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null
+
+### Security
+- **Personal Key**: Encrypts personal tasks/notes; unique per parent device
+- **Family Key**: Shared via QR; encrypts proposals, shared notes, kids tasks
+- **Partner Paired Flag**: Stored as `kinetic_partner_paired` secure storage key; set only when QR pairing succeeds
+- **Enrolled Kids List**: Stored as JSON in `kinetic_enrolled_kids` secure storage key; persisted on parent device only
 
 ## Development
 
@@ -26,16 +54,15 @@ All secrets are stored at runtime via secure storage — no `--dart-define` flag
 
 ```
 lib/
-├── db/            — Drift schema (PartnerProposals + PersonalTasks + PersonalNotes)
+├── db/            — Drift schema (PersonalTasks with targetKidId column, PersonalNotes, PartnerProposals)
 ├── notifications/ — local notification scheduling
-├── partner/       — proposals, load metrics, screens, services
+├── partner/       — proposals, family screen, services
 ├── secure/        — secure storage wrappers
-├── settings/      — WebDAV config, theme preference
-├── support/       — support utilities
-├── sync/          — SyncOrchestrator (WebDAV pull/push, LWW merge)
+├── settings/      — WebDAV config, theme, family key share/scan screens
+├── sync/          — SyncOrchestrator (WebDAV pull/push, LWW merge, xKineticTargetKidId embedding)
 ├── theme/         — Material 3 color schemes
 ├── todo/          — task & note models, repositories, screens
-└── main.dart
+└── main.dart      — root shell with conditional Familie nav item
 ```
 
 ### WebDAV layout
@@ -49,25 +76,23 @@ lib/
 ├── notes/{uid}.ics        — shared notes (family key)
 ├── proposals/{id}.json    — partner proposals (family key)
 ├── load/{parentId}.json   — workload metrics (family key)
-└── tasks/{uid}.ics        — tasks assigned to children (family key)
+└── tasks/{uid}.ics        — tasks assigned to children (family key, with xKineticTargetKidId)
 ```
 
-## Data Migration & Recovery
+### Backup Format
+- **`.kbak2`** (new): Unencrypted JSON wrapper containing `personalKey` (base64) + `database` (base64 of encrypted .kbak blob)
+- Export/import as one combined file in Settings → Back-up & Herstel
 
-When configuring WebDAV or upgrading with existing server data:
+## Conditional UI
 
-1. **Automatic detection**: App detects remote tasks/notes without decrypting them
-2. **User choice**: Dialog offers to import (re-encrypt with new key) or cleanup (delete old data)
-3. **Key recovery**: Export/import recovery keys in Settings **Back-up & Herstel** for multi-device access
+**Familie nav item** is only visible when:
+- Partner is paired (Flag: `kinetic_partner_paired == true`) OR
+- At least one child is enrolled (`enrolledKids.length > 0`)
 
-The recovery key is your personal AES-256 key in JSON format. Export it to enable:
-- Importing on new devices to access old encrypted data
-- Disaster recovery if the local key is lost
-- Manual backup of your encryption key
+**Voorstellen tab** in Familie screen:
+- Visible only when `partnerPaired == true`
+- Shows "Geen voorstellen" when no proposals exist
 
-## Backlog
-
-- "Assign to child" UI in task detail
-- Parent approval screen for kids-completed tasks
-- Activity history and XP tracking
-- Improve time selection on new reminders
+**Kinderen tab** in Familie screen:
+- Visible only when `enrolledKidsCount > 0`
+- Displays live overview pulled from `/kinetic/shared/tasks/` grouped by enrolled kid name

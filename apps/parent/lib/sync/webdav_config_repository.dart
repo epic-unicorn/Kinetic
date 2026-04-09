@@ -14,6 +14,7 @@ const _kPersonalKey = 'kinetic_webdav_personal_key';
 const _kFamilyKey = 'kinetic_webdav_family_key';
 const _kParentId = 'kinetic_webdav_parent_id';
 const _kEnrolledKids = 'kinetic_enrolled_kids';
+const _kPartnerPaired = 'kinetic_partner_paired';
 
 /// Persists and loads [SyncConfig] from [SecureKeyValueStore].
 ///
@@ -137,6 +138,21 @@ class WebDavConfigRepository {
   /// Call this when leaving the family pairing.
   Future<void> clearFamilyKey() async {
     await _store.delete(key: _kFamilyKey);
+    await _store.delete(key: _kPartnerPaired);
+  }
+
+  /// Marks whether the user has explicitly paired with a partner.
+  ///
+  /// Set to true after sharing or scanning a family key QR with a partner.
+  /// Distinct from [familyKeyBytes] which may also exist for kids-only setups.
+  Future<void> setPartnerPaired(bool paired) async {
+    await _store.write(key: _kPartnerPaired, value: paired ? '1' : '0');
+  }
+
+  /// Returns true if the user has explicitly paired with a partner.
+  Future<bool> isPartnerPaired() async {
+    final val = await _store.read(key: _kPartnerPaired);
+    return val == '1';
   }
 
   // ---------------------------------------------------------------------------
@@ -195,5 +211,6 @@ class WebDavConfigRepository {
     await _store.delete(key: _kParentId);
     await _store.delete(key: _kPersonalKey);
     await _store.delete(key: _kFamilyKey);
+    await _store.delete(key: _kPartnerPaired);
   }
 }

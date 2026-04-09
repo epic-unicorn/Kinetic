@@ -65,6 +65,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
       ),
     );
     await _loadData();
+    if (mounted) widget.onConfigSaved?.call();
   }
 
   Future<void> _confirmRemoveKid(EnrolledKid kid) async {
@@ -94,6 +95,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
     if (confirmed != true || !mounted) return;
     await widget.configRepo.removeEnrolledKid(kid.id);
     await _loadData();
+    if (mounted) widget.onConfigSaved?.call();
   }
 
   String _formatDate(DateTime dt) {

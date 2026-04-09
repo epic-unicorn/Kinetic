@@ -83,7 +83,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final WebDavConfigRepository _webDavConfig;
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
-  final hasFamilyKey = ValueNotifier<bool>(false);
+  final partnerPaired = ValueNotifier<bool>(false);
+  final enrolledKidsCount = ValueNotifier<int>(0);
   final webDavConfigured = ValueNotifier<bool>(false);
   final pendingProposalCount = ValueNotifier<int>(0);
   StreamSubscription<int>? _proposalCountSub;
@@ -125,7 +126,12 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   Future<void> _initSync() async {
     final config = await _webDavConfig.load();
-    hasFamilyKey.value = config?.familyKeyBytes != null;
+    final isPaired = await _webDavConfig.isPartnerPaired();
+    final kidsCount = (await _webDavConfig.loadEnrolledKids()).length;
+    
+    partnerPaired.value = isPaired;
+    enrolledKidsCount.value = kidsCount;
+    
     if (config != null) {
       _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
       webDavConfigured.value = true;
@@ -186,46 +192,52 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
-      valueListenable: hasFamilyKey,
+      valueListenable: partnerPaired,
       builder: (context, paired, _) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: webDavConfigured,
-          builder: (context, hasWebDav, _) {
-            return ValueListenableBuilder<int>(
-              valueListenable: pendingProposalCount,
-              builder: (context, pendingCount, _) {
-                final screens = <Widget>[
-                  TasksScreen(
-                    repo: _todoRepository,
-                    settingsRepo: widget.settingsRepo,
-                    proposalRepo: paired ? _proposalRepository : null,
-                    myParentId: _syncOrchestrator?.parentId,
-                    syncStatus: hasWebDav ? syncStatus : null,
-                    hasFamilyKey: paired,
-                    onSyncRetry: _triggerSync,
-                    configRepo: _webDavConfig,
-                  ),
-                  if (paired)
-                    FamilyScreen(
-                      proposalRepository: _proposalRepository,
-                      myParentId: _syncOrchestrator?.username,
-                      configRepo: _webDavConfig,
-                      syncConfig: _syncOrchestrator!.config,
-                    ),
-                  NotesScreen(
-                    repo: _noteRepository,
-                    settingsRepo: widget.settingsRepo,
-                    onSyncRetry: _triggerSync,
-                    syncStatus: hasWebDav ? syncStatus : null,
-                    hasFamilyKey: hasFamilyKey,
-                  ),
-                  SettingsScreen(
-                    db: widget.db,
-                    configRepo: _webDavConfig,
-                    settingsRepo: widget.settingsRepo,
-                    onConfigSaved: _initSync,
-                  ),
-                ];
+        return ValueListenableBuilder<int>(
+          valueListenable: enrolledKidsCount,
+          builder: (context, kidsCount, _) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: webDavConfigured,
+              builder: (context, hasWebDav, _) {
+                return ValueListenableBuilder<int>(
+                  valueListenable: pendingProposalCount,
+                  builder: (context, pendingCount, _) {
+                    final hasFamily = paired || kidsCount > 0;
+                    final screens = <Widget>[
+                      TasksScreen(
+                        repo: _todoRepository,
+                        settingsRepo: widget.settingsRepo,
+                        proposalRepo: paired ? _proposalRepository : null,
+                        myParentId: _syncOrchestrator?.parentId,
+                        syncStatus: hasWebDav ? syncStatus : null,
+                        hasFamilyKey: paired || kidsCount > 0,
+                        onSyncRetry: _triggerSync,
+                        configRepo: _webDavConfig,
+                      ),
+                      if (hasFamily)
+                        FamilyScreen(
+                          proposalRepository: _proposalRepository,
+                          myParentId: _syncOrchestrator?.username,
+                          configRepo: _webDavConfig,
+                          syncConfig: _syncOrchestrator!.config,
+                          partnerPaired: paired,
+                          enrolledKidsCount: kidsCount,
+                        ),
+                      NotesScreen(
+                        repo: _noteRepository,
+                        settingsRepo: widget.settingsRepo,
+                        onSyncRetry: _triggerSync,
+                        syncStatus: hasWebDav ? syncStatus : null,
+                        hasFamilyKey: ValueNotifier(paired || kidsCount > 0),
+                      ),
+                      SettingsScreen(
+                        db: widget.db,
+                        configRepo: _webDavConfig,
+                        settingsRepo: widget.settingsRepo,
+                        onConfigSaved: _initSync,
+                      ),
+                    ];
 
                 final destinations = <NavigationDestination>[
                   const NavigationDestination(
@@ -233,7 +245,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     selectedIcon: Icon(Icons.check_circle),
                     label: 'Taken',
                   ),
-                  if (paired)
+                  if (hasFamily)
                     NavigationDestination(
                       icon: Badge(
                         isLabelVisible: pendingCount > 0,
@@ -257,22 +269,24 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     selectedIcon: Icon(Icons.settings),
                     label: 'Instellingen',
                   ),
-                ];
+                    ];
 
-                // Clamp selected index in case the partner tab disappears
-                final clampedIndex = _selectedIndex.clamp(
-                  0,
-                  screens.length - 1,
-                );
+                    // Clamp selected index in case the Familie tab disappears
+                    final clampedIndex = _selectedIndex.clamp(
+                      0,
+                      screens.length - 1,
+                    );
 
-                return Scaffold(
-                  body: IndexedStack(index: clampedIndex, children: screens),
-                  bottomNavigationBar: NavigationBar(
-                    selectedIndex: clampedIndex,
-                    onDestinationSelected: (i) =>
-                        setState(() => _selectedIndex = i),
-                    destinations: destinations,
-                  ),
+                    return Scaffold(
+                      body: IndexedStack(index: clampedIndex, children: screens),
+                      bottomNavigationBar: NavigationBar(
+                        selectedIndex: clampedIndex,
+                        onDestinationSelected: (i) =>
+                            setState(() => _selectedIndex = i),
+                        destinations: destinations,
+                      ),
+                    );
+                  },
                 );
               },
             );

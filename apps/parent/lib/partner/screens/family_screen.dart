@@ -10,11 +10,15 @@ import '../services/partner_proposal_repository.dart';
 
 /// FamilyScreen — proposals from partner (Voorstellen tab) and
 /// kids assignments overview (Kinderen tab).
+/// 
+/// Tabs are conditionally shown based on connection status.
 class FamilyScreen extends StatelessWidget {
   final PartnerProposalRepository proposalRepository;
   final String? myParentId;
   final WebDavConfigRepository configRepo;
   final SyncConfig syncConfig;
+  final bool partnerPaired;
+  final int enrolledKidsCount;
 
   const FamilyScreen({
     super.key,
@@ -22,30 +26,80 @@ class FamilyScreen extends StatelessWidget {
     this.myParentId,
     required this.configRepo,
     required this.syncConfig,
+    required this.partnerPaired,
+    required this.enrolledKidsCount,
   });
+
+  int _getTabCount() {
+    int count = 0;
+    if (partnerPaired) count++;
+    if (enrolledKidsCount > 0) count++;
+    return count;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tabCount = _getTabCount();
+    if (tabCount == 0) {
+      return Scaffold(
+        appBar: AppBar(
+          title: AppHeader(title: 'Familie', centerTitle: false),
+          centerTitle: false,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.people_outline,
+                size: 56,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Familie niet ingesteld',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Koppel een partner of kinderen in Instellingen',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return DefaultTabController(
-      length: 2,
+      length: tabCount,
       child: Scaffold(
         appBar: AppBar(
           title: AppHeader(title: 'Familie', centerTitle: false),
           centerTitle: false,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.swap_horiz), text: 'Voorstellen'),
-              Tab(icon: Icon(Icons.child_care), text: 'Kinderen'),
+              if (partnerPaired)
+                const Tab(icon: Icon(Icons.swap_horiz), text: 'Voorstellen'),
+              if (enrolledKidsCount > 0)
+                const Tab(icon: Icon(Icons.child_care), text: 'Kinderen'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _ProposalsTab(
-              proposalRepository: proposalRepository,
-              myParentId: myParentId,
-            ),
-            _KidsTasksTab(configRepo: configRepo, syncConfig: syncConfig),
+            if (partnerPaired)
+              _ProposalsTab(
+                proposalRepository: proposalRepository,
+                myParentId: myParentId,
+              ),
+            if (enrolledKidsCount > 0)
+              _KidsTasksTab(configRepo: configRepo, syncConfig: syncConfig),
           ],
         ),
       ),
