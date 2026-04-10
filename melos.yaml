@@ -6,25 +6,27 @@ packages:
 
 scripts:
   test:
-    run: melos exec --dir-exists=test -- flutter test
+    exec: flutter test
     description: Run all tests across packages
+    packageFilters:
+      dirExists: test
 
   analyze:
-    run: melos exec -- flutter analyze
+    exec: flutter analyze
     description: Analyze all packages
 
   pub_get:
-    run: melos exec -- flutter pub get
+    exec: flutter pub get
     description: Get pub dependencies for all packages
 
   build_parent:
-    run: flutter build apk --release
-    exec:
-      scope: parent
+    exec: flutter build apk --release
     description: Build release APK for parent app
+    packageFilters:
+      scope: "parent"
 
   build_kids:
-    run: flutter build apk --release
-    exec:
-      scope: kids
+    exec: flutter build apk --release
     description: Build release APK for kids app
+    packageFilters:
+      scope: "kids"
