@@ -53,7 +53,7 @@ jobs:
       - name: Get dependencies
         run: |
           flutter pub global activate melos
-          $HOME/.pub-cache/bin/melos bootstrap
+          cd $GITHUB_WORKSPACE && $HOME/.pub-cache/bin/melos bootstrap
 
       - name: Build kids app
         run: |
@@ -106,7 +106,7 @@ jobs:
       - name: Get dependencies
         run: |
           flutter pub global activate melos
-          $HOME/.pub-cache/bin/melos bootstrap
+          cd $GITHUB_WORKSPACE && $HOME/.pub-cache/bin/melos bootstrap
 
       - name: Build parent app
         run: |
