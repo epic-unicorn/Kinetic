@@ -141,6 +141,8 @@ jobs:
     needs: [build-kids-app, build-parent-app]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     
     steps:
       - uses: actions/checkout@v4
@@ -178,6 +180,8 @@ jobs:
           files: |
             ./artifacts/kids/app-release.apk
             ./artifacts/kids/sha256.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Create Parent App Release
         uses: softprops/action-gh-release@v1
@@ -193,3 +197,5 @@ jobs:
           files: |
             ./artifacts/parent/app-release.apk
             ./artifacts/parent/sha256.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
