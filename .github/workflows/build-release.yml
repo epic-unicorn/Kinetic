@@ -102,12 +102,6 @@ jobs:
         run: |
           cd apps/parent
           flutter build apk --release --build-name=${{ steps.version.outputs.version }}
-        run: melos bootstrap
-
-      - name: Build parent app
-        run: |
-          cd apps/parent
-          flutter build apk --release
 
       - name: Upload parent app artifact
         uses: actions/upload-artifact@v3
