@@ -145,16 +145,39 @@ jobs:
           name: parent-app-release
           path: ./artifacts/parent
 
+      - name: Generate checksums
+        run: |
+          sha256sum ./artifacts/kids/app-release.apk | awk '{print $1}' > ./artifacts/kids/sha256.txt
+          sha256sum ./artifacts/parent/app-release.apk | awk '{print $1}' > ./artifacts/parent/sha256.txt
+          echo "KIDS_SHA256=$(cat ./artifacts/kids/sha256.txt)" >> $GITHUB_ENV
+          echo "PARENT_SHA256=$(cat ./artifacts/parent/sha256.txt)" >> $GITHUB_ENV
+
       - name: Create Kids App Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}-kids
           name: Kids App ${{ github.ref_name }}
-          files: ./artifacts/kids/app-release.apk
+          body: |
+            ## SHA-256 Checksum
+            Verify the integrity of the downloaded APK:
+            ```
+            ${{ env.KIDS_SHA256 }}  kinetic-kids-${{ github.ref_name }}.apk
+            ```
+          files: |
+            ./artifacts/kids/app-release.apk
+            ./artifacts/kids/sha256.txt
       
       - name: Create Parent App Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}-parent
           name: Parent App ${{ github.ref_name }}
-          files: ./artifacts/parent/app-release.apk
+          body: |
+            ## SHA-256 Checksum
+            Verify the integrity of the downloaded APK:
+            ```
+            ${{ env.PARENT_SHA256 }}  kinetic-parent-${{ github.ref_name }}.apk
+            ```
+          files: |
+            ./artifacts/parent/app-release.apk
+            ./artifacts/parent/sha256.txt
