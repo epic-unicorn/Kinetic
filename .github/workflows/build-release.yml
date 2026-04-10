@@ -51,7 +51,9 @@ jobs:
           EOF
 
       - name: Get dependencies
-        run: melos bootstrap
+        run: |
+          flutter pub global activate melos
+          melos bootstrap
 
       - name: Build kids app
         run: |
@@ -96,7 +98,9 @@ jobs:
           EOF
 
       - name: Get dependencies
-        run: melos bootstrap
+        run: |
+          flutter pub global activate melos
+          melos bootstrap
 
       - name: Build parent app
         run: |
