@@ -52,9 +52,11 @@ jobs:
 
       - name: Get dependencies
         run: |
-          dart pub global activate melos
-          export PATH="$PATH":"$HOME/.pub-cache/bin"
-          melos bootstrap
+          flutter pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Bootstrap
+        run: melos bootstrap
 
       - name: Build kids app
         run: |
@@ -72,6 +74,12 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          cache: true
 
       - name: Extract version from tag
         id: version
@@ -100,9 +108,11 @@ jobs:
 
       - name: Get dependencies
         run: |
-          dart pub global activate melos
-          export PATH="$PATH":"$HOME/.pub-cache/bin"
-          melos bootstrap
+          flutter pub global activate melos
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Bootstrap
+        run: melos bootstrap
 
       - name: Build parent app
         run: |
