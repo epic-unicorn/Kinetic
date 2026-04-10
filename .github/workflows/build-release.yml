@@ -52,8 +52,11 @@ jobs:
 
       - name: Get dependencies
         run: |
+          echo "Working dir: $(pwd)"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la
           flutter pub global activate melos
-          cd $GITHUB_WORKSPACE && $HOME/.pub-cache/bin/melos bootstrap
+          $HOME/.pub-cache/bin/melos bootstrap
 
       - name: Build kids app
         run: |
@@ -105,8 +108,11 @@ jobs:
 
       - name: Get dependencies
         run: |
+          echo "Working dir: $(pwd)"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la
           flutter pub global activate melos
-          cd $GITHUB_WORKSPACE && $HOME/.pub-cache/bin/melos bootstrap
+          $HOME/.pub-cache/bin/melos bootstrap
 
       - name: Build parent app
         run: |
