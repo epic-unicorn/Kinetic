@@ -59,7 +59,7 @@ jobs:
           flutter build apk --release --build-name=${{ steps.version.outputs.version }}
 
       - name: Upload kids app artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kids-app-release
           path: apps/kids/build/app/outputs/flutter-apk/app-release.apk
@@ -104,7 +104,7 @@ jobs:
           flutter build apk --release --build-name=${{ steps.version.outputs.version }}
 
       - name: Upload parent app artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: parent-app-release
           path: apps/parent/build/app/outputs/flutter-apk/app-release.apk
@@ -118,13 +118,13 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Download kids app
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: kids-app-release
           path: ./artifacts/kids
 
       - name: Download parent app
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: parent-app-release
           path: ./artifacts/parent
