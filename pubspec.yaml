@@ -1,0 +1,13 @@
+name: kinetic_workspace
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+workspace:
+  - apps/kids
+  - apps/parent
+  - packages/webdav
+
+dev_dependencies:
+  melos: ^7.5.1
