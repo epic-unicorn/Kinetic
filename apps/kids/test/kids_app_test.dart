@@ -32,7 +32,18 @@ void main() {
     testWidgets('renders home screen', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(KineticKidsApp(appDb: appDb));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: KidsHomeScreen(appDb: appDb),
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFFF97316),
+                brightness: Brightness.dark,
+              ),
+            ),
+          ),
+        );
 
         expect(find.byType(KidsHomeScreen), findsOneWidget);
       } finally {

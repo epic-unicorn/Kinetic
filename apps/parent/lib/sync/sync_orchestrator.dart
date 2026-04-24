@@ -4,6 +4,7 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
 import '../partner/models/partner_proposal.dart';
+import '../settings/models/enrolled_kid.dart';
 import '../todo/models/enums.dart';
 
 /// Drives a full sync cycle against the WebDAV server.
@@ -13,9 +14,18 @@ class SyncOrchestrator {
   final AppDatabase _db;
   final SyncConfig _config;
 
-  SyncOrchestrator({required AppDatabase db, required SyncConfig config})
-    : _db = db,
-      _config = config;
+  /// Optional callback invoked after disconnect tombstones are processed.
+  ///
+  /// Receives the list of device IDs that sent an explicit disconnect so the
+  /// caller (main.dart) can update UI notifiers (partner pairing, kids count).
+  final void Function(List<String> disconnectedIds)? onDisconnectsDetected;
+
+  SyncOrchestrator({
+    required AppDatabase db,
+    required SyncConfig config,
+    this.onDisconnectsDetected,
+  }) : _db = db,
+       _config = config;
 
   /// The WebDAV username (used as the local parent ID).
   String get username => _config.username;
@@ -37,6 +47,8 @@ class SyncOrchestrator {
       await _syncTasks(service);
       await _syncNotes(service);
       await _syncProposals(service);
+      await _pushPresence(service);
+      await _processDisconnects(service);
     } finally {
       client.dispose();
     }
@@ -50,6 +62,132 @@ class SyncOrchestrator {
     await _syncTasks(service);
     await _syncNotes(service);
     await _syncProposals(service);
+    await _pushPresence(service);
+    await _processDisconnects(service);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Presence heartbeat
+  // ---------------------------------------------------------------------------
+
+  Future<void> _pushPresence(WebDavSyncService service) async {
+    if (_config.familyKeyBytes == null) return;
+    try {
+      await service.pushPresence(
+        PresenceInfo(
+          deviceId: _config.parentId.isNotEmpty
+              ? _config.parentId
+              : _config.username,
+          deviceType: 'parent',
+          displayName: _config.username,
+          lastSeen: DateTime.now().toUtc(),
+        ),
+      );
+    } catch (_) {
+      // Non-critical — silently skip if server is unreachable.
+    }
+  }
+
+  /// Pulls all family-member presence entries (excluding self).
+  ///
+  /// Called from settings UI to display last-seen timestamps.
+  Future<List<PresenceInfo>> pullPresence() async {
+    if (_config.familyKeyBytes == null) return [];
+    final client = WebDavClient(
+      baseUrl: _config.baseUrl,
+      username: _config.username,
+      password: _config.password,
+    );
+    final service = WebDavSyncService(client: client, config: _config);
+    try {
+      final myId = _config.parentId.isNotEmpty
+          ? _config.parentId
+          : _config.username;
+      final all = await service.pullPresence();
+      return all.where((p) => p.deviceId != myId).toList();
+    } finally {
+      client.dispose();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Disconnect tombstones
+  // ---------------------------------------------------------------------------
+
+  /// Checks the shared disconnect folder.  If a tombstone for a known
+  /// partner or enrolled kid is found the callback is invoked and the
+  /// tombstone is cleaned up so it is not processed again.
+  Future<void> _processDisconnects(WebDavSyncService service) async {
+    if (_config.familyKeyBytes == null) return;
+    try {
+      final tombstones = await service.pullDisconnects();
+      if (tombstones.isEmpty) return;
+      final disconnectedIds = tombstones.map((t) => t.deviceId).toList();
+      onDisconnectsDetected?.call(disconnectedIds);
+      // Clean up processed tombstones so they are not re-read next cycle.
+      for (final tombstone in tombstones) {
+        try {
+          await service.deleteDisconnect(tombstone.deviceId);
+        } catch (_) {}
+      }
+    } catch (_) {
+      // Non-critical.
+    }
+  }
+
+  /// Writes an explicit disconnect tombstone for this parent device and
+  /// removes its own presence entry.  Call this before clearing the family key.
+  Future<void> pushDisconnect() async {
+    if (_config.familyKeyBytes == null) return;
+    final client = WebDavClient(
+      baseUrl: _config.baseUrl,
+      username: _config.username,
+      password: _config.password,
+    );
+    final service = WebDavSyncService(client: client, config: _config);
+    try {
+      final myId = _config.parentId.isNotEmpty
+          ? _config.parentId
+          : _config.username;
+      await service.pushDisconnect(
+        DisconnectTombstone(
+          deviceId: myId,
+          deviceType: 'parent',
+          disconnectedAt: DateTime.now().toUtc(),
+        ),
+      );
+      try {
+        await service.deletePresence(myId);
+      } catch (_) {}
+    } finally {
+      client.dispose();
+    }
+  }
+
+  /// Writes a disconnect tombstone for a removed kid and removes their
+  /// presence entry.  Call this when the parent removes an enrolled kid.
+  Future<void> pushKidDisconnect(EnrolledKid kid) async {
+    if (_config.familyKeyBytes == null) return;
+    final client = WebDavClient(
+      baseUrl: _config.baseUrl,
+      username: _config.username,
+      password: _config.password,
+    );
+    final service = WebDavSyncService(client: client, config: _config);
+    try {
+      await service.pushDisconnect(
+        DisconnectTombstone(
+          deviceId: kid.id,
+          deviceType: 'kid',
+          disconnectedAt: DateTime.now().toUtc(),
+        ),
+      );
+      try {
+        await service.deletePresence(kid.id);
+      } catch (_) {}
+    } finally {
+      client.dispose();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -160,7 +298,7 @@ class SyncOrchestrator {
           ? ';xKineticTargetKidId:${row.targetKidId}'
           : '';
       final description =
-          '$baseNotes;xKineticParentId:${row.id};xKineticCategory:${row.category};xKineticXpReward:10$targetKidPart';
+          '$baseNotes;xKineticParentId:${row.id};xKineticCategory:${row.category};xKineticXpReward:${row.xpReward}$targetKidPart';
       final kidsTask = ICalTask(
         uid: row.kidsTaskId!,
         summary: row.title,
@@ -490,6 +628,7 @@ class SyncOrchestrator {
       fromParentId: row.fromParentId,
       taskTitle: row.taskTitle,
       taskNotes: row.taskNotes,
+      taskCategory: row.taskCategory,
       taskPriority: TaskPriority.values[row.taskPriority],
       taskDueDate: row.taskDueDate,
       status: ProposalStatus.values.firstWhere((e) => e.name == row.status),
@@ -504,6 +643,7 @@ class SyncOrchestrator {
     'fromParentId': p.fromParentId,
     'taskTitle': p.taskTitle,
     'taskNotes': p.taskNotes,
+    'taskCategory': p.taskCategory,
     'taskPriority': p.taskPriority.index,
     'taskDueDate': p.taskDueDate?.toIso8601String(),
     'status': p.status.name,
@@ -518,6 +658,7 @@ class SyncOrchestrator {
       fromParentId: json['fromParentId'] as String,
       taskTitle: json['taskTitle'] as String,
       taskNotes: json['taskNotes'] as String?,
+      taskCategory: json['taskCategory'] as String? ?? 'other',
       taskPriority: TaskPriority.values[json['taskPriority'] as int],
       taskDueDate: json['taskDueDate'] != null
           ? DateTime.parse(json['taskDueDate'] as String)
@@ -539,7 +680,7 @@ class SyncOrchestrator {
       fromParentId: Value(p.fromParentId),
       taskTitle: Value(p.taskTitle),
       taskNotes: Value(p.taskNotes),
-      taskCategory: const Value('other'),
+      taskCategory: Value(p.taskCategory),
       taskPriority: Value(p.taskPriority.index),
       taskDueDate: Value(p.taskDueDate),
       status: Value(p.status.name),

@@ -122,14 +122,19 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
     );
-    if (date == null) return;
+    if (date == null || !mounted) return;
 
-    if (!mounted) return;
     final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_remindAt ?? now),
+      initialTime: _remindAt != null
+          ? TimeOfDay.fromDateTime(_remindAt!)
+          : _defaultReminderTime(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
-    if (time == null) return;
+    if (time == null || !mounted) return;
 
     setState(() {
       _remindAt = DateTime(
@@ -140,6 +145,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         time.minute,
       );
     });
+  }
+
+  /// Returns current time + 1 hour, rounded to the next full hour.
+  TimeOfDay _defaultReminderTime() {
+    final target = DateTime.now().add(const Duration(hours: 1));
+    return TimeOfDay(hour: target.hour, minute: 0);
   }
 
   Future<void> _confirmDelete() async {

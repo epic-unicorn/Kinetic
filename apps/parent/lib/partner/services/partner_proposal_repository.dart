@@ -309,6 +309,7 @@ class PartnerProposalRepository {
       fromParentId: row.fromParentId,
       taskTitle: row.taskTitle,
       taskNotes: row.taskNotes,
+      taskCategory: row.taskCategory,
       taskPriority: TaskPriority.values[row.taskPriority],
       taskDueDate: row.taskDueDate,
       status: ProposalStatus.values.firstWhere(

@@ -9,6 +9,7 @@ class PartnerProposal {
   final String fromParentId;
   final String taskTitle;
   final String? taskNotes;
+  final String taskCategory;
   final TaskPriority taskPriority;
   final DateTime? taskDueDate;
   final ProposalStatus status;
@@ -23,6 +24,7 @@ class PartnerProposal {
     required this.fromParentId,
     required this.taskTitle,
     this.taskNotes,
+    this.taskCategory = 'other',
     required this.taskPriority,
     this.taskDueDate,
     required this.status,
@@ -38,6 +40,7 @@ class PartnerProposal {
       fromParentId: fromParentId,
       taskTitle: taskTitle,
       taskNotes: taskNotes,
+      taskCategory: taskCategory,
       taskPriority: taskPriority,
       taskDueDate: taskDueDate,
       status: newStatus,

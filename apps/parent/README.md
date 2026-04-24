@@ -6,10 +6,10 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
+| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
 | **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: Incoming task proposals (accept/snooze/dismiss). **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
-| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. |
-| **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). |
+| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. Reminder uses separate date and time pickers; time defaults to current time + 1 hour rounded to the full hour. |
+| **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). Restoring a backup automatically reschedules all notifications. |
 
 ## Family Setup
 
@@ -27,11 +27,19 @@ Each child device enrolls independently:
 4. Child receives tasks targeted to their UUID
 5. Enrollment count shown in Settings
 
+## WebDAV Setup & Encryption Keys
+
+When enabling WebDAV sync for the first time (or switching to a different account), you are prompted to:
+- **Import existing key** — paste your recovery JSON exported from the previous install to keep existing encrypted data readable.
+- **Generate new key** — creates a new random personal key. Use this for a fresh install where no previous data exists on the WebDAV server.
+
+You can export your recovery JSON at any time from the Back-up & Herstel section.
+
 ## Data Model
 
 ### Tasks
-- `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in xKineticTargetKidId iCal property
-- Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null
+- `xpReward` (integer, default 10): XP the child earns when completing a task sent via "Stuur naar kinderen". Configurable per task before sending.
+- `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in `xKineticTargetKidId` iCal property. Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null.
 
 ### Security
 - **Personal Key**: Encrypts personal tasks/notes; unique per parent device
@@ -76,12 +84,31 @@ lib/
 ├── notes/{uid}.ics        — shared notes (family key)
 ├── proposals/{id}.json    — partner proposals (family key)
 ├── load/{parentId}.json   — workload metrics (family key)
-└── tasks/{uid}.ics        — tasks assigned to children (family key, with xKineticTargetKidId)
+├── tasks/{uid}.ics        — tasks assigned to children (family key, with xKineticTargetKidId)
+├── presence/{deviceId}.json — heartbeat presence (family key, written every sync)
+└── disconnect/{deviceId}.json — disconnect tombstone (family key, written on leave/remove)
 ```
 
 ### Backup Format
-- **`.kbak2`** (new): Unencrypted JSON wrapper containing `personalKey` (base64) + `database` (base64 of encrypted .kbak blob)
-- Export/import as one combined file in Settings → Back-up & Herstel
+- **`.kbak2` v2**: Unencrypted JSON wrapper containing `personalKey` (base64) + `database` (base64 of encrypted .kbak blob). No WebDAV configuration required to export.
+- **`.kbak2` v3** (current): Extends v2 with a `settings` section containing `theme` (light/dark) and `webdav` (server URL, credentials, family key base64, enrolled kids, partner pairing state). Import is backwards compatible — v2 files restore only the database.
+- Export never requires WebDAV to be configured: a personal key is generated silently on first export if one doesn't exist yet.
+- Import restores all settings including theme, WebDAV credentials, family key, enrolled kids list, and partner pairing flag.
+
+### Presence & Heartbeat Protocol
+Every sync cycle each device writes an encrypted **presence file** to `/kinetic/shared/presence/{deviceId}.json` (family key). The file contains `deviceId`, `deviceType` (`'parent'` or `'kid'`), `displayName`, and `lastSeen` (UTC ISO-8601).
+
+- **Parent Settings screen** reads presence files for the connected partner and displays a relative last-seen timestamp ("zojuist", "X minuten geleden", etc.).
+- **Kids Settings screen** reads presence files for each enrolled kid, showing last-seen per kid in the list.
+- Entries older than **14 days** are shown as a stale warning with error styling.
+
+### Disconnect Tombstone Protocol
+When a device explicitly leaves the family, it writes an encrypted **tombstone** to `/kinetic/shared/disconnect/{deviceId}.json` (family key) containing `deviceId`, `deviceType`, and `disconnectedAt`.
+
+- **Parent leaves** (`_leaveFamily`): writes parent tombstone + deletes own presence file.
+- **Kid removed** (`_confirmRemoveKid`): parent writes a kid tombstone + deletes that kid's presence file.
+- **Kids app**: on each sync, checks for its own tombstone; if found, invokes `onDisconnected` callback so the app can prompt the user.
+- **Parent app**: on each sync, `_processDisconnects` reads all tombstones, invokes `onDisconnectsDetected`, then deletes the tombstone files it processed.
 
 ## Conditional UI
 

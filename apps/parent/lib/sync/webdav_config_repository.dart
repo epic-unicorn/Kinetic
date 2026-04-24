@@ -133,6 +133,20 @@ class WebDavConfigRepository {
     return Uint8List.fromList(base64.decode(base64str));
   }
 
+  /// Returns the personal key, generating and persisting a new one if absent.
+  ///
+  /// This allows the backup/restore flow to work without requiring WebDAV to
+  /// be configured first.  The key is stored under the same secure-storage
+  /// slot used by the WebDAV config so it is automatically re-used when the
+  /// user later sets up WebDAV sync.
+  Future<Uint8List> ensurePersonalKey() async {
+    final existing = await loadPersonalKeyBytes();
+    if (existing != null) return existing;
+    final newKey = KineticEncryption.generatePersonalKey();
+    await savePersonalKey(newKey);
+    return newKey;
+  }
+
   /// Removes the family key without touching any other config fields.
   ///
   /// Call this when leaving the family pairing.
@@ -193,6 +207,10 @@ class WebDavConfigRepository {
     kids.removeWhere((k) => k.id == kidId);
     await _writeEnrolledKids(kids);
   }
+
+  /// Replaces the entire enrolled-kids list (used during backup restore).
+  Future<void> restoreEnrolledKids(List<EnrolledKid> kids) =>
+      _writeEnrolledKids(kids);
 
   Future<void> _writeEnrolledKids(List<EnrolledKid> kids) async {
     final json = jsonEncode(kids.map((k) => k.toJson()).toList());

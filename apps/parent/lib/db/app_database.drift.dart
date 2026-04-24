@@ -691,6 +691,18 @@ class $PersonalTasksTable extends PersonalTasks
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _xpRewardMeta = const VerificationMeta(
+    'xpReward',
+  );
+  @override
+  late final GeneratedColumn<int> xpReward = GeneratedColumn<int>(
+    'xp_reward',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(10),
+  );
   static const VerificationMeta _categoryMeta = const VerificationMeta(
     'category',
   );
@@ -798,6 +810,7 @@ class $PersonalTasksTable extends PersonalTasks
     isPrivate,
     kidsTaskId,
     targetKidId,
+    xpReward,
     category,
     customCategory,
     remindAt,
@@ -917,6 +930,12 @@ class $PersonalTasksTable extends PersonalTasks
           data['target_kid_id']!,
           _targetKidIdMeta,
         ),
+      );
+    }
+    if (data.containsKey('xp_reward')) {
+      context.handle(
+        _xpRewardMeta,
+        xpReward.isAcceptableOrUnknown(data['xp_reward']!, _xpRewardMeta),
       );
     }
     if (data.containsKey('category')) {
@@ -1039,6 +1058,10 @@ class $PersonalTasksTable extends PersonalTasks
         DriftSqlType.string,
         data['${effectivePrefix}target_kid_id'],
       ),
+      xpReward: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}xp_reward'],
+      )!,
       category: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}category'],
@@ -1095,6 +1118,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
   final bool isPrivate;
   final String? kidsTaskId;
   final String? targetKidId;
+  final int xpReward;
   final String category;
   final String? customCategory;
 
@@ -1125,6 +1149,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     required this.isPrivate,
     this.kidsTaskId,
     this.targetKidId,
+    required this.xpReward,
     required this.category,
     this.customCategory,
     this.remindAt,
@@ -1165,6 +1190,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     if (!nullToAbsent || targetKidId != null) {
       map['target_kid_id'] = Variable<String>(targetKidId);
     }
+    map['xp_reward'] = Variable<int>(xpReward);
     map['category'] = Variable<String>(category);
     if (!nullToAbsent || customCategory != null) {
       map['custom_category'] = Variable<String>(customCategory);
@@ -1212,6 +1238,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       targetKidId: targetKidId == null && nullToAbsent
           ? const Value.absent()
           : Value(targetKidId),
+      xpReward: Value(xpReward),
       category: Value(category),
       customCategory: customCategory == null && nullToAbsent
           ? const Value.absent()
@@ -1249,6 +1276,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       isPrivate: serializer.fromJson<bool>(json['isPrivate']),
       kidsTaskId: serializer.fromJson<String?>(json['kidsTaskId']),
       targetKidId: serializer.fromJson<String?>(json['targetKidId']),
+      xpReward: serializer.fromJson<int>(json['xpReward']),
       category: serializer.fromJson<String>(json['category']),
       customCategory: serializer.fromJson<String?>(json['customCategory']),
       remindAt: serializer.fromJson<DateTime?>(json['remindAt']),
@@ -1277,6 +1305,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       'isPrivate': serializer.toJson<bool>(isPrivate),
       'kidsTaskId': serializer.toJson<String?>(kidsTaskId),
       'targetKidId': serializer.toJson<String?>(targetKidId),
+      'xpReward': serializer.toJson<int>(xpReward),
       'category': serializer.toJson<String>(category),
       'customCategory': serializer.toJson<String?>(customCategory),
       'remindAt': serializer.toJson<DateTime?>(remindAt),
@@ -1303,6 +1332,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     bool? isPrivate,
     Value<String?> kidsTaskId = const Value.absent(),
     Value<String?> targetKidId = const Value.absent(),
+    int? xpReward,
     String? category,
     Value<String?> customCategory = const Value.absent(),
     Value<DateTime?> remindAt = const Value.absent(),
@@ -1328,6 +1358,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate: isPrivate ?? this.isPrivate,
     kidsTaskId: kidsTaskId.present ? kidsTaskId.value : this.kidsTaskId,
     targetKidId: targetKidId.present ? targetKidId.value : this.targetKidId,
+    xpReward: xpReward ?? this.xpReward,
     category: category ?? this.category,
     customCategory: customCategory.present
         ? customCategory.value
@@ -1365,6 +1396,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
       targetKidId: data.targetKidId.present
           ? data.targetKidId.value
           : this.targetKidId,
+      xpReward: data.xpReward.present ? data.xpReward.value : this.xpReward,
       category: data.category.present ? data.category.value : this.category,
       customCategory: data.customCategory.present
           ? data.customCategory.value
@@ -1397,6 +1429,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('targetKidId: $targetKidId, ')
+          ..write('xpReward: $xpReward, ')
           ..write('category: $category, ')
           ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
@@ -1425,6 +1458,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
     isPrivate,
     kidsTaskId,
     targetKidId,
+    xpReward,
     category,
     customCategory,
     remindAt,
@@ -1452,6 +1486,7 @@ class PersonalTaskRow extends DataClass implements Insertable<PersonalTaskRow> {
           other.isPrivate == this.isPrivate &&
           other.kidsTaskId == this.kidsTaskId &&
           other.targetKidId == this.targetKidId &&
+          other.xpReward == this.xpReward &&
           other.category == this.category &&
           other.customCategory == this.customCategory &&
           other.remindAt == this.remindAt &&
@@ -1477,6 +1512,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
   final Value<bool> isPrivate;
   final Value<String?> kidsTaskId;
   final Value<String?> targetKidId;
+  final Value<int> xpReward;
   final Value<String> category;
   final Value<String?> customCategory;
   final Value<DateTime?> remindAt;
@@ -1501,6 +1537,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.targetKidId = const Value.absent(),
+    this.xpReward = const Value.absent(),
     this.category = const Value.absent(),
     this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
@@ -1526,6 +1563,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     this.isPrivate = const Value.absent(),
     this.kidsTaskId = const Value.absent(),
     this.targetKidId = const Value.absent(),
+    this.xpReward = const Value.absent(),
     this.category = const Value.absent(),
     this.customCategory = const Value.absent(),
     this.remindAt = const Value.absent(),
@@ -1554,6 +1592,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Expression<bool>? isPrivate,
     Expression<String>? kidsTaskId,
     Expression<String>? targetKidId,
+    Expression<int>? xpReward,
     Expression<String>? category,
     Expression<String>? customCategory,
     Expression<DateTime>? remindAt,
@@ -1579,6 +1618,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       if (isPrivate != null) 'is_private': isPrivate,
       if (kidsTaskId != null) 'kids_task_id': kidsTaskId,
       if (targetKidId != null) 'target_kid_id': targetKidId,
+      if (xpReward != null) 'xp_reward': xpReward,
       if (category != null) 'category': category,
       if (customCategory != null) 'custom_category': customCategory,
       if (remindAt != null) 'remind_at': remindAt,
@@ -1606,6 +1646,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     Value<bool>? isPrivate,
     Value<String?>? kidsTaskId,
     Value<String?>? targetKidId,
+    Value<int>? xpReward,
     Value<String>? category,
     Value<String?>? customCategory,
     Value<DateTime?>? remindAt,
@@ -1631,6 +1672,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       targetKidId: targetKidId ?? this.targetKidId,
+      xpReward: xpReward ?? this.xpReward,
       category: category ?? this.category,
       customCategory: customCategory ?? this.customCategory,
       remindAt: remindAt ?? this.remindAt,
@@ -1688,6 +1730,9 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
     if (targetKidId.present) {
       map['target_kid_id'] = Variable<String>(targetKidId.value);
     }
+    if (xpReward.present) {
+      map['xp_reward'] = Variable<int>(xpReward.value);
+    }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
@@ -1735,6 +1780,7 @@ class PersonalTasksCompanion extends UpdateCompanion<PersonalTaskRow> {
           ..write('isPrivate: $isPrivate, ')
           ..write('kidsTaskId: $kidsTaskId, ')
           ..write('targetKidId: $targetKidId, ')
+          ..write('xpReward: $xpReward, ')
           ..write('category: $category, ')
           ..write('customCategory: $customCategory, ')
           ..write('remindAt: $remindAt, ')
@@ -4610,6 +4656,7 @@ typedef $$PersonalTasksTableCreateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String?> targetKidId,
+      Value<int> xpReward,
       Value<String> category,
       Value<String?> customCategory,
       Value<DateTime?> remindAt,
@@ -4636,6 +4683,7 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<bool> isPrivate,
       Value<String?> kidsTaskId,
       Value<String?> targetKidId,
+      Value<int> xpReward,
       Value<String> category,
       Value<String?> customCategory,
       Value<DateTime?> remindAt,
@@ -4770,6 +4818,11 @@ class $$PersonalTasksTableFilterComposer
 
   ColumnFilters<String> get targetKidId => $composableBuilder(
     column: $table.targetKidId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4936,6 +4989,11 @@ class $$PersonalTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get xpReward => $composableBuilder(
+    column: $table.xpReward,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get category => $composableBuilder(
     column: $table.category,
     builder: (column) => ColumnOrderings(column),
@@ -5058,6 +5116,9 @@ class $$PersonalTasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get xpReward =>
+      $composableBuilder(column: $table.xpReward, builder: (column) => column);
+
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
 
@@ -5177,6 +5238,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String?> targetKidId = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
@@ -5201,6 +5263,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 targetKidId: targetKidId,
+                xpReward: xpReward,
                 category: category,
                 customCategory: customCategory,
                 remindAt: remindAt,
@@ -5227,6 +5290,7 @@ class $$PersonalTasksTableTableManager
                 Value<bool> isPrivate = const Value.absent(),
                 Value<String?> kidsTaskId = const Value.absent(),
                 Value<String?> targetKidId = const Value.absent(),
+                Value<int> xpReward = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> customCategory = const Value.absent(),
                 Value<DateTime?> remindAt = const Value.absent(),
@@ -5251,6 +5315,7 @@ class $$PersonalTasksTableTableManager
                 isPrivate: isPrivate,
                 kidsTaskId: kidsTaskId,
                 targetKidId: targetKidId,
+                xpReward: xpReward,
                 category: category,
                 customCategory: customCategory,
                 remindAt: remindAt,

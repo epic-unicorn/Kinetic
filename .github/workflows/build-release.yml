@@ -5,12 +5,18 @@ on:
     branches:
       - main
       - develop
+      - 'feature/**'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
       - develop
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.2.3) — defaults to git tag or "dev"'
+        required: false
 
 jobs:
   build-kids-app:
@@ -34,7 +40,13 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Decode keystore
@@ -69,11 +81,16 @@ jobs:
           cd apps/kids
           flutter build apk --release --build-name=${{ steps.version.outputs.version }}
 
+      - name: Rename kids APK to versioned filename
+        run: |
+          cp apps/kids/build/app/outputs/flutter-apk/app-release.apk \
+             apps/kids/build/app/outputs/flutter-apk/kinetic-kids-${{ steps.version.outputs.version }}.apk
+
       - name: Upload kids app artifact
         uses: actions/upload-artifact@v4
         with:
           name: kids-app-release
-          path: apps/kids/build/app/outputs/flutter-apk/app-release.apk
+          path: apps/kids/build/app/outputs/flutter-apk/kinetic-kids-${{ steps.version.outputs.version }}.apk
 
   build-parent-app:
     runs-on: ubuntu-latest
@@ -96,7 +113,13 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Decode keystore
@@ -131,11 +154,16 @@ jobs:
           cd apps/parent
           flutter build apk --release --build-name=${{ steps.version.outputs.version }}
 
+      - name: Rename parent APK to versioned filename
+        run: |
+          cp apps/parent/build/app/outputs/flutter-apk/app-release.apk \
+             apps/parent/build/app/outputs/flutter-apk/kinetic-parent-${{ steps.version.outputs.version }}.apk
+
       - name: Upload parent app artifact
         uses: actions/upload-artifact@v4
         with:
           name: parent-app-release
-          path: apps/parent/build/app/outputs/flutter-apk/app-release.apk
+          path: apps/parent/build/app/outputs/flutter-apk/kinetic-parent-${{ steps.version.outputs.version }}.apk
 
   release:
     needs: [build-kids-app, build-parent-app]
@@ -147,6 +175,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Download kids app
         uses: actions/download-artifact@v4
         with:
@@ -161,8 +201,8 @@ jobs:
 
       - name: Generate checksums
         run: |
-          sha256sum ./artifacts/kids/app-release.apk | awk '{print $1}' > ./artifacts/kids/sha256.txt
-          sha256sum ./artifacts/parent/app-release.apk | awk '{print $1}' > ./artifacts/parent/sha256.txt
+          sha256sum ./artifacts/kids/kinetic-kids-*.apk | awk '{print $1}' > ./artifacts/kids/sha256.txt
+          sha256sum ./artifacts/parent/kinetic-parent-*.apk | awk '{print $1}' > ./artifacts/parent/sha256.txt
           echo "KIDS_SHA256=$(cat ./artifacts/kids/sha256.txt)" >> $GITHUB_ENV
           echo "PARENT_SHA256=$(cat ./artifacts/parent/sha256.txt)" >> $GITHUB_ENV
 
@@ -175,10 +215,10 @@ jobs:
             ## SHA-256 Checksum
             Verify the integrity of the downloaded APK:
             ```
-            ${{ env.KIDS_SHA256 }}  kinetic-kids-${{ github.ref_name }}.apk
+            ${{ env.KIDS_SHA256 }}  kinetic-kids-${{ steps.version.outputs.version }}.apk
             ```
           files: |
-            ./artifacts/kids/app-release.apk
+            ./artifacts/kids/kinetic-kids-${{ steps.version.outputs.version }}.apk
             ./artifacts/kids/sha256.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -192,10 +232,10 @@ jobs:
             ## SHA-256 Checksum
             Verify the integrity of the downloaded APK:
             ```
-            ${{ env.PARENT_SHA256 }}  kinetic-parent-${{ github.ref_name }}.apk
+            ${{ env.PARENT_SHA256 }}  kinetic-parent-${{ steps.version.outputs.version }}.apk
             ```
           files: |
-            ./artifacts/parent/app-release.apk
+            ./artifacts/parent/kinetic-parent-${{ steps.version.outputs.version }}.apk
             ./artifacts/parent/sha256.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
