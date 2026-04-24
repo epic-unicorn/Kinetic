@@ -95,6 +95,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   final notificationsEnabled = ValueNotifier<bool>(true);
   /// False when the Alarms & Reminders permission is not granted (Android 12+).
   final exactAlarmsGranted = ValueNotifier<bool>(true);
+  /// Non-null when notification plugin initialization failed.
+  final notifInitError = ValueNotifier<String?>(null);
   StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
@@ -138,15 +140,18 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _initSync();
     // Request notification permissions immediately so the Android dialog
     // is shown on first launch rather than waiting for the first reminder.
-    _notifSvc.init().then((_) => _checkNotificationPermission()).catchError(
-      (Object e, StackTrace st) {
-        assert(() {
-          // ignore: avoid_print
-          print('[NotificationService] init failed: $e\n$st');
-          return true;
-        }());
-      },
-    );
+    _notifSvc
+        .init()
+        .then((_) => _checkNotificationPermission())
+        .catchError((Object e, StackTrace st) {
+      // Store error — visible in both debug and release via the banner.
+      final svc = _notifSvc;
+      if (svc is ParentNotificationService && svc.initError != null) {
+        if (mounted) notifInitError.value = svc.initError.toString();
+      } else {
+        if (mounted) notifInitError.value = e.toString();
+      }
+    });
   }
 
   Future<void> _checkNotificationPermission() async {
@@ -263,14 +268,29 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
         return ValueListenableBuilder<bool>(
           valueListenable: exactAlarmsGranted,
           builder: (context, exactEnabled, _) {
-            return _buildShell(context, notifEnabled, exactEnabled);
+            return ValueListenableBuilder<String?>(
+              valueListenable: notifInitError,
+              builder: (context, initErr, _) {
+                return _buildShell(
+                  context,
+                  notifEnabled,
+                  exactEnabled,
+                  initErr,
+                );
+              },
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildShell(BuildContext context, bool notifEnabled, bool exactEnabled) {
+  Widget _buildShell(
+    BuildContext context,
+    bool notifEnabled,
+    bool exactEnabled,
+    String? initErr,
+  ) {
     return ValueListenableBuilder<bool>(
       valueListenable: partnerPaired,
       builder: (context, paired, _) {
@@ -363,6 +383,27 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     return Scaffold(
                       body: Column(
                         children: [
+                          if (initErr != null)
+                            MaterialBanner(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              content: Text(
+                                'Meldingenservice kon niet starten: $initErr',
+                              ),
+                              leading: const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      notifInitError.value = null,
+                                  child: const Text('Sluiten'),
+                                ),
+                              ],
+                            ),
                           if (!notifEnabled)
                             MaterialBanner(
                               padding: const EdgeInsets.symmetric(

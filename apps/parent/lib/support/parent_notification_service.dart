@@ -49,6 +49,10 @@ class ParentNotificationService implements NotificationService {
   ParentNotificationService({OnReminderActionCallback? onActionCallback})
     : _onActionCallback = onActionCallback;
 
+  // Stores any error that occurred during initialisation so callers can
+  // surface it to the user in both debug and release builds.
+  Object? initError;
+
   @override
   Future<void> init() => _ensureInitialized();
 
@@ -79,48 +83,51 @@ class ParentNotificationService implements NotificationService {
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
 
-    // Timezone setup — fall back to UTC if the device returns an unknown
-    // identifier, so a timezone failure never blocks notification init.
     try {
-      tz.initializeTimeZones();
-      final tzInfo = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
-    } catch (_) {
-      tz.initializeTimeZones();
-      tz.setLocalLocation(tz.UTC);
-    }
+      // Timezone setup — fall back to UTC if the device returns an unknown
+      // identifier, so a timezone failure never blocks notification init.
+      try {
+        tz.initializeTimeZones();
+        final tzInfo = await FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+      } catch (_) {
+        tz.initializeTimeZones();
+        tz.setLocalLocation(tz.UTC);
+      }
 
-    await _plugin.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@drawable/ic_notification'),
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
+      await _plugin.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@drawable/ic_notification'),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          ),
         ),
-      ),
-      onDidReceiveNotificationResponse: _handleNotificationAction,
-      // onDidReceiveBackgroundNotificationResponse requires a top-level
-      // @pragma('vm:entry-point') function and cannot be an instance method.
-      // Background-tap actions are not supported; foreground tap/action
-      // handling is covered by onDidReceiveNotificationResponse above.
-    );
+        onDidReceiveNotificationResponse: _handleNotificationAction,
+      );
 
-    // Request Android 13+ POST_NOTIFICATIONS permission.
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+      // Request Android 13+ POST_NOTIFICATIONS permission.
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestNotificationsPermission();
 
-    // Request exact-alarm permission (Android 12+).
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestExactAlarmsPermission();
+      // Request exact-alarm permission (Android 12+).
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestExactAlarmsPermission();
 
-    _initialized = true;
+      _initialized = true;
+      initError = null;
+    } catch (e, st) {
+      initError = e;
+      // Rethrow so the caller (main.dart) can surface the error.
+      Error.throwWithStackTrace(e, st);
+    }
   }
 
   static const _details = NotificationDetails(
