@@ -30,4 +30,8 @@ abstract class NotificationService {
     required String title,
     required String body,
   });
+
+  /// Returns true if the user has granted notification permission.
+  /// Returns true on platforms where this check is not supported.
+  Future<bool> areNotificationsEnabled();
 }

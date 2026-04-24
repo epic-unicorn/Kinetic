@@ -47,6 +47,9 @@ class _FakeNotificationService implements NotificationService {
     required String title,
     required String body,
   }) async => DateTime.now().add(const Duration(minutes: 5));
+
+  @override
+  Future<bool> areNotificationsEnabled() async => true;
 }
 
 void main() {

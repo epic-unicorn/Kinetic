@@ -5,9 +5,13 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import android.media.RingtoneManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.moonbaseone.kinetic.parent/audio"
+    private val SETTINGS_CHANNEL = "net.moonbaseone.kinetic.parent/settings"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -21,6 +25,19 @@ class MainActivity : FlutterActivity() {
                     } catch (e: Exception) {
                         result.error("SOUND_ERROR", e.message, null)
                     }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SETTINGS_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openNotificationSettings" -> {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }

@@ -49,6 +49,14 @@ class ParentNotificationService implements NotificationService {
   @override
   Future<void> init() => _ensureInitialized();
 
+  @override
+  Future<bool> areNotificationsEnabled() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true; // iOS/other: assume granted
+    return await android.areNotificationsEnabled() ?? true;
+  }
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
 

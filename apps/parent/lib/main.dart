@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
@@ -90,6 +91,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   /// Incremented after every successful sync — lets the Kinderen tab reload.
   final _syncDoneCount = ValueNotifier<int>(0);
+  /// False when the user has permanently blocked notifications in system settings.
+  final notificationsEnabled = ValueNotifier<bool>(true);
   StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
@@ -133,13 +136,20 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _initSync();
     // Request notification permissions immediately so the Android dialog
     // is shown on first launch rather than waiting for the first reminder.
-    _notifSvc.init().catchError((Object e, StackTrace st) {
-      assert(() {
-        // ignore: avoid_print
-        print('[NotificationService] init failed: $e\n$st');
-        return true;
-      }());
-    });
+    _notifSvc.init().then((_) => _checkNotificationPermission()).catchError(
+      (Object e, StackTrace st) {
+        assert(() {
+          // ignore: avoid_print
+          print('[NotificationService] init failed: $e\n$st');
+          return true;
+        }());
+      },
+    );
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    final enabled = await _notifSvc.areNotificationsEnabled();
+    if (mounted) notificationsEnabled.value = enabled;
   }
 
   Future<void> _initSync() async {
@@ -221,10 +231,12 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   }
 
   /// Trigger a sync whenever the app returns to the foreground.
+  /// Also re-check notification permission — user may have toggled it in Settings.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _triggerSync();
+      _checkNotificationPermission();
     }
   }
 
@@ -239,6 +251,15 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: notificationsEnabled,
+      builder: (context, notifEnabled, _) {
+        return _buildShell(context, notifEnabled);
+      },
+    );
+  }
+
+  Widget _buildShell(BuildContext context, bool notifEnabled) {
     return ValueListenableBuilder<bool>(
       valueListenable: partnerPaired,
       builder: (context, paired, _) {
@@ -329,9 +350,44 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     );
 
                     return Scaffold(
-                      body: IndexedStack(
-                        index: clampedIndex,
-                        children: screens,
+                      body: Column(
+                        children: [
+                          if (!notifEnabled)
+                            MaterialBanner(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              content: const Text(
+                                'Meldingen zijn uitgeschakeld. Zet ze aan in Instellingen om herinneringen te ontvangen.',
+                              ),
+                              leading: const Icon(
+                                Icons.notifications_off_outlined,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    // Open this app's notification settings page.
+                                    const channel = MethodChannel(
+                                      'net.moonbaseone.kinetic.parent/settings',
+                                    );
+                                    channel
+                                        .invokeMethod<void>(
+                                          'openNotificationSettings',
+                                        )
+                                        .catchError((_) {});
+                                  },
+                                  child: const Text('Instellingen'),
+                                ),
+                              ],
+                            ),
+                          Expanded(
+                            child: IndexedStack(
+                              index: clampedIndex,
+                              children: screens,
+                            ),
+                          ),
+                        ],
                       ),
                       bottomNavigationBar: NavigationBar(
                         selectedIndex: clampedIndex,
