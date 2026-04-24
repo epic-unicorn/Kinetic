@@ -97,7 +97,7 @@ class ParentNotificationService implements NotificationService {
 
       await _plugin.initialize(
         const InitializationSettings(
-          android: AndroidInitializationSettings('@drawable/ic_notification'),
+          android: AndroidInitializationSettings('ic_notification'),
           iOS: DarwinInitializationSettings(
             requestAlertPermission: true,
             requestBadgePermission: true,
@@ -137,7 +137,7 @@ class ParentNotificationService implements NotificationService {
       channelDescription: _channelDesc,
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@drawable/ic_notification',
+      icon: 'ic_notification',
       actions: [
         AndroidNotificationAction(
           _snooze1HourId,
