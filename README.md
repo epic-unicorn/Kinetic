@@ -78,19 +78,34 @@ cd apps/parent   # or apps/kids
 flutter build apk --release
 ```
 
-The GitHub Actions workflow (`.github/workflows/build-release.yml`) builds and signs both APKs, renames them to `kinetic-{app}-{version}.apk`, generates SHA-256 checksums, and publishes them as a GitHub Release on any `v*` tag push.
+The GitHub Actions workflow (`.github/workflows/build-release.yml`) builds and signs both APKs on every push to `main`, `develop`, or `feature/**` branches, and on any `v*` tag push.
+
+### Creating a release
+
+Push a version tag to trigger a GitHub Release:
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+This creates **two separate releases**:
+- `v0.2.0-kids` — contains `kinetic-kids-0.2.0.apk`
+- `v0.2.0-parent` — contains `kinetic-parent-0.2.0.apk`
+
+Each release includes a `sha256.txt` checksum file.
 
 ### Verifying release APKs
 
-After downloading the APK and its `.sha256` file from a GitHub Release:
+After downloading the APK and its `sha256.txt` from a GitHub Release:
 
 ```bash
-sha256sum --check kinetic-parent-{version}.apk.sha256
+echo "<digest>  kinetic-parent-0.2.0.apk" | sha256sum --check
 ```
 
 Or manually compare:
 
 ```bash
-sha256sum kinetic-parent-{version}.apk
-# compare with the digest listed in the release notes
+sha256sum kinetic-parent-0.2.0.apk
+# compare with the digest listed in sha256.txt
 ```
