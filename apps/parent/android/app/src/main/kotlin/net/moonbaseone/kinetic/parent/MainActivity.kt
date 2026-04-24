@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.app.AlarmManager
+import android.os.Build
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.moonbaseone.kinetic.parent/audio"
@@ -46,6 +48,14 @@ class MainActivity : FlutterActivity() {
                     )
                     startActivity(intent)
                     result.success(null)
+                }
+                "canScheduleExactAlarms" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                        result.success(alarmManager.canScheduleExactAlarms())
+                    } else {
+                        result.success(true)
+                    }
                 }
                 else -> result.notImplemented()
             }

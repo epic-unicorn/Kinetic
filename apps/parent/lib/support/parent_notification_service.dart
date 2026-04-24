@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -59,10 +62,18 @@ class ParentNotificationService implements NotificationService {
 
   @override
   Future<bool> canScheduleExactAlarms() async {
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    if (android == null) return true; // iOS/other: assume granted
-    return await android.canScheduleExactAlarms() ?? true;
+    if (!Platform.isAndroid) return true;
+    try {
+      const channel = MethodChannel(
+        'net.moonbaseone.kinetic.parent/settings',
+      );
+      final result = await channel.invokeMethod<bool>(
+        'canScheduleExactAlarms',
+      );
+      return result ?? true;
+    } catch (_) {
+      return true;
+    }
   }
 
   Future<void> _ensureInitialized() async {
