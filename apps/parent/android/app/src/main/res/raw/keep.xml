@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Prevents the Android resource shrinker from stripping drawables that are
+  only referenced dynamically (as strings) at runtime by flutter_local_notifications.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification" />
