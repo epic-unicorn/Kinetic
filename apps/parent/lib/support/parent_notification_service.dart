@@ -58,8 +58,10 @@ class ParentNotificationService implements NotificationService {
 
   @override
   Future<bool> areNotificationsEnabled() async {
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android == null) return true; // iOS/other: assume granted
     return await android.areNotificationsEnabled() ?? true;
   }
@@ -68,12 +70,8 @@ class ParentNotificationService implements NotificationService {
   Future<bool> canScheduleExactAlarms() async {
     if (!Platform.isAndroid) return true;
     try {
-      const channel = MethodChannel(
-        'net.moonbaseone.kinetic.parent/settings',
-      );
-      final result = await channel.invokeMethod<bool>(
-        'canScheduleExactAlarms',
-      );
+      const channel = MethodChannel('net.moonbaseone.kinetic.parent/settings');
+      final result = await channel.invokeMethod<bool>('canScheduleExactAlarms');
       return result ?? true;
     } catch (_) {
       return true;

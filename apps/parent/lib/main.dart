@@ -91,10 +91,13 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   /// Incremented after every successful sync — lets the Kinderen tab reload.
   final _syncDoneCount = ValueNotifier<int>(0);
+
   /// False when the user has permanently blocked notifications in system settings.
   final notificationsEnabled = ValueNotifier<bool>(true);
+
   /// False when the Alarms & Reminders permission is not granted (Android 12+).
   final exactAlarmsGranted = ValueNotifier<bool>(true);
+
   /// Non-null when notification plugin initialization failed.
   final notifInitError = ValueNotifier<String?>(null);
   StreamSubscription<int>? _proposalCountSub;
@@ -140,10 +143,10 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _initSync();
     // Request notification permissions immediately so the Android dialog
     // is shown on first launch rather than waiting for the first reminder.
-    _notifSvc
-        .init()
-        .then((_) => _checkNotificationPermission())
-        .catchError((Object e, StackTrace st) {
+    _notifSvc.init().then((_) => _checkNotificationPermission()).catchError((
+      Object e,
+      StackTrace st,
+    ) {
       // Store error — visible in both debug and release via the banner.
       final svc = _notifSvc;
       if (svc is ParentNotificationService && svc.initError != null) {
@@ -398,8 +401,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                               ),
                               actions: [
                                 TextButton(
-                                  onPressed: () =>
-                                      notifInitError.value = null,
+                                  onPressed: () => notifInitError.value = null,
                                   child: const Text('Sluiten'),
                                 ),
                               ],
