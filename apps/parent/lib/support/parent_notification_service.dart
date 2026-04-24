@@ -51,9 +51,17 @@ class ParentNotificationService implements NotificationService {
 
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    tz.initializeTimeZones();
-    final tzInfo = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+
+    // Timezone setup — fall back to UTC if the device returns an unknown
+    // identifier, so a timezone failure never blocks notification init.
+    try {
+      tz.initializeTimeZones();
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+    } catch (_) {
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.UTC);
+    }
 
     await _plugin.initialize(
       const InitializationSettings(

@@ -133,7 +133,13 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _initSync();
     // Request notification permissions immediately so the Android dialog
     // is shown on first launch rather than waiting for the first reminder.
-    unawaited(_notifSvc.init());
+    _notifSvc.init().catchError((Object e, StackTrace st) {
+      assert(() {
+        // ignore: avoid_print
+        print('[NotificationService] init failed: $e\n$st');
+        return true;
+      }());
+    });
   }
 
   Future<void> _initSync() async {
