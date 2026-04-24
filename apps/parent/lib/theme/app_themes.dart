@@ -74,9 +74,14 @@ String formatDueDate(DateTime due, {bool allDay = true}) {
   return '$datePart $h:$m';
 }
 
-bool isOverdue(DateTime due) {
+bool isOverdue(DateTime due, {bool isAllDay = false}) {
   final now = DateTime.now();
-  return due.toLocal().isBefore(now);
+  final local = due.toLocal();
+  // For all-day tasks the deadline is end-of-day (23:59:59), not midnight.
+  final effective = isAllDay
+      ? DateTime(local.year, local.month, local.day, 23, 59, 59)
+      : local;
+  return effective.isBefore(now);
 }
 
 String _weekday(int w) => const [

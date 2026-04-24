@@ -22,3 +22,6 @@ export 'src/ical/ical_serializer.dart';
 // Sync service + enrollment
 export 'src/sync/webdav_sync_service.dart';
 export 'src/sync/webdav_enrollment.dart';
+
+// Presence tracking
+export 'src/presence_info.dart';

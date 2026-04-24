@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide Column;
@@ -8,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
 import '../db/full_backup_service.dart';
+import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_header.dart';
 import '../theme/app_themes.dart';
@@ -20,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
   final AppDatabase db;
   final WebDavConfigRepository configRepo;
   final SettingsRepository settingsRepo;
+  final SyncOrchestrator? syncOrchestrator;
   final VoidCallback? onConfigSaved;
 
   /// Called after a backup is successfully restored so callers can reschedule
@@ -31,6 +34,7 @@ class SettingsScreen extends StatefulWidget {
     required this.db,
     required this.configRepo,
     required this.settingsRepo,
+    this.syncOrchestrator,
     this.onConfigSaved,
     this.onRestoreComplete,
   });
@@ -102,7 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       builder: (_) => WebDavSetupScreen(
                         db: widget.db,
                         configRepo: widget.configRepo,
+                        settingsRepo: widget.settingsRepo,
                         onConfigSaved: widget.onConfigSaved,
+                        onRestoreComplete: widget.onRestoreComplete,
                       ),
                     ),
                   );
@@ -126,6 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         builder: (_) => PartnerSettingsScreen(
                           db: widget.db,
                           configRepo: widget.configRepo,
+                          syncOrchestrator: widget.syncOrchestrator,
                           onConfigSaved: widget.onConfigSaved,
                         ),
                       ),
@@ -147,6 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       MaterialPageRoute<void>(
                         builder: (_) => KidsSettingsScreen(
                           configRepo: widget.configRepo,
+                          syncOrchestrator: widget.syncOrchestrator,
                           onConfigSaved: widget.onConfigSaved,
                         ),
                       ),
@@ -213,20 +221,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _exportFullBackup() async {
-    final key =
-        _config?.personalKeyBytes ??
-        await widget.configRepo.loadPersonalKeyBytes();
-    if (key == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Geen persoonlijke sleutel gevonden. Configureer eerst WebDAV.',
-          ),
-        ),
-      );
-      return;
-    }
+    // Ensure a personal key exists — generate one silently if WebDAV has
+    // never been configured.  The generated key is stored in secure storage
+    // and will be re-used automatically when the user later sets up WebDAV.
+    final key = await widget.configRepo.ensurePersonalKey();
 
     if (!mounted) return;
     showDialog<void>(
@@ -244,10 +242,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
+      final enrolledKids = await widget.configRepo.loadEnrolledKids();
       final bytes = await FullBackupService.exportToBytes(
         widget.db,
         key,
         usernameHint: _config?.username ?? '',
+        webDavConfig: _config,
+        enrolledKids: enrolledKids,
+        partnerPaired: _partnerPaired,
+        currentThemeName: themeNotifier.value.name,
       );
       final now = DateTime.now();
       final stamp =
@@ -345,6 +348,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         widget.db,
         widget.configRepo,
         fileBytes,
+        settingsRepo: widget.settingsRepo,
+        onThemeRestored: (theme) => themeNotifier.value = theme,
       );
       if (mounted) {
         Navigator.of(context).pop();
@@ -379,13 +384,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class WebDavSetupScreen extends StatefulWidget {
   final AppDatabase db;
   final WebDavConfigRepository configRepo;
+  final SettingsRepository? settingsRepo;
   final VoidCallback? onConfigSaved;
+  final VoidCallback? onRestoreComplete;
 
   const WebDavSetupScreen({
     super.key,
     required this.db,
     required this.configRepo,
+    this.settingsRepo,
     this.onConfigSaved,
+    this.onRestoreComplete,
   });
 
   @override
@@ -456,8 +465,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     Uint8List personalKey,
   ) async {
     try {
-      debugPrint('[Migration] Starting migration check...');
-
       final client = WebDavClient(
         baseUrl: serverUrl,
         username: username,
@@ -465,45 +472,17 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       );
 
       try {
-        final config = SyncConfig(
-          serverUrl: serverUrl,
-          username: username,
-          password: password,
-          parentId: '',
-          personalKeyBytes: personalKey,
-          familyKeyBytes: null,
-        );
-
-        final service = WebDavSyncService(client: client, config: config);
-
-        // Check if there are any files on the server (before trying to decrypt)
-        debugPrint('[Migration] Checking for remote files...');
         final tasksPath = '/kinetic/$username/tasks';
         final notesPath = '/kinetic/$username/notes';
 
         final taskFiles = await _listServerFiles(client, tasksPath);
         final noteFiles = await _listServerFiles(client, notesPath);
 
-        debugPrint(
-          '[Migration] Found ${taskFiles.length} task files and ${noteFiles.length} note files',
-        );
+        if (taskFiles.isEmpty && noteFiles.isEmpty) return;
 
-        if (taskFiles.isEmpty && noteFiles.isEmpty) {
-          // No existing data, nothing to migrate
-          debugPrint('[Migration] No existing data found, skipping migration');
-          return;
-        }
+        if (!mounted) return;
 
-        // There are files on the server - ask user what to do
-        debugPrint(
-          '[Migration] Found existing files, showing migration dialog',
-        );
-        if (!mounted) {
-          debugPrint('[Migration] Widget not mounted, aborting');
-          return;
-        }
-
-        final shouldImport = await showDialog<bool>(
+        final choice = await showDialog<_MigrationChoice>(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
@@ -513,84 +492,120 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Er zijn bestaande taken en notities op de WebDAV-server gevonden:',
+                  'Op de WebDAV-server staan al versleutelde bestanden:',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '  • ${taskFiles.length} taakbestand${taskFiles.length == 1 ? '' : 'en'}',
+                ),
+                Text(
+                  '  • ${noteFiles.length} notitiebestand${noteFiles.length == 1 ? '' : 'en'}',
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Deze bestanden zijn versleuteld met je oude persoonlijke sleutel. '
+                  'Kies hoe je verder wilt gaan:',
                 ),
                 const SizedBox(height: 12),
-                Text('  • Taakbestanden: ${taskFiles.length}'),
-                Text('  • Notitiebstanden: ${noteFiles.length}'),
-                const SizedBox(height: 16),
                 const Text(
-                  'Opmerking: Als je van een ander apparaat komt, kunnen de gegevens niet automatisch worden gedecodeerd met je nieuwe sleutel.',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                  '1. Schone installatie — verwijder de oude bestanden op de server '
+                  'en begin opnieuw.',
+                  style: TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 const Text(
-                  'Wat wil je doen?',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  '2. Back-up importeren — selecteer een .kbak2-bestand met je oude '
+                  'sleutel. De back-up wordt hersteld en gesynchroniseerd met de serverdata.',
+                  style: TextStyle(fontSize: 13),
                 ),
               ],
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Opschonen (verwijderen)'),
+                onPressed: () => Navigator.pop(ctx, _MigrationChoice.clean),
+                child: const Text('Schone installatie'),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Importeren'),
+              FilledButton(
+                onPressed: () =>
+                    Navigator.pop(ctx, _MigrationChoice.importBackup),
+                child: const Text('Back-up importeren'),
               ),
             ],
           ),
         );
 
-        debugPrint('[Migration] User choice: shouldImport=$shouldImport');
+        if (choice == null) return;
 
-        if (shouldImport ?? false) {
-          // Try to import - will only import decryptable items
-          debugPrint(
-            '[Migration] User chose to import, attempting to read and decrypt data',
-          );
-          try {
-            final remoteTasks = await service.pullTasks();
-            final remoteNotes = await service.pullNotes();
-            debugPrint(
-              '[Migration] Successfully decrypted ${remoteTasks.length} tasks and ${remoteNotes.length} notes',
-            );
-
-            if (remoteTasks.isNotEmpty || remoteNotes.isNotEmpty) {
-              await _importRemoteData(remoteTasks, remoteNotes);
-            } else {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Kon de bestaande gegevens niet decoderen. Ze zijn mogelijk met een ander wachtwoord versleuteld.',
-                    ),
-                  ),
-                );
-              }
-            }
-          } catch (e) {
-            debugPrint('[Migration] Error during import: $e');
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Fout bij importeren: $e')),
-              );
-            }
-          }
-        } else {
-          // Clean up: delete remote files
-          debugPrint(
-            '[Migration] User chose to clean up, deleting remote files',
-          );
+        if (choice == _MigrationChoice.clean) {
           await _cleanupRemoteFiles(client, taskFiles, noteFiles);
+          return;
+        }
+
+        // --- Import backup flow ---
+        if (!mounted) return;
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.any,
+          allowMultiple: false,
+          withData: true,
+        );
+        if (result == null || result.files.isEmpty) return;
+        final fileBytes = result.files.first.bytes;
+        if (fileBytes == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Kon het bestand niet lezen.')),
+            );
+          }
+          return;
+        }
+
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Back-up herstellen…'),
+              ],
+            ),
+          ),
+        );
+
+        try {
+          await FullBackupService.importFromBytes(
+            widget.db,
+            widget.configRepo,
+            fileBytes,
+            settingsRepo: widget.settingsRepo,
+            onThemeRestored: (theme) => themeNotifier.value = theme,
+          );
+          if (mounted) {
+            Navigator.of(context).pop(); // dismiss progress
+            widget.onRestoreComplete?.call();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Back-up hersteld. De app synchroniseert nu met de server.',
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Fout bij herstellen van back-up: $e')),
+            );
+          }
         }
       } finally {
         client.dispose();
       }
     } catch (e, st) {
-      // Log error but don't block the configuration save
-      debugPrint('[Migration] Error during migration: $e');
+      debugPrint('[Migration] Error: $e');
       debugPrintStack(stackTrace: st);
       if (mounted) {
         ScaffoldMessenger.of(
@@ -605,9 +620,18 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     String path,
   ) async {
     try {
-      // Use PROPFIND to list files without encryption/decryption
       final entries = await client.propfind(path);
-      return entries.map((e) => e.href).toList();
+      // PROPFIND depth-1 includes the collection itself — filter it out.
+      final basePath = Uri.parse(client.baseUrl).path;
+      return entries.where((e) => !e.isCollection).map((e) {
+        // Hrefs are full server paths; strip the baseUrl path prefix so
+        // client.delete() (which re-prepends baseUrl) resolves correctly.
+        final href = e.href;
+        if (basePath.isNotEmpty && href.startsWith(basePath)) {
+          return href.substring(basePath.length);
+        }
+        return href;
+      }).toList();
     } catch (e) {
       debugPrint('[Migration] Error listing $path: $e');
       return [];
@@ -656,156 +680,81 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     }
   }
 
-  Future<void> _importRemoteData(
-    List<ICalTask> remoteTasks,
-    List<ICalNote> remoteNotes,
-  ) async {
-    try {
-      // Import tasks
-      for (final remoteTask in remoteTasks) {
-        final existingTask = await (widget.db.select(
-          widget.db.personalTasks,
-        )..where((t) => t.id.equals(remoteTask.uid))).getSingleOrNull();
-
-        if (existingTask == null) {
-          // New task from remote
-          final isCompleted = remoteTask.status == ICalTaskStatus.completed;
-          await widget.db
-              .into(widget.db.personalTasks)
-              .insert(
-                PersonalTasksCompanion(
-                  id: Value(remoteTask.uid),
-                  title: Value(remoteTask.summary),
-                  notes: Value(remoteTask.description),
-                  dueDate: Value(remoteTask.dueAt),
-                  isCompleted: Value(isCompleted),
-                  completedAt: Value(isCompleted ? DateTime.now() : null),
-                  createdAt: Value(remoteTask.createdAt),
-                  updatedAt: Value(remoteTask.updatedAt),
-                  recurrenceRule: Value(remoteTask.rrule),
-                  syncState: const Value('clean'),
-                ),
-              );
-        }
-      }
-
-      // Import notes
-      for (final remoteNote in remoteNotes) {
-        final existingNote = await (widget.db.select(
-          widget.db.personalNotes,
-        )..where((n) => n.id.equals(remoteNote.uid))).getSingleOrNull();
-
-        if (existingNote == null) {
-          // New note from remote
-          await widget.db
-              .into(widget.db.personalNotes)
-              .insert(
-                PersonalNotesCompanion(
-                  id: Value(remoteNote.uid),
-                  title: Value(remoteNote.summary),
-                  body: Value(remoteNote.description ?? ''),
-                  isShared: Value(remoteNote.isShared),
-                  createdAt: Value(remoteNote.createdAt),
-                  updatedAt: Value(remoteNote.updatedAt),
-                  remindAt: Value(remoteNote.remindAt),
-                  syncState: const Value('clean'),
-                ),
-              );
-        }
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${remoteTasks.length + remoteNotes.length} items geïmporteerd.',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
-      }
-    }
-  }
-
   /// Shows a dialog asking whether the user wants to import an existing
-  /// personal key (for restoring access to old data) or generate a new one.
+  /// personal key from a .kbak2 backup file or generate a new one.
   ///
   /// Returns the chosen [Uint8List] key, or null if the user cancelled.
   Future<Uint8List?> _showKeySetupDialog() async {
-    final keyCtrl = TextEditingController();
-    Uint8List? result;
-
-    await showDialog<void>(
+    final choice = await showDialog<_KeySetupChoice>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Persoonlijke sleutel'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Heb je al eerder taken of notities opgeslagen via WebDAV?\n\n'
-              'Importeer dan je bestaande herstelsleutel zodat die bestanden '
-              'ontsleuteld kunnen worden. Zonder de juiste sleutel zijn oude '
-              'bestanden niet te lezen.\n\n'
-              'Heb je nog geen sleutel? Kies dan "Nieuwe sleutel".',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: keyCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Herstelsleutel (JSON) — optioneel',
-                border: OutlineInputBorder(),
-                hintText: '{"personalKey":"..."}',
-              ),
-              maxLines: 3,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+        content: const Text(
+          'Heb je al eerder taken of notities opgeslagen via WebDAV?\n\n'
+          'Importeer dan je back-upbestand (.kbak2) zodat die bestanden '
+          'ontsleuteld kunnen worden.\n\n'
+          'Nieuwe installatie? Kies dan "Nieuwe sleutel".',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.cancel),
             child: const Text('Annuleren'),
           ),
           OutlinedButton(
-            onPressed: () {
-              result = KineticEncryption.generatePersonalKey();
-              Navigator.pop(ctx);
-            },
-            child: const Text('Nieuwe sleutel'),
+            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.importBackup),
+            child: const Text('Backup importeren'),
           ),
           FilledButton(
-            onPressed: () {
-              final json = keyCtrl.text.trim();
-              if (json.isEmpty) {
-                result = KineticEncryption.generatePersonalKey();
-                Navigator.pop(ctx);
-                return;
-              }
-              try {
-                result = KineticEncryption.importRecoveryJson(json);
-                Navigator.pop(ctx);
-              } catch (e) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text('Ongeldige sleutel: $e')),
-                );
-              }
-            },
-            child: const Text('Sleutel importeren'),
+            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.newKey),
+            child: const Text('Nieuwe sleutel'),
           ),
         ],
       ),
     );
 
-    keyCtrl.dispose();
-    return result;
+    if (choice == null || choice == _KeySetupChoice.cancel) return null;
+    if (choice == _KeySetupChoice.newKey) {
+      return KineticEncryption.generatePersonalKey();
+    }
+
+    // Import personal key from a .kbak2 backup file.
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return null;
+    final bytes = result.files.first.bytes;
+    if (bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kon het bestand niet lezen.')),
+        );
+      }
+      return null;
+    }
+    try {
+      final map = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
+      final keyBase64 = map['personalKey'] as String?;
+      if (keyBase64 == null) {
+        throw const FormatException(
+          'Geen persoonlijke sleutel gevonden in dit bestand.',
+        );
+      }
+      final keyBytes = base64.decode(keyBase64);
+      if (keyBytes.length != 32) {
+        throw const FormatException('Ongeldige sleutellengte.');
+      }
+      return Uint8List.fromList(keyBytes);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ongeldig back-upbestand: $e')));
+      }
+      return null;
+    }
   }
 
   Future<void> _save() async {
@@ -1097,3 +1046,7 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
+
+enum _KeySetupChoice { newKey, importBackup, cancel }
+
+enum _MigrationChoice { clean, importBackup }

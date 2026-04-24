@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show visibleForTesting, VoidCallback;
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
@@ -28,10 +28,15 @@ class KidsSyncOrchestrator {
     required KidsTaskRepository repo,
     required SyncConfig config,
     String myKidId = '',
+    this.onDisconnected,
   }) : _db = db,
        _repo = repo,
        _config = config,
        _myKidId = myKidId;
+
+  /// Optional callback invoked when the parent sends a disconnect tombstone
+  /// for this kid device.  The caller should clear the enrollment.
+  final VoidCallback? onDisconnected;
 
   /// Main sync cycle: pull remote tasks, push local changes
   Future<void> sync() async {
@@ -47,8 +52,45 @@ class KidsSyncOrchestrator {
       await _pullRemoteTasks(service);
       // Push local changes (completion status)
       await _pushLocalChanges(service);
+      // Heartbeat: write presence so the parent can see this kid is active
+      await _pushPresence(service);
+      // Check if the parent has disconnected this kid
+      await _checkDisconnect(service);
     } finally {
       client.dispose();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Presence
+  // ---------------------------------------------------------------------------
+
+  Future<void> _pushPresence(WebDavSyncService service) async {
+    if (_myKidId.isEmpty || _config.familyKeyBytes == null) return;
+    try {
+      await service.pushPresence(
+        PresenceInfo(
+          deviceId: _myKidId,
+          deviceType: 'kid',
+          displayName: _myKidId,
+          lastSeen: DateTime.now().toUtc(),
+        ),
+      );
+    } catch (_) {
+      // Non-critical.
+    }
+  }
+
+  Future<void> _checkDisconnect(WebDavSyncService service) async {
+    if (_myKidId.isEmpty || _config.familyKeyBytes == null) return;
+    try {
+      final tombstones = await service.pullDisconnects();
+      final mine = tombstones.where((t) => t.deviceId == _myKidId);
+      if (mine.isNotEmpty) {
+        onDisconnected?.call();
+      }
+    } catch (_) {
+      // Non-critical.
     }
   }
 

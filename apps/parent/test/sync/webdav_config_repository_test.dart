@@ -70,5 +70,18 @@ void main() {
       expect(config.personalKeyBytes.length, equals(32));
       expect(config.familyKeyBytes!.length, equals(32));
     });
+  group('ensurePersonalKey', () {
+    test('generates 32-byte key via KineticEncryption', () {
+      // ensurePersonalKey generates a key using KineticEncryption.generatePersonalKey
+      // Verify the generator produces valid 32-byte keys
+      final key = KineticEncryption.generatePersonalKey();
+      expect(key.length, equals(32));
+    });
+
+    test('generated keys are unique across calls', () {
+      final key1 = KineticEncryption.generatePersonalKey();
+      final key2 = KineticEncryption.generatePersonalKey();
+      expect(key1, isNot(equals(key2)));
+    });
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
+import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import 'family_key_scan_screen.dart';
@@ -17,12 +18,14 @@ import 'family_key_share_screen.dart';
 class PartnerSettingsScreen extends StatefulWidget {
   final AppDatabase db;
   final WebDavConfigRepository configRepo;
+  final SyncOrchestrator? syncOrchestrator;
   final VoidCallback? onConfigSaved;
 
   const PartnerSettingsScreen({
     super.key,
     required this.db,
     required this.configRepo,
+    this.syncOrchestrator,
     this.onConfigSaved,
   });
 
@@ -33,11 +36,13 @@ class PartnerSettingsScreen extends StatefulWidget {
 class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   SyncConfig? _config;
   bool _partnerPaired = false;
+  List<PresenceInfo> _presenceList = [];
 
   @override
   void initState() {
     super.initState();
     _loadConfig();
+    _loadPresence();
   }
 
   Future<void> _loadConfig() async {
@@ -48,6 +53,15 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
         _config = config;
         _partnerPaired = paired;
       });
+  }
+
+  Future<void> _loadPresence() async {
+    final orchestrator = widget.syncOrchestrator;
+    if (orchestrator == null) return;
+    try {
+      final presence = await orchestrator.pullPresence();
+      if (mounted) setState(() => _presenceList = presence);
+    } catch (_) {}
   }
 
   Future<void> _exportFamilyKey() async {
@@ -157,6 +171,10 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
       widget.db.personalNotes,
     )..where((n) => n.isShared.equals(true))).go();
     await widget.db.delete(widget.db.partnerProposals).go();
+    // Write disconnect tombstone so the other parent is notified.
+    try {
+      await widget.syncOrchestrator?.pushDisconnect();
+    } catch (_) {}
     await widget.configRepo.clearFamilyKey();
     if (!mounted) return;
     widget.onConfigSaved?.call();
@@ -168,13 +186,18 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
     final config = _config;
     final paired = _partnerPaired;
 
+    // Partner presence: filter to other parents only.
+    final partnerPresence = _presenceList
+        .where((p) => p.deviceType == 'parent')
+        .toList();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Partner'), centerTitle: false),
       body: ListView(
         children: [
           if (config != null) ...[
             const SizedBox(height: 8),
-            _PartnerStatusBanner(paired: paired),
+            _PartnerStatusBanner(paired: paired, presenceList: partnerPresence),
             const SizedBox(height: 8),
             if (!paired) ...[
               ListTile(
@@ -240,46 +263,103 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
 
 class _PartnerStatusBanner extends StatelessWidget {
   final bool paired;
+  final List<PresenceInfo> presenceList;
 
-  const _PartnerStatusBanner({required this.paired});
+  const _PartnerStatusBanner({
+    required this.paired,
+    required this.presenceList,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
+    // Determine stale state: warn if partner hasn't synced in 14 days.
+    final now = DateTime.now().toUtc();
+    const staleThreshold = Duration(days: 14);
+    final partnerPresence = presenceList.isNotEmpty ? presenceList.first : null;
+    final isStale =
+        partnerPresence != null &&
+        now.difference(partnerPresence.lastSeen) > staleThreshold;
+    final lastSeenText = partnerPresence != null
+        ? _formatLastSeen(now, partnerPresence.lastSeen)
+        : null;
+
+    final statusColor = isStale
+        ? scheme.error
+        : paired
+        ? kColorTeal
+        : scheme.onSurfaceVariant;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: paired
+          color: isStale
+              ? scheme.error.withAlpha(15)
+              : paired
               ? kColorTeal.withAlpha(20)
               : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: paired ? kColorTeal.withAlpha(80) : scheme.outlineVariant,
+            color: isStale
+                ? scheme.error.withAlpha(80)
+                : paired
+                ? kColorTeal.withAlpha(80)
+                : scheme.outlineVariant,
           ),
         ),
         child: Row(
           children: [
             Icon(
-              paired ? Icons.people : Icons.people_outline,
+              isStale
+                  ? Icons.warning_amber_rounded
+                  : paired
+                  ? Icons.people
+                  : Icons.people_outline,
               size: 20,
-              color: paired ? kColorTeal : scheme.onSurfaceVariant,
+              color: statusColor,
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                paired
-                    ? 'Partner gekoppeld — familiesleutel aanwezig'
-                    : 'Partner niet gekoppeld — scan of deel de QR-code om te koppelen',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: paired ? kColorTeal : scheme.onSurfaceVariant,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    paired
+                        ? 'Partner gekoppeld — familiesleutel aanwezig'
+                        : 'Partner niet gekoppeld — scan of deel de QR-code om te koppelen',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: statusColor),
+                  ),
+                  if (lastSeenText != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      isStale
+                          ? 'Waarschuwing: partner voor het last gezien $lastSeenText'
+                          : 'Partner voor het last gezien $lastSeenText',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: statusColor),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static String _formatLastSeen(DateTime now, DateTime lastSeen) {
+    final diff = now.difference(lastSeen);
+    if (diff.inMinutes < 2) return 'zojuist';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} minuten geleden';
+    if (diff.inHours < 24) return '${diff.inHours} uur geleden';
+    if (diff.inDays == 1) return 'gisteren';
+    return '${diff.inDays} dagen geleden';
   }
 }

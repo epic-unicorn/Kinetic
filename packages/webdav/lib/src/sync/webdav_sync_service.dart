@@ -5,6 +5,7 @@ import '../encryption/kinetic_encryption.dart';
 import '../ical/ical_note.dart';
 import '../ical/ical_serializer.dart';
 import '../ical/ical_task.dart';
+import '../presence_info.dart';
 import '../sync_config.dart';
 import '../webdav_client.dart';
 
@@ -258,7 +259,8 @@ class WebDavSyncService {
   /// Encrypts [task] with the family key and PUTs it to `/kinetic/shared/tasks/{uid}.ics`.
   Future<void> pushSharedTask(ICalTask task) async {
     final familyKey = config.familyKeyBytes;
-    if (familyKey == null) throw StateError('Family key required to push shared tasks');
+    if (familyKey == null)
+      throw StateError('Family key required to push shared tasks');
     final ical = ICalSerializer.taskToVtodo(task);
     final plain = Uint8List.fromList(utf8.encode(ical));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
@@ -309,7 +311,7 @@ class WebDavSyncService {
     final id = proposalJson['id'] as String;
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(proposalJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
-    
+
     try {
       await client.put('$_proposalsPath/$id.json', blob);
     } on WebDavException catch (e) {
@@ -372,7 +374,7 @@ class WebDavSyncService {
     final parentId = metricsJson['parentId'] as String;
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(metricsJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
-    
+
     try {
       await client.put('$_loadPath/$parentId.json', blob);
     } on WebDavException catch (e) {
@@ -405,4 +407,114 @@ class WebDavSyncService {
       rethrow;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Presence heartbeat
+  // ---------------------------------------------------------------------------
+
+  String get _presencePath => '/kinetic/shared/presence';
+  String get _disconnectPath => '/kinetic/shared/disconnect';
+
+  /// Writes a presence heartbeat for [info] to the shared presence folder,
+  /// encrypted with the family key.  No-op when no family key is available.
+  Future<void> pushPresence(PresenceInfo info) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return;
+
+    final plain = Uint8List.fromList(utf8.encode(jsonEncode(info.toJson())));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+
+    try {
+      await client.put('$_presencePath/${info.deviceId}.json', blob);
+    } on WebDavException catch (e) {
+      if (e.message.contains('403') || e.message.contains('404')) {
+        try {
+          await client.mkcol(_presencePath);
+        } catch (_) {}
+        await client.put('$_presencePath/${info.deviceId}.json', blob);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  /// Pulls all presence entries from the shared presence folder.
+  /// Returns an empty list when no family key is available or no entries exist.
+  Future<List<PresenceInfo>> pullPresence() async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return [];
+
+    final entries = await _listJsonFiles(_presencePath);
+    final result = <PresenceInfo>[];
+    for (final entry in entries) {
+      try {
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
+        final plain = await KineticEncryption.decrypt(blob, familyKey);
+        final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+        final presence = PresenceInfo.tryFromJson(json);
+        if (presence != null) result.add(presence);
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Disconnect tombstones
+  // ---------------------------------------------------------------------------
+
+  /// Writes a disconnect tombstone for [deviceId], signalling to other
+  /// family members that this device has intentionally left.
+  Future<void> pushDisconnect(DisconnectTombstone tombstone) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return;
+
+    final plain =
+        Uint8List.fromList(utf8.encode(jsonEncode(tombstone.toJson())));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+
+    try {
+      await client.put('$_disconnectPath/${tombstone.deviceId}.json', blob);
+    } on WebDavException catch (e) {
+      if (e.message.contains('403') || e.message.contains('404')) {
+        try {
+          await client.mkcol(_disconnectPath);
+        } catch (_) {}
+        await client.put('$_disconnectPath/${tombstone.deviceId}.json', blob);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  /// Pulls all disconnect tombstones from the shared disconnect folder.
+  Future<List<DisconnectTombstone>> pullDisconnects() async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return [];
+
+    final entries = await _listJsonFiles(_disconnectPath);
+    final result = <DisconnectTombstone>[];
+    for (final entry in entries) {
+      try {
+        final href = _relativizeHref(entry.href);
+        final blob = await client.get(href);
+        final plain = await KineticEncryption.decrypt(blob, familyKey);
+        final json = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+        result.add(DisconnectTombstone.fromJson(json));
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
+  }
+
+  /// Removes the disconnect tombstone for [deviceId] from the server.
+  Future<void> deleteDisconnect(String deviceId) =>
+      client.delete('$_disconnectPath/$deviceId.json');
+
+  /// Removes the presence entry for [deviceId] from the server.
+  Future<void> deletePresence(String deviceId) =>
+      client.delete('$_presencePath/$deviceId.json');
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 import 'kids_enrollment_qr_screen.dart';
@@ -17,11 +19,13 @@ import 'models/enrolled_kid.dart';
 
 class KidsSettingsScreen extends StatefulWidget {
   final WebDavConfigRepository configRepo;
+  final SyncOrchestrator? syncOrchestrator;
   final VoidCallback? onConfigSaved;
 
   const KidsSettingsScreen({
     super.key,
     required this.configRepo,
+    this.syncOrchestrator,
     this.onConfigSaved,
   });
 
@@ -31,11 +35,13 @@ class KidsSettingsScreen extends StatefulWidget {
 
 class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
   List<EnrolledKid> _enrolledKids = [];
+  Map<String, PresenceInfo> _presenceByKidId = {};
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadPresence();
   }
 
   Future<void> _loadData() async {
@@ -45,6 +51,19 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
         _enrolledKids = kids;
       });
     }
+  }
+
+  Future<void> _loadPresence() async {
+    final orchestrator = widget.syncOrchestrator;
+    if (orchestrator == null) return;
+    try {
+      final presence = await orchestrator.pullPresence();
+      final kidPresence = <String, PresenceInfo>{};
+      for (final p in presence) {
+        if (p.deviceType == 'kid') kidPresence[p.deviceId] = p;
+      }
+      if (mounted) setState(() => _presenceByKidId = kidPresence);
+    } catch (_) {}
   }
 
   Future<void> _enrollKid() async {
@@ -93,6 +112,10 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    // Write disconnect tombstone so the kid's device knows it was removed.
+    try {
+      await widget.syncOrchestrator?.pushKidDisconnect(kid);
+    } catch (_) {}
     await widget.configRepo.removeEnrolledKid(kid.id);
     await _loadData();
     if (mounted) widget.onConfigSaved?.call();
@@ -101,6 +124,43 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
   String _formatDate(DateTime dt) {
     final local = dt.toLocal();
     return '${local.day}-${local.month}-${local.year}';
+  }
+
+  Widget _buildKidSubtitle(BuildContext context, EnrolledKid kid) {
+    final presence = _presenceByKidId[kid.id];
+    final enrolledText = 'Gekoppeld op ${_formatDate(kid.enrolledAt)}';
+    if (presence == null) {
+      return Text(enrolledText);
+    }
+    final now = DateTime.now().toUtc();
+    final diff = now.difference(presence.lastSeen);
+    final stale = diff.inDays >= 14;
+    final lastSeenText = _formatLastSeen(diff);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(enrolledText),
+        Text(
+          stale
+              ? 'Waarschuwing: voor het last gezien $lastSeenText'
+              : 'Voor het last gezien $lastSeenText',
+          style: TextStyle(
+            fontSize: 11,
+            color: stale
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _formatLastSeen(Duration diff) {
+    if (diff.inMinutes < 2) return 'zojuist';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min. geleden';
+    if (diff.inHours < 24) return '${diff.inHours} uur geleden';
+    if (diff.inDays == 1) return 'gisteren';
+    return '${diff.inDays} dagen geleden';
   }
 
   @override
@@ -133,7 +193,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.face, color: kColorTeal),
                 title: Text(kid.name),
-                subtitle: Text('Gekoppeld op ${_formatDate(kid.enrolledAt)}'),
+                subtitle: _buildKidSubtitle(context, kid),
                 trailing: IconButton(
                   icon: Icon(
                     Icons.person_remove_outlined,

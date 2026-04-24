@@ -99,7 +99,16 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _notifSvc = ParentNotificationService();
+    _notifSvc = ParentNotificationService(
+      onActionCallback: (id, actionId, title, body, _) async {
+        await _notifSvc.rescheduleReminder(
+          id: id,
+          actionId: actionId,
+          title: title,
+          body: body,
+        );
+      },
+    );
     _todoRepository = TodoRepository(
       db: widget.db,
       notifications: _notifSvc,
@@ -136,7 +145,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     // trigger a rebuild, _syncOrchestrator!.config already contains the
     // updated config (including the family key for enrolled kids).
     if (config != null) {
-      _syncOrchestrator = SyncOrchestrator(db: widget.db, config: config);
+      _syncOrchestrator = SyncOrchestrator(
+        db: widget.db,
+        config: config,
+        onDisconnectsDetected: _handleDisconnects,
+      );
       webDavConfigured.value = true;
 
       // Re-subscribe badge count with myParentId so own outgoing proposals
@@ -188,6 +201,17 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     await _todoRepository.rescheduleAllReminders();
     await _noteRepository.rescheduleAllReminders();
     await _initSync();
+  }
+
+  /// Called by [SyncOrchestrator] when disconnect tombstones are found.
+  ///
+  /// Updates the partner-paired and enrolled-kids notifiers so the UI reacts
+  /// immediately without requiring the user to navigate away and back.
+  Future<void> _handleDisconnects(List<String> disconnectedIds) async {
+    final isPaired = await _webDavConfig.isPartnerPaired();
+    final kids = await _webDavConfig.loadEnrolledKids();
+    partnerPaired.value = isPaired;
+    enrolledKidsCount.value = kids.length;
   }
 
   /// Trigger a sync whenever the app returns to the foreground.
@@ -254,6 +278,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                         db: widget.db,
                         configRepo: _webDavConfig,
                         settingsRepo: widget.settingsRepo,
+                        syncOrchestrator: _syncOrchestrator,
                         onConfigSaved: _initSync,
                         onRestoreComplete: _onRestoreComplete,
                       ),

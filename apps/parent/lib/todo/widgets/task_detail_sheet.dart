@@ -364,7 +364,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             onCheckChanged: (v) {
               setState(() {
                 if (v) {
-                  // Auto-select today
                   final now = DateTime.now();
                   _dueDate = DateTime(now.year, now.month, now.day).toUtc();
                   _isAllDay = true;
@@ -376,40 +375,48 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               });
             },
           ),
-          // Time row — only shown when a date is set; auto-selects +1h rounded
-          if (_dueDate != null)
-            _MetaRow(
-              icon: Icons.access_time_outlined,
-              label: _isAllDay
-                  ? 'Tijd instellen'
-                  : _formatTimeOnly(_dueDate!.toLocal()),
-              active: !_isAllDay,
-              onTap: () => _isAllDay ? _enableTime() : _pickTime(),
-              trailing: !_isAllDay
-                  ? IconButton(
-                      icon: const Icon(Icons.close, size: 16),
-                      onPressed: () => setState(() {
-                        // Keep date, remove time component
+          // Time row — always visible; checking it auto-sets date to today
+          _MetaRow(
+            icon: Icons.access_time_outlined,
+            label: !_isAllDay && _dueDate != null
+                ? _formatTimeOnly(_dueDate!.toLocal())
+                : 'Tijd instellen',
+            active: !_isAllDay && _dueDate != null,
+            onTap: () {
+              if (!_isAllDay && _dueDate != null) {
+                _pickTime();
+              } else {
+                _enableTimeWithDate();
+              }
+            },
+            trailing: !_isAllDay && _dueDate != null
+                ? IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => setState(() {
+                      if (_dueDate != null) {
                         final d = _dueDate!.toLocal();
                         _dueDate = DateTime(d.year, d.month, d.day).toUtc();
-                        _isAllDay = true;
-                      }),
-                    )
-                  : null,
-              leadingCheckbox: true,
-              checked: !_isAllDay,
-              onCheckChanged: (v) {
-                if (v) {
-                  _enableTime();
-                } else {
-                  setState(() {
+                      }
+                      _isAllDay = true;
+                    }),
+                  )
+                : null,
+            leadingCheckbox: true,
+            checked: !_isAllDay && _dueDate != null,
+            onCheckChanged: (v) {
+              if (v) {
+                _enableTimeWithDate();
+              } else {
+                setState(() {
+                  if (_dueDate != null) {
                     final d = _dueDate!.toLocal();
                     _dueDate = DateTime(d.year, d.month, d.day).toUtc();
-                    _isAllDay = true;
-                  });
-                }
-              },
-            ),
+                  }
+                  _isAllDay = true;
+                });
+              }
+            },
+          ),
           _MetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
@@ -589,6 +596,33 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         0,
       ).toUtc();
       _isAllDay = false;
+    });
+  }
+
+  /// Like [_enableTime] but also sets date to today if no date is set yet.
+  void _enableTimeWithDate() {
+    final now = DateTime.now();
+    final base = _dueDate?.toLocal() ?? now;
+    final target = now.add(const Duration(hours: 1));
+    setState(() {
+      _dueDate = DateTime(
+        base.year,
+        base.month,
+        base.day,
+        target.hour,
+        0,
+      ).toUtc();
+      _isAllDay = false;
+      // If date wasn't set yet, default to today.
+      if (_dueDate == null) {
+        _dueDate = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          target.hour,
+          0,
+        ).toUtc();
+      }
     });
   }
 

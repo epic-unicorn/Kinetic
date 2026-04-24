@@ -84,12 +84,31 @@ lib/
 ├── notes/{uid}.ics        — shared notes (family key)
 ├── proposals/{id}.json    — partner proposals (family key)
 ├── load/{parentId}.json   — workload metrics (family key)
-└── tasks/{uid}.ics        — tasks assigned to children (family key, with xKineticTargetKidId)
+├── tasks/{uid}.ics        — tasks assigned to children (family key, with xKineticTargetKidId)
+├── presence/{deviceId}.json — heartbeat presence (family key, written every sync)
+└── disconnect/{deviceId}.json — disconnect tombstone (family key, written on leave/remove)
 ```
 
 ### Backup Format
-- **`.kbak2`** (new): Unencrypted JSON wrapper containing `personalKey` (base64) + `database` (base64 of encrypted .kbak blob)
-- Export/import as one combined file in Settings → Back-up & Herstel
+- **`.kbak2` v2**: Unencrypted JSON wrapper containing `personalKey` (base64) + `database` (base64 of encrypted .kbak blob). No WebDAV configuration required to export.
+- **`.kbak2` v3** (current): Extends v2 with a `settings` section containing `theme` (light/dark) and `webdav` (server URL, credentials, family key base64, enrolled kids, partner pairing state). Import is backwards compatible — v2 files restore only the database.
+- Export never requires WebDAV to be configured: a personal key is generated silently on first export if one doesn't exist yet.
+- Import restores all settings including theme, WebDAV credentials, family key, enrolled kids list, and partner pairing flag.
+
+### Presence & Heartbeat Protocol
+Every sync cycle each device writes an encrypted **presence file** to `/kinetic/shared/presence/{deviceId}.json` (family key). The file contains `deviceId`, `deviceType` (`'parent'` or `'kid'`), `displayName`, and `lastSeen` (UTC ISO-8601).
+
+- **Parent Settings screen** reads presence files for the connected partner and displays a relative last-seen timestamp ("zojuist", "X minuten geleden", etc.).
+- **Kids Settings screen** reads presence files for each enrolled kid, showing last-seen per kid in the list.
+- Entries older than **14 days** are shown as a stale warning with error styling.
+
+### Disconnect Tombstone Protocol
+When a device explicitly leaves the family, it writes an encrypted **tombstone** to `/kinetic/shared/disconnect/{deviceId}.json` (family key) containing `deviceId`, `deviceType`, and `disconnectedAt`.
+
+- **Parent leaves** (`_leaveFamily`): writes parent tombstone + deletes own presence file.
+- **Kid removed** (`_confirmRemoveKid`): parent writes a kid tombstone + deletes that kid's presence file.
+- **Kids app**: on each sync, checks for its own tombstone; if found, invokes `onDisconnected` callback so the app can prompt the user.
+- **Parent app**: on each sync, `_processDisconnects` reads all tombstones, invokes `onDisconnectsDetected`, then deletes the tombstone files it processed.
 
 ## Conditional UI
 
