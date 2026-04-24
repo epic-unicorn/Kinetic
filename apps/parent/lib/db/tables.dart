@@ -63,6 +63,9 @@ class PersonalTasks extends Table {
   // ID of the specific enrolled kid this task was targeted at; null = all kids
   TextColumn get targetKidId => text().nullable()();
 
+  // XP reward when this task is sent to kids; default 10
+  IntColumn get xpReward => integer().withDefault(const Constant(10))();
+
   // Auto-detected: household / health / admin / school / finance / other
   TextColumn get category => text().withDefault(const Constant('other'))();
 

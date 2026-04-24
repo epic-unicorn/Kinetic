@@ -451,7 +451,12 @@ class TodoRepository {
   /// Mark a task as delegated to the kids app. Sets [kidsTaskId] to a new UUID
   /// and marks the task dirty so it gets pushed to the shared tasks folder.
   /// Optional [targetKidId] limits the task to a specific enrolled kid.
-  Future<void> sendToKids(String taskId, {String? targetKidId}) async {
+  /// [xpReward] sets the XP the child earns on completion (default 10).
+  Future<void> sendToKids(
+    String taskId, {
+    String? targetKidId,
+    int xpReward = 10,
+  }) async {
     final kidsId = const Uuid().v4();
     await (_db.update(
       _db.personalTasks,
@@ -459,6 +464,7 @@ class TodoRepository {
       PersonalTasksCompanion(
         kidsTaskId: Value(kidsId),
         targetKidId: Value(targetKidId),
+        xpReward: Value(xpReward),
         syncState: const Value('dirty'),
         updatedAt: Value(DateTime.now().toUtc()),
       ),
@@ -568,7 +574,7 @@ class TodoRepository {
             fromParentId: proposal.fromParentId,
             taskTitle: proposal.taskTitle,
             taskNotes: Value(proposal.taskNotes),
-            taskCategory: const Value('other'),
+            taskCategory: Value(proposal.taskCategory),
             taskPriority: Value(proposal.taskPriority.index),
             taskDueDate: Value(proposal.taskDueDate),
             status: Value(proposal.status.name),
@@ -640,6 +646,18 @@ class TodoRepository {
 
   int _notifId(String taskId) => taskId.hashCode.abs();
 
+  /// Re-schedule notifications for all non-completed tasks that have a future
+  /// reminder. Call after restoring a backup on a new install.
+  Future<void> rescheduleAllReminders() async {
+    final rows = await (_db.select(
+      _db.personalTasks,
+    )..where((t) => t.isCompleted.equals(false))).get();
+    for (final row in rows) {
+      final task = _taskFromRow(row);
+      await _scheduleReminderFor(task);
+    }
+  }
+
   Future<void> _scheduleReminderFor(PersonalTask task) async {
     final notif = _notifications;
     if (notif == null) return;
@@ -676,6 +694,7 @@ class TodoRepository {
     isPrivate: r.isPrivate,
     kidsTaskId: r.kidsTaskId,
     targetKidId: r.targetKidId,
+    xpReward: r.xpReward,
     category: TaskCategory.values.byName(r.category),
     customCategory: r.customCategory,
     remindAt: r.remindAt,
@@ -702,6 +721,7 @@ class TodoRepository {
         category: Value(t.category.name),
         customCategory: Value(t.customCategory),
         targetKidId: Value(t.targetKidId),
+        xpReward: Value(t.xpReward),
         remindAt: Value(t.remindAt),
         sortOrder: Value(t.sortOrder),
         createdAt: Value(t.createdAt),
@@ -722,6 +742,7 @@ class TodoRepository {
     fromParentId: r.fromParentId,
     taskTitle: r.taskTitle,
     taskNotes: r.taskNotes,
+    taskCategory: r.taskCategory,
     taskPriority: TaskPriority.values[r.taskPriority],
     taskDueDate: r.taskDueDate,
     status: ProposalStatus.values.byName(r.status),

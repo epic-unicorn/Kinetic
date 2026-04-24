@@ -45,6 +45,7 @@ class TaskDetailSheet extends StatefulWidget {
 class _TaskDetailSheetState extends State<TaskDetailSheet> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _notesCtrl;
+  late final TextEditingController _xpCtrl;
 
   late TaskPriority _priority;
   DateTime? _dueDate;
@@ -63,6 +64,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       text: t?.title ?? widget.initialTitle ?? '',
     );
     _notesCtrl = TextEditingController(text: t?.notes ?? '');
+    _xpCtrl = TextEditingController(text: '${t?.xpReward ?? 10}');
     _priority = t?.priority ?? TaskPriority.none;
     _dueDate = t?.dueDate;
     _isAllDay = t?.isAllDay ?? true;
@@ -75,6 +77,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   void dispose() {
     _titleCtrl.dispose();
     _notesCtrl.dispose();
+    _xpCtrl.dispose();
     super.dispose();
   }
 
@@ -263,7 +266,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await widget.repo.sendToKids(task.id, targetKidId: selectedKid?.id);
+    await widget.repo.sendToKids(
+      task.id,
+      targetKidId: selectedKid?.id,
+      xpReward: int.tryParse(_xpCtrl.text.trim()) ?? 10,
+    );
     if (mounted) Navigator.pop(context);
   }
 
@@ -334,11 +341,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           const Divider(height: 16),
 
           // ── Metadata rows ────────────────────────────────────────────────
+          // Date row — auto-selects today when toggled on
           _MetaRow(
             icon: Icons.calendar_today_outlined,
             label: _dueDate != null
-                ? formatDueDate(_dueDate!, allDay: _isAllDay)
-                : 'Vervaldatum toevoegen',
+                ? _formatDateOnly(_dueDate!.toLocal())
+                : 'Vervaldatum',
             active: _dueDate != null,
             onTap: () => _pickDate(),
             trailing: _dueDate != null
@@ -346,11 +354,62 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     icon: const Icon(Icons.close, size: 16),
                     onPressed: () => setState(() {
                       _dueDate = null;
+                      _isAllDay = true;
                       _recurrenceRule = null;
                     }),
                   )
                 : null,
+            leadingCheckbox: true,
+            checked: _dueDate != null,
+            onCheckChanged: (v) {
+              setState(() {
+                if (v) {
+                  // Auto-select today
+                  final now = DateTime.now();
+                  _dueDate = DateTime(now.year, now.month, now.day).toUtc();
+                  _isAllDay = true;
+                } else {
+                  _dueDate = null;
+                  _isAllDay = true;
+                  _recurrenceRule = null;
+                }
+              });
+            },
           ),
+          // Time row — only shown when a date is set; auto-selects +1h rounded
+          if (_dueDate != null)
+            _MetaRow(
+              icon: Icons.access_time_outlined,
+              label: _isAllDay
+                  ? 'Tijd instellen'
+                  : _formatTimeOnly(_dueDate!.toLocal()),
+              active: !_isAllDay,
+              onTap: () => _isAllDay ? _enableTime() : _pickTime(),
+              trailing: !_isAllDay
+                  ? IconButton(
+                      icon: const Icon(Icons.close, size: 16),
+                      onPressed: () => setState(() {
+                        // Keep date, remove time component
+                        final d = _dueDate!.toLocal();
+                        _dueDate = DateTime(d.year, d.month, d.day).toUtc();
+                        _isAllDay = true;
+                      }),
+                    )
+                  : null,
+              leadingCheckbox: true,
+              checked: !_isAllDay,
+              onCheckChanged: (v) {
+                if (v) {
+                  _enableTime();
+                } else {
+                  setState(() {
+                    final d = _dueDate!.toLocal();
+                    _dueDate = DateTime(d.year, d.month, d.day).toUtc();
+                    _isAllDay = true;
+                  });
+                }
+              },
+            ),
           _MetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
@@ -405,7 +464,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                   if (widget.task!.kidsTaskId != null)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.bolt, size: 18),
-                      label: const Text('Opdracht aangemaakt ✓'),
+                      label: const Text('Opdracht aangemaakt \u2713'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: kColorTeal,
                         side: BorderSide(
@@ -414,12 +473,38 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       ),
                       onPressed: null,
                     )
-                  else
+                  else ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.star_outline, size: 18),
+                        const SizedBox(width: 8),
+                        const Text('XP beloning:'),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 64,
+                          child: TextField(
+                            controller: _xpCtrl,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.bolt, size: 18),
                       label: const Text('Stuur naar kinderen'),
                       onPressed: _saving ? null : () => _sendToKids(context),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -465,30 +550,88 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       lastDate: DateTime(2099),
     );
     if (picked == null || !mounted) return;
-    // Always offer a time — cancelling the time picker keeps the date all-day.
-    final time = await showTimePicker(
-      // ignore: use_build_context_synchronously
-      context: context,
-      initialTime: (!_isAllDay && _dueDate != null)
-          ? TimeOfDay.fromDateTime(_dueDate!.toLocal())
-          : TimeOfDay.fromDateTime(DateTime.now()),
-    );
-    if (!mounted) return;
     setState(() {
-      if (time != null) {
+      final existing = _dueDate?.toLocal();
+      if (!_isAllDay && existing != null) {
+        // Preserve existing time when only changing the date.
         _dueDate = DateTime(
           picked.year,
           picked.month,
           picked.day,
-          time.hour,
-          time.minute,
+          existing.hour,
+          existing.minute,
         ).toUtc();
-        _isAllDay = false;
       } else {
         _dueDate = DateTime(picked.year, picked.month, picked.day).toUtc();
         _isAllDay = true;
       }
     });
+  }
+
+  /// Enable time: auto-set to current time + 1 hour, rounded to full hour.
+  void _enableTime() {
+    final base = _dueDate?.toLocal() ?? DateTime.now();
+    final now = DateTime.now();
+    // Round now + 1h up to the next full hour.
+    final target = now.add(const Duration(hours: 1));
+    final rounded = DateTime(
+      target.year,
+      target.month,
+      target.day,
+      target.hour,
+    );
+    setState(() {
+      _dueDate = DateTime(
+        base.year,
+        base.month,
+        base.day,
+        rounded.hour,
+        0,
+      ).toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  Future<void> _pickTime() async {
+    final current = _dueDate?.toLocal() ?? DateTime.now();
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      final d = _dueDate?.toLocal() ?? DateTime.now();
+      _dueDate = DateTime(
+        d.year,
+        d.month,
+        d.day,
+        picked.hour,
+        picked.minute,
+      ).toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  String _formatDateOnly(DateTime d) {
+    final now = DateTime.now();
+    if (d.year == now.year && d.month == now.month && d.day == now.day) {
+      return 'Vandaag';
+    }
+    final tomorrow = now.add(const Duration(days: 1));
+    if (d.year == tomorrow.year &&
+        d.month == tomorrow.month &&
+        d.day == tomorrow.day) {
+      return 'Morgen';
+    }
+    return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
+  }
+
+  String _formatTimeOnly(DateTime d) {
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _pickCategory(BuildContext context) async {
@@ -593,6 +736,9 @@ class _MetaRow extends StatelessWidget {
   final Color? color;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final bool leadingCheckbox;
+  final bool checked;
+  final ValueChanged<bool>? onCheckChanged;
 
   const _MetaRow({
     required this.icon,
@@ -601,6 +747,9 @@ class _MetaRow extends StatelessWidget {
     required this.onTap,
     this.color,
     this.trailing,
+    this.leadingCheckbox = false,
+    this.checked = false,
+    this.onCheckChanged,
   });
 
   @override
@@ -608,6 +757,29 @@ class _MetaRow extends StatelessWidget {
     final effectiveColor = active
         ? (color ?? kColorTeal)
         : Theme.of(context).colorScheme.onSurfaceVariant;
+
+    if (leadingCheckbox) {
+      return ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        leading: Checkbox(
+          value: checked,
+          onChanged: onCheckChanged != null
+              ? (v) => onCheckChanged!(v ?? false)
+              : null,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        title: Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
+        ),
+        trailing: trailing,
+        onTap: checked ? onTap : () => onCheckChanged?.call(true),
+      );
+    }
+
     return ListTile(
       dense: true,
       leading: Icon(icon, size: 20, color: effectiveColor),

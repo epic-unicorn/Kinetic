@@ -6,10 +6,10 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
+| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
 | **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: Incoming task proposals (accept/snooze/dismiss). **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
-| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. |
-| **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). |
+| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. Reminder uses separate date and time pickers; time defaults to current time + 1 hour rounded to the full hour. |
+| **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). Restoring a backup automatically reschedules all notifications. |
 
 ## Family Setup
 
@@ -27,11 +27,19 @@ Each child device enrolls independently:
 4. Child receives tasks targeted to their UUID
 5. Enrollment count shown in Settings
 
+## WebDAV Setup & Encryption Keys
+
+When enabling WebDAV sync for the first time (or switching to a different account), you are prompted to:
+- **Import existing key** — paste your recovery JSON exported from the previous install to keep existing encrypted data readable.
+- **Generate new key** — creates a new random personal key. Use this for a fresh install where no previous data exists on the WebDAV server.
+
+You can export your recovery JSON at any time from the Back-up & Herstel section.
+
 ## Data Model
 
 ### Tasks
-- `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in xKineticTargetKidId iCal property
-- Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null
+- `xpReward` (integer, default 10): XP the child earns when completing a task sent via "Stuur naar kinderen". Configurable per task before sending.
+- `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in `xKineticTargetKidId` iCal property. Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null.
 
 ### Security
 - **Personal Key**: Encrypts personal tasks/notes; unique per parent device

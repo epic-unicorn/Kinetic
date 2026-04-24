@@ -182,5 +182,15 @@ class NoteRepository {
     }
   }
 
+  /// Re-schedule notifications for all notes that have a future reminder.
+  /// Call after restoring a backup on a new install.
+  Future<void> rescheduleAllReminders() async {
+    final rows = await _db.select(_db.personalNotes).get();
+    for (final row in rows) {
+      final note = _noteFromRow(row);
+      await _scheduleReminderFor(note);
+    }
+  }
+
   int _notifId(String noteId) => noteId.hashCode.abs();
 }

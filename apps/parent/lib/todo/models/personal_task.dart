@@ -137,6 +137,9 @@ class PersonalTask {
   /// ID of the specific enrolled kid this mission was targeted at; null = all.
   final String? targetKidId;
 
+  /// XP reward for the child when this task is sent via kids sync.
+  final int xpReward;
+
   final TaskCategory category;
 
   /// User-defined category label for grouping in the tasks list; null = uncategorized.
@@ -164,6 +167,7 @@ class PersonalTask {
     required this.isPrivate,
     this.kidsTaskId,
     this.targetKidId,
+    this.xpReward = 10,
     required this.category,
     this.customCategory,
     this.remindAt,
@@ -186,6 +190,7 @@ class PersonalTask {
     String? customCategory,
     DateTime? remindAt,
     int sortOrder = 0,
+    int xpReward = 10,
   }) {
     final now = DateTime.now().toUtc();
     return PersonalTask(
@@ -202,6 +207,7 @@ class PersonalTask {
       isFlagged: isFlagged,
       isPrivate: isPrivate,
       kidsTaskId: null,
+      xpReward: xpReward,
       category: category ?? TaskCategory.other,
       customCategory: customCategory,
       remindAt: remindAt,
@@ -226,6 +232,7 @@ class PersonalTask {
     bool? isFlagged,
     bool? isPrivate,
     String? kidsTaskId,
+    int? xpReward,
     TaskCategory? category,
     String? customCategory,
     bool clearCustomCategory = false,
@@ -248,6 +255,7 @@ class PersonalTask {
       isPrivate: isPrivate ?? this.isPrivate,
       kidsTaskId: kidsTaskId ?? this.kidsTaskId,
       targetKidId: targetKidId ?? this.targetKidId,
+      xpReward: xpReward ?? this.xpReward,
       category: category ?? this.category,
       customCategory: clearCustomCategory
           ? null

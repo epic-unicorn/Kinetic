@@ -22,12 +22,17 @@ class SettingsScreen extends StatefulWidget {
   final SettingsRepository settingsRepo;
   final VoidCallback? onConfigSaved;
 
+  /// Called after a backup is successfully restored so callers can reschedule
+  /// notifications and reinitialise sync.
+  final VoidCallback? onRestoreComplete;
+
   const SettingsScreen({
     super.key,
     required this.db,
     required this.configRepo,
     required this.settingsRepo,
     this.onConfigSaved,
+    this.onRestoreComplete,
   });
 
   @override
@@ -344,6 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         Navigator.of(context).pop();
         await _loadConfig();
+        widget.onRestoreComplete?.call();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Back-up succesvol hersteld.')),
         );
@@ -726,8 +732,83 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     }
   }
 
+  /// Shows a dialog asking whether the user wants to import an existing
+  /// personal key (for restoring access to old data) or generate a new one.
+  ///
+  /// Returns the chosen [Uint8List] key, or null if the user cancelled.
+  Future<Uint8List?> _showKeySetupDialog() async {
+    final keyCtrl = TextEditingController();
+    Uint8List? result;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Persoonlijke sleutel'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Heb je al eerder taken of notities opgeslagen via WebDAV?\n\n'
+              'Importeer dan je bestaande herstelsleutel zodat die bestanden '
+              'ontsleuteld kunnen worden. Zonder de juiste sleutel zijn oude '
+              'bestanden niet te lezen.\n\n'
+              'Heb je nog geen sleutel? Kies dan "Nieuwe sleutel".',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: keyCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Herstelsleutel (JSON) — optioneel',
+                border: OutlineInputBorder(),
+                hintText: '{"personalKey":"..."}',
+              ),
+              maxLines: 3,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          OutlinedButton(
+            onPressed: () {
+              result = KineticEncryption.generatePersonalKey();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Nieuwe sleutel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final json = keyCtrl.text.trim();
+              if (json.isEmpty) {
+                result = KineticEncryption.generatePersonalKey();
+                Navigator.pop(ctx);
+                return;
+              }
+              try {
+                result = KineticEncryption.importRecoveryJson(json);
+                Navigator.pop(ctx);
+              } catch (e) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text('Ongeldige sleutel: $e')),
+                );
+              }
+            },
+            child: const Text('Sleutel importeren'),
+          ),
+        ],
+      ),
+    );
+
+    keyCtrl.dispose();
+    return result;
+  }
+
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_testResult != 'ok') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -756,9 +837,17 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         // it is set exclusively via the QR exchange flow.
         personalKey = _existing!.personalKeyBytes;
       } else {
-        // New account — generate only the personal key.
-        // Family key is NOT generated here; it is exchanged via QR pairing.
-        personalKey = KineticEncryption.generatePersonalKey();
+        // New account — ask whether the user wants to import an existing key
+        // or generate a fresh one. This prevents data loss when the user
+        // already has encrypted items on the WebDAV server.
+        if (!mounted) return;
+        final importedKey = await _showKeySetupDialog();
+        // If the dialog was dismissed (null) the user cancelled the setup.
+        if (importedKey == null) {
+          setState(() => _saving = false);
+          return;
+        }
+        personalKey = importedKey;
       }
 
       // Reuse existing parentId, or generate a stable UUID for a new account.

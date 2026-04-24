@@ -182,6 +182,14 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _syncDebounce = Timer(const Duration(seconds: 3), _triggerSync);
   }
 
+  /// Called after a backup is restored. Re-schedules all notifications and
+  /// re-initialises sync so the restored config takes effect immediately.
+  Future<void> _onRestoreComplete() async {
+    await _todoRepository.rescheduleAllReminders();
+    await _noteRepository.rescheduleAllReminders();
+    await _initSync();
+  }
+
   /// Trigger a sync whenever the app returns to the foreground.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -247,6 +255,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                         configRepo: _webDavConfig,
                         settingsRepo: widget.settingsRepo,
                         onConfigSaved: _initSync,
+                        onRestoreComplete: _onRestoreComplete,
                       ),
                     ];
 
