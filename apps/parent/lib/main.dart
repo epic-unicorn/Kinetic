@@ -93,6 +93,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   final _syncDoneCount = ValueNotifier<int>(0);
   /// False when the user has permanently blocked notifications in system settings.
   final notificationsEnabled = ValueNotifier<bool>(true);
+  /// False when the Alarms & Reminders permission is not granted (Android 12+).
+  final exactAlarmsGranted = ValueNotifier<bool>(true);
   StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
@@ -149,7 +151,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   Future<void> _checkNotificationPermission() async {
     final enabled = await _notifSvc.areNotificationsEnabled();
-    if (mounted) notificationsEnabled.value = enabled;
+    final exact = await _notifSvc.canScheduleExactAlarms();
+    if (mounted) {
+      notificationsEnabled.value = enabled;
+      exactAlarmsGranted.value = exact;
+    }
   }
 
   Future<void> _initSync() async {
@@ -254,12 +260,17 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     return ValueListenableBuilder<bool>(
       valueListenable: notificationsEnabled,
       builder: (context, notifEnabled, _) {
-        return _buildShell(context, notifEnabled);
+        return ValueListenableBuilder<bool>(
+          valueListenable: exactAlarmsGranted,
+          builder: (context, exactEnabled, _) {
+            return _buildShell(context, notifEnabled, exactEnabled);
+          },
+        );
       },
     );
   }
 
-  Widget _buildShell(BuildContext context, bool notifEnabled) {
+  Widget _buildShell(BuildContext context, bool notifEnabled, bool exactEnabled) {
     return ValueListenableBuilder<bool>(
       valueListenable: partnerPaired,
       builder: (context, paired, _) {
@@ -367,13 +378,38 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    // Open this app's notification settings page.
                                     const channel = MethodChannel(
                                       'net.moonbaseone.kinetic.parent/settings',
                                     );
                                     channel
                                         .invokeMethod<void>(
                                           'openNotificationSettings',
+                                        )
+                                        .catchError((_) {});
+                                  },
+                                  child: const Text('Instellingen'),
+                                ),
+                              ],
+                            ),
+                          if (notifEnabled && !exactEnabled)
+                            MaterialBanner(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              content: const Text(
+                                'Precieze herinneringen zijn uitgeschakeld. Sta "Alarmen & herinneringen" toe voor exacte tijden.',
+                              ),
+                              leading: const Icon(Icons.alarm_off_outlined),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    const channel = MethodChannel(
+                                      'net.moonbaseone.kinetic.parent/settings',
+                                    );
+                                    channel
+                                        .invokeMethod<void>(
+                                          'openExactAlarmSettings',
                                         )
                                         .catchError((_) {});
                                   },

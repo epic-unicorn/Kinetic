@@ -57,6 +57,14 @@ class ParentNotificationService implements NotificationService {
     return await android.areNotificationsEnabled() ?? true;
   }
 
+  @override
+  Future<bool> canScheduleExactAlarms() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true; // iOS/other: assume granted
+    return await android.canScheduleExactAlarms() ?? true;
+  }
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
 
@@ -164,13 +172,19 @@ class ParentNotificationService implements NotificationService {
 
     final scheduled = tz.TZDateTime.from(at, tz.local);
     if (scheduled.isBefore(DateTime.now())) return; // skip past reminders
+
+    // Use exact scheduling when permitted; fall back to inexact (±15 min) so
+    // reminders always fire even if the Alarms & Reminders grant is missing.
+    final exact = await canScheduleExactAlarms();
     await _plugin.zonedSchedule(
       id,
       title,
       body,
       scheduled,
       _details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: exact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );

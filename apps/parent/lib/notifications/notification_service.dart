@@ -34,4 +34,8 @@ abstract class NotificationService {
   /// Returns true if the user has granted notification permission.
   /// Returns true on platforms where this check is not supported.
   Future<bool> areNotificationsEnabled();
+
+  /// Returns true if the app can schedule exact alarms (Android 12+
+  /// Alarms & Reminders permission). Always true on iOS and older Android.
+  Future<bool> canScheduleExactAlarms();
 }

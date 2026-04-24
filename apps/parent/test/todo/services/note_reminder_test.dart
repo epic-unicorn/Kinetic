@@ -43,6 +43,9 @@ class _FakeNotifService implements NotificationService {
 
   @override
   Future<bool> areNotificationsEnabled() async => true;
+
+  @override
+  Future<bool> canScheduleExactAlarms() async => true;
 }
 
 void main() {
