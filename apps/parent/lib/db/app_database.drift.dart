@@ -3591,6 +3591,28 @@ class $AppSettingsTable extends AppSettings
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _lastSuggestionRunAtMeta =
+      const VerificationMeta('lastSuggestionRunAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSuggestionRunAt =
+      GeneratedColumn<DateTime>(
+        'last_suggestion_run_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastPartnerSuggestionRunAtMeta =
+      const VerificationMeta('lastPartnerSuggestionRunAt');
+  @override
+  late final GeneratedColumn<DateTime> lastPartnerSuggestionRunAt =
+      GeneratedColumn<DateTime>(
+        'last_partner_suggestion_run_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -3608,6 +3630,8 @@ class $AppSettingsTable extends AppSettings
     theme,
     taskCategoryOrder,
     noteCategoryOrder,
+    lastSuggestionRunAt,
+    lastPartnerSuggestionRunAt,
     updatedAt,
   ];
   @override
@@ -3652,6 +3676,24 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('last_suggestion_run_at')) {
+      context.handle(
+        _lastSuggestionRunAtMeta,
+        lastSuggestionRunAt.isAcceptableOrUnknown(
+          data['last_suggestion_run_at']!,
+          _lastSuggestionRunAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_partner_suggestion_run_at')) {
+      context.handle(
+        _lastPartnerSuggestionRunAtMeta,
+        lastPartnerSuggestionRunAt.isAcceptableOrUnknown(
+          data['last_partner_suggestion_run_at']!,
+          _lastPartnerSuggestionRunAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -3685,6 +3727,14 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}note_category_order'],
       ),
+      lastSuggestionRunAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_suggestion_run_at'],
+      ),
+      lastPartnerSuggestionRunAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_partner_suggestion_run_at'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -3703,12 +3753,16 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   final String theme;
   final String? taskCategoryOrder;
   final String? noteCategoryOrder;
+  final DateTime? lastSuggestionRunAt;
+  final DateTime? lastPartnerSuggestionRunAt;
   final DateTime updatedAt;
   const AppSettingsRow({
     required this.key,
     required this.theme,
     this.taskCategoryOrder,
     this.noteCategoryOrder,
+    this.lastSuggestionRunAt,
+    this.lastPartnerSuggestionRunAt,
     required this.updatedAt,
   });
   @override
@@ -3721,6 +3775,14 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     }
     if (!nullToAbsent || noteCategoryOrder != null) {
       map['note_category_order'] = Variable<String>(noteCategoryOrder);
+    }
+    if (!nullToAbsent || lastSuggestionRunAt != null) {
+      map['last_suggestion_run_at'] = Variable<DateTime>(lastSuggestionRunAt);
+    }
+    if (!nullToAbsent || lastPartnerSuggestionRunAt != null) {
+      map['last_partner_suggestion_run_at'] = Variable<DateTime>(
+        lastPartnerSuggestionRunAt,
+      );
     }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -3736,6 +3798,13 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       noteCategoryOrder: noteCategoryOrder == null && nullToAbsent
           ? const Value.absent()
           : Value(noteCategoryOrder),
+      lastSuggestionRunAt: lastSuggestionRunAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSuggestionRunAt),
+      lastPartnerSuggestionRunAt:
+          lastPartnerSuggestionRunAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastPartnerSuggestionRunAt),
       updatedAt: Value(updatedAt),
     );
   }
@@ -3754,6 +3823,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       noteCategoryOrder: serializer.fromJson<String?>(
         json['noteCategoryOrder'],
       ),
+      lastSuggestionRunAt: serializer.fromJson<DateTime?>(
+        json['lastSuggestionRunAt'],
+      ),
+      lastPartnerSuggestionRunAt: serializer.fromJson<DateTime?>(
+        json['lastPartnerSuggestionRunAt'],
+      ),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -3765,6 +3840,10 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       'theme': serializer.toJson<String>(theme),
       'taskCategoryOrder': serializer.toJson<String?>(taskCategoryOrder),
       'noteCategoryOrder': serializer.toJson<String?>(noteCategoryOrder),
+      'lastSuggestionRunAt': serializer.toJson<DateTime?>(lastSuggestionRunAt),
+      'lastPartnerSuggestionRunAt': serializer.toJson<DateTime?>(
+        lastPartnerSuggestionRunAt,
+      ),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -3774,6 +3853,8 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     String? theme,
     Value<String?> taskCategoryOrder = const Value.absent(),
     Value<String?> noteCategoryOrder = const Value.absent(),
+    Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
+    Value<DateTime?> lastPartnerSuggestionRunAt = const Value.absent(),
     DateTime? updatedAt,
   }) => AppSettingsRow(
     key: key ?? this.key,
@@ -3784,6 +3865,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     noteCategoryOrder: noteCategoryOrder.present
         ? noteCategoryOrder.value
         : this.noteCategoryOrder,
+    lastSuggestionRunAt: lastSuggestionRunAt.present
+        ? lastSuggestionRunAt.value
+        : this.lastSuggestionRunAt,
+    lastPartnerSuggestionRunAt: lastPartnerSuggestionRunAt.present
+        ? lastPartnerSuggestionRunAt.value
+        : this.lastPartnerSuggestionRunAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   AppSettingsRow copyWithCompanion(AppSettingsCompanion data) {
@@ -3796,6 +3883,12 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       noteCategoryOrder: data.noteCategoryOrder.present
           ? data.noteCategoryOrder.value
           : this.noteCategoryOrder,
+      lastSuggestionRunAt: data.lastSuggestionRunAt.present
+          ? data.lastSuggestionRunAt.value
+          : this.lastSuggestionRunAt,
+      lastPartnerSuggestionRunAt: data.lastPartnerSuggestionRunAt.present
+          ? data.lastPartnerSuggestionRunAt.value
+          : this.lastPartnerSuggestionRunAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -3807,14 +3900,23 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           ..write('theme: $theme, ')
           ..write('taskCategoryOrder: $taskCategoryOrder, ')
           ..write('noteCategoryOrder: $noteCategoryOrder, ')
+          ..write('lastSuggestionRunAt: $lastSuggestionRunAt, ')
+          ..write('lastPartnerSuggestionRunAt: $lastPartnerSuggestionRunAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(key, theme, taskCategoryOrder, noteCategoryOrder, updatedAt);
+  int get hashCode => Object.hash(
+    key,
+    theme,
+    taskCategoryOrder,
+    noteCategoryOrder,
+    lastSuggestionRunAt,
+    lastPartnerSuggestionRunAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3823,6 +3925,8 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
           other.theme == this.theme &&
           other.taskCategoryOrder == this.taskCategoryOrder &&
           other.noteCategoryOrder == this.noteCategoryOrder &&
+          other.lastSuggestionRunAt == this.lastSuggestionRunAt &&
+          other.lastPartnerSuggestionRunAt == this.lastPartnerSuggestionRunAt &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -3831,6 +3935,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   final Value<String> theme;
   final Value<String?> taskCategoryOrder;
   final Value<String?> noteCategoryOrder;
+  final Value<DateTime?> lastSuggestionRunAt;
+  final Value<DateTime?> lastPartnerSuggestionRunAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const AppSettingsCompanion({
@@ -3838,6 +3944,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.theme = const Value.absent(),
     this.taskCategoryOrder = const Value.absent(),
     this.noteCategoryOrder = const Value.absent(),
+    this.lastSuggestionRunAt = const Value.absent(),
+    this.lastPartnerSuggestionRunAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3846,6 +3954,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     this.theme = const Value.absent(),
     this.taskCategoryOrder = const Value.absent(),
     this.noteCategoryOrder = const Value.absent(),
+    this.lastSuggestionRunAt = const Value.absent(),
+    this.lastPartnerSuggestionRunAt = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt);
@@ -3854,6 +3964,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     Expression<String>? theme,
     Expression<String>? taskCategoryOrder,
     Expression<String>? noteCategoryOrder,
+    Expression<DateTime>? lastSuggestionRunAt,
+    Expression<DateTime>? lastPartnerSuggestionRunAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -3862,6 +3974,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
       if (theme != null) 'theme': theme,
       if (taskCategoryOrder != null) 'task_category_order': taskCategoryOrder,
       if (noteCategoryOrder != null) 'note_category_order': noteCategoryOrder,
+      if (lastSuggestionRunAt != null)
+        'last_suggestion_run_at': lastSuggestionRunAt,
+      if (lastPartnerSuggestionRunAt != null)
+        'last_partner_suggestion_run_at': lastPartnerSuggestionRunAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3872,6 +3988,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     Value<String>? theme,
     Value<String?>? taskCategoryOrder,
     Value<String?>? noteCategoryOrder,
+    Value<DateTime?>? lastSuggestionRunAt,
+    Value<DateTime?>? lastPartnerSuggestionRunAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -3880,6 +3998,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
       theme: theme ?? this.theme,
       taskCategoryOrder: taskCategoryOrder ?? this.taskCategoryOrder,
       noteCategoryOrder: noteCategoryOrder ?? this.noteCategoryOrder,
+      lastSuggestionRunAt: lastSuggestionRunAt ?? this.lastSuggestionRunAt,
+      lastPartnerSuggestionRunAt:
+          lastPartnerSuggestionRunAt ?? this.lastPartnerSuggestionRunAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3900,6 +4021,16 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     if (noteCategoryOrder.present) {
       map['note_category_order'] = Variable<String>(noteCategoryOrder.value);
     }
+    if (lastSuggestionRunAt.present) {
+      map['last_suggestion_run_at'] = Variable<DateTime>(
+        lastSuggestionRunAt.value,
+      );
+    }
+    if (lastPartnerSuggestionRunAt.present) {
+      map['last_partner_suggestion_run_at'] = Variable<DateTime>(
+        lastPartnerSuggestionRunAt.value,
+      );
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -3916,6 +4047,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
           ..write('theme: $theme, ')
           ..write('taskCategoryOrder: $taskCategoryOrder, ')
           ..write('noteCategoryOrder: $noteCategoryOrder, ')
+          ..write('lastSuggestionRunAt: $lastSuggestionRunAt, ')
+          ..write('lastPartnerSuggestionRunAt: $lastPartnerSuggestionRunAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4237,6 +4370,666 @@ class ExclusionRulesCompanion extends UpdateCompanion<ExclusionRuleRow> {
   }
 }
 
+class $AiSuggestionsTable extends AiSuggestions
+    with TableInfo<$AiSuggestionsTable, AiSuggestionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiSuggestionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('other'),
+  );
+  static const VerificationMeta _suggestedDueDateMeta = const VerificationMeta(
+    'suggestedDueDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> suggestedDueDate =
+      GeneratedColumn<DateTime>(
+        'suggested_due_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _snoozeUntilMeta = const VerificationMeta(
+    'snoozeUntil',
+  );
+  @override
+  late final GeneratedColumn<DateTime> snoozeUntil = GeneratedColumn<DateTime>(
+    'snooze_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    notes,
+    priority,
+    category,
+    suggestedDueDate,
+    reason,
+    status,
+    snoozeUntil,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_suggestions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiSuggestionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('suggested_due_date')) {
+      context.handle(
+        _suggestedDueDateMeta,
+        suggestedDueDate.isAcceptableOrUnknown(
+          data['suggested_due_date']!,
+          _suggestedDueDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('snooze_until')) {
+      context.handle(
+        _snoozeUntilMeta,
+        snoozeUntil.isAcceptableOrUnknown(
+          data['snooze_until']!,
+          _snoozeUntilMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AiSuggestionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiSuggestionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      suggestedDueDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}suggested_due_date'],
+      ),
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      snoozeUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}snooze_until'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiSuggestionsTable createAlias(String alias) {
+    return $AiSuggestionsTable(attachedDatabase, alias);
+  }
+}
+
+class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
+  final String id;
+  final String title;
+  final String? notes;
+  final int priority;
+  final String category;
+  final DateTime? suggestedDueDate;
+  final String reason;
+  final String status;
+  final DateTime? snoozeUntil;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const AiSuggestionRow({
+    required this.id,
+    required this.title,
+    this.notes,
+    required this.priority,
+    required this.category,
+    this.suggestedDueDate,
+    required this.reason,
+    required this.status,
+    this.snoozeUntil,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['priority'] = Variable<int>(priority);
+    map['category'] = Variable<String>(category);
+    if (!nullToAbsent || suggestedDueDate != null) {
+      map['suggested_due_date'] = Variable<DateTime>(suggestedDueDate);
+    }
+    map['reason'] = Variable<String>(reason);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || snoozeUntil != null) {
+      map['snooze_until'] = Variable<DateTime>(snoozeUntil);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AiSuggestionsCompanion toCompanion(bool nullToAbsent) {
+    return AiSuggestionsCompanion(
+      id: Value(id),
+      title: Value(title),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      priority: Value(priority),
+      category: Value(category),
+      suggestedDueDate: suggestedDueDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(suggestedDueDate),
+      reason: Value(reason),
+      status: Value(status),
+      snoozeUntil: snoozeUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(snoozeUntil),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AiSuggestionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiSuggestionRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      priority: serializer.fromJson<int>(json['priority']),
+      category: serializer.fromJson<String>(json['category']),
+      suggestedDueDate: serializer.fromJson<DateTime?>(
+        json['suggestedDueDate'],
+      ),
+      reason: serializer.fromJson<String>(json['reason']),
+      status: serializer.fromJson<String>(json['status']),
+      snoozeUntil: serializer.fromJson<DateTime?>(json['snoozeUntil']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'notes': serializer.toJson<String?>(notes),
+      'priority': serializer.toJson<int>(priority),
+      'category': serializer.toJson<String>(category),
+      'suggestedDueDate': serializer.toJson<DateTime?>(suggestedDueDate),
+      'reason': serializer.toJson<String>(reason),
+      'status': serializer.toJson<String>(status),
+      'snoozeUntil': serializer.toJson<DateTime?>(snoozeUntil),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AiSuggestionRow copyWith({
+    String? id,
+    String? title,
+    Value<String?> notes = const Value.absent(),
+    int? priority,
+    String? category,
+    Value<DateTime?> suggestedDueDate = const Value.absent(),
+    String? reason,
+    String? status,
+    Value<DateTime?> snoozeUntil = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => AiSuggestionRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    notes: notes.present ? notes.value : this.notes,
+    priority: priority ?? this.priority,
+    category: category ?? this.category,
+    suggestedDueDate: suggestedDueDate.present
+        ? suggestedDueDate.value
+        : this.suggestedDueDate,
+    reason: reason ?? this.reason,
+    status: status ?? this.status,
+    snoozeUntil: snoozeUntil.present ? snoozeUntil.value : this.snoozeUntil,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  AiSuggestionRow copyWithCompanion(AiSuggestionsCompanion data) {
+    return AiSuggestionRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      category: data.category.present ? data.category.value : this.category,
+      suggestedDueDate: data.suggestedDueDate.present
+          ? data.suggestedDueDate.value
+          : this.suggestedDueDate,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      status: data.status.present ? data.status.value : this.status,
+      snoozeUntil: data.snoozeUntil.present
+          ? data.snoozeUntil.value
+          : this.snoozeUntil,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiSuggestionRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('priority: $priority, ')
+          ..write('category: $category, ')
+          ..write('suggestedDueDate: $suggestedDueDate, ')
+          ..write('reason: $reason, ')
+          ..write('status: $status, ')
+          ..write('snoozeUntil: $snoozeUntil, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    notes,
+    priority,
+    category,
+    suggestedDueDate,
+    reason,
+    status,
+    snoozeUntil,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiSuggestionRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.notes == this.notes &&
+          other.priority == this.priority &&
+          other.category == this.category &&
+          other.suggestedDueDate == this.suggestedDueDate &&
+          other.reason == this.reason &&
+          other.status == this.status &&
+          other.snoozeUntil == this.snoozeUntil &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> notes;
+  final Value<int> priority;
+  final Value<String> category;
+  final Value<DateTime?> suggestedDueDate;
+  final Value<String> reason;
+  final Value<String> status;
+  final Value<DateTime?> snoozeUntil;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const AiSuggestionsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.category = const Value.absent(),
+    this.suggestedDueDate = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.status = const Value.absent(),
+    this.snoozeUntil = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiSuggestionsCompanion.insert({
+    required String id,
+    required String title,
+    this.notes = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.category = const Value.absent(),
+    this.suggestedDueDate = const Value.absent(),
+    required String reason,
+    this.status = const Value.absent(),
+    this.snoozeUntil = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       reason = Value(reason),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<AiSuggestionRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? notes,
+    Expression<int>? priority,
+    Expression<String>? category,
+    Expression<DateTime>? suggestedDueDate,
+    Expression<String>? reason,
+    Expression<String>? status,
+    Expression<DateTime>? snoozeUntil,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (notes != null) 'notes': notes,
+      if (priority != null) 'priority': priority,
+      if (category != null) 'category': category,
+      if (suggestedDueDate != null) 'suggested_due_date': suggestedDueDate,
+      if (reason != null) 'reason': reason,
+      if (status != null) 'status': status,
+      if (snoozeUntil != null) 'snooze_until': snoozeUntil,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiSuggestionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? notes,
+    Value<int>? priority,
+    Value<String>? category,
+    Value<DateTime?>? suggestedDueDate,
+    Value<String>? reason,
+    Value<String>? status,
+    Value<DateTime?>? snoozeUntil,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return AiSuggestionsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      priority: priority ?? this.priority,
+      category: category ?? this.category,
+      suggestedDueDate: suggestedDueDate ?? this.suggestedDueDate,
+      reason: reason ?? this.reason,
+      status: status ?? this.status,
+      snoozeUntil: snoozeUntil ?? this.snoozeUntil,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (suggestedDueDate.present) {
+      map['suggested_due_date'] = Variable<DateTime>(suggestedDueDate.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (snoozeUntil.present) {
+      map['snooze_until'] = Variable<DateTime>(snoozeUntil.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiSuggestionsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('priority: $priority, ')
+          ..write('category: $category, ')
+          ..write('suggestedDueDate: $suggestedDueDate, ')
+          ..write('reason: $reason, ')
+          ..write('status: $status, ')
+          ..write('snoozeUntil: $snoozeUntil, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4251,6 +5044,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $ExclusionRulesTable exclusionRules = $ExclusionRulesTable(this);
+  late final $AiSuggestionsTable aiSuggestions = $AiSuggestionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4263,6 +5057,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     partnerProposals,
     appSettings,
     exclusionRules,
+    aiSuggestions,
   ];
 }
 
@@ -6431,6 +7226,8 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String> theme,
       Value<String?> taskCategoryOrder,
       Value<String?> noteCategoryOrder,
+      Value<DateTime?> lastSuggestionRunAt,
+      Value<DateTime?> lastPartnerSuggestionRunAt,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -6440,6 +7237,8 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String> theme,
       Value<String?> taskCategoryOrder,
       Value<String?> noteCategoryOrder,
+      Value<DateTime?> lastSuggestionRunAt,
+      Value<DateTime?> lastPartnerSuggestionRunAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -6470,6 +7269,16 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get noteCategoryOrder => $composableBuilder(
     column: $table.noteCategoryOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSuggestionRunAt => $composableBuilder(
+    column: $table.lastSuggestionRunAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastPartnerSuggestionRunAt => $composableBuilder(
+    column: $table.lastPartnerSuggestionRunAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6508,6 +7317,17 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get lastSuggestionRunAt => $composableBuilder(
+    column: $table.lastSuggestionRunAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastPartnerSuggestionRunAt =>
+      $composableBuilder(
+        column: $table.lastPartnerSuggestionRunAt,
+        builder: (column) => ColumnOrderings(column),
+      );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -6538,6 +7358,17 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.noteCategoryOrder,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get lastSuggestionRunAt => $composableBuilder(
+    column: $table.lastSuggestionRunAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastPartnerSuggestionRunAt =>
+      $composableBuilder(
+        column: $table.lastPartnerSuggestionRunAt,
+        builder: (column) => column,
+      );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -6578,6 +7409,9 @@ class $$AppSettingsTableTableManager
                 Value<String> theme = const Value.absent(),
                 Value<String?> taskCategoryOrder = const Value.absent(),
                 Value<String?> noteCategoryOrder = const Value.absent(),
+                Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
+                Value<DateTime?> lastPartnerSuggestionRunAt =
+                    const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AppSettingsCompanion(
@@ -6585,6 +7419,8 @@ class $$AppSettingsTableTableManager
                 theme: theme,
                 taskCategoryOrder: taskCategoryOrder,
                 noteCategoryOrder: noteCategoryOrder,
+                lastSuggestionRunAt: lastSuggestionRunAt,
+                lastPartnerSuggestionRunAt: lastPartnerSuggestionRunAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -6594,6 +7430,9 @@ class $$AppSettingsTableTableManager
                 Value<String> theme = const Value.absent(),
                 Value<String?> taskCategoryOrder = const Value.absent(),
                 Value<String?> noteCategoryOrder = const Value.absent(),
+                Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
+                Value<DateTime?> lastPartnerSuggestionRunAt =
+                    const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => AppSettingsCompanion.insert(
@@ -6601,6 +7440,8 @@ class $$AppSettingsTableTableManager
                 theme: theme,
                 taskCategoryOrder: taskCategoryOrder,
                 noteCategoryOrder: noteCategoryOrder,
+                lastSuggestionRunAt: lastSuggestionRunAt,
+                lastPartnerSuggestionRunAt: lastPartnerSuggestionRunAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -6818,6 +7659,324 @@ typedef $$ExclusionRulesTableProcessedTableManager =
       ExclusionRuleRow,
       PrefetchHooks Function()
     >;
+typedef $$AiSuggestionsTableCreateCompanionBuilder =
+    AiSuggestionsCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> notes,
+      Value<int> priority,
+      Value<String> category,
+      Value<DateTime?> suggestedDueDate,
+      required String reason,
+      Value<String> status,
+      Value<DateTime?> snoozeUntil,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$AiSuggestionsTableUpdateCompanionBuilder =
+    AiSuggestionsCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> notes,
+      Value<int> priority,
+      Value<String> category,
+      Value<DateTime?> suggestedDueDate,
+      Value<String> reason,
+      Value<String> status,
+      Value<DateTime?> snoozeUntil,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$AiSuggestionsTableFilterComposer
+    extends Composer<_$AppDatabase, $AiSuggestionsTable> {
+  $$AiSuggestionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get suggestedDueDate => $composableBuilder(
+    column: $table.suggestedDueDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get snoozeUntil => $composableBuilder(
+    column: $table.snoozeUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiSuggestionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiSuggestionsTable> {
+  $$AiSuggestionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get suggestedDueDate => $composableBuilder(
+    column: $table.suggestedDueDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get snoozeUntil => $composableBuilder(
+    column: $table.snoozeUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiSuggestionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiSuggestionsTable> {
+  $$AiSuggestionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get suggestedDueDate => $composableBuilder(
+    column: $table.suggestedDueDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get snoozeUntil => $composableBuilder(
+    column: $table.snoozeUntil,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AiSuggestionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiSuggestionsTable,
+          AiSuggestionRow,
+          $$AiSuggestionsTableFilterComposer,
+          $$AiSuggestionsTableOrderingComposer,
+          $$AiSuggestionsTableAnnotationComposer,
+          $$AiSuggestionsTableCreateCompanionBuilder,
+          $$AiSuggestionsTableUpdateCompanionBuilder,
+          (
+            AiSuggestionRow,
+            BaseReferences<_$AppDatabase, $AiSuggestionsTable, AiSuggestionRow>,
+          ),
+          AiSuggestionRow,
+          PrefetchHooks Function()
+        > {
+  $$AiSuggestionsTableTableManager(_$AppDatabase db, $AiSuggestionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiSuggestionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiSuggestionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiSuggestionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<DateTime?> suggestedDueDate = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> snoozeUntil = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiSuggestionsCompanion(
+                id: id,
+                title: title,
+                notes: notes,
+                priority: priority,
+                category: category,
+                suggestedDueDate: suggestedDueDate,
+                reason: reason,
+                status: status,
+                snoozeUntil: snoozeUntil,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> notes = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<DateTime?> suggestedDueDate = const Value.absent(),
+                required String reason,
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> snoozeUntil = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => AiSuggestionsCompanion.insert(
+                id: id,
+                title: title,
+                notes: notes,
+                priority: priority,
+                category: category,
+                suggestedDueDate: suggestedDueDate,
+                reason: reason,
+                status: status,
+                snoozeUntil: snoozeUntil,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiSuggestionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiSuggestionsTable,
+      AiSuggestionRow,
+      $$AiSuggestionsTableFilterComposer,
+      $$AiSuggestionsTableOrderingComposer,
+      $$AiSuggestionsTableAnnotationComposer,
+      $$AiSuggestionsTableCreateCompanionBuilder,
+      $$AiSuggestionsTableUpdateCompanionBuilder,
+      (
+        AiSuggestionRow,
+        BaseReferences<_$AppDatabase, $AiSuggestionsTable, AiSuggestionRow>,
+      ),
+      AiSuggestionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6836,4 +7995,6 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$ExclusionRulesTableTableManager get exclusionRules =>
       $$ExclusionRulesTableTableManager(_db, _db.exclusionRules);
+  $$AiSuggestionsTableTableManager get aiSuggestions =>
+      $$AiSuggestionsTableTableManager(_db, _db.aiSuggestions);
 }

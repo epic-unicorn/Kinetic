@@ -206,6 +206,29 @@ class PartnerProposalRepository {
         });
   }
 
+  /// Returns accepted proposals (for the AI engine to analyse).
+  Stream<List<PartnerProposalRow>> watchAccepted() {
+    return (_db.select(_db.partnerProposals)
+          ..where((p) => p.status.equals('accepted')))
+        .watch();
+  }
+
+  /// Returns true if an outgoing proposal with [title] from [parentId] was
+  /// created in the last 30 days (dedup for auto proposals).
+  Future<bool> hasRecentOutgoing(String title, String parentId) async {
+    final cutoff = DateTime.now().toUtc().subtract(const Duration(days: 30));
+    final normalized = _normalizeTitle(title);
+    final rows = await (_db.select(_db.partnerProposals)
+          ..where(
+            (p) =>
+                p.fromParentId.equals(parentId) &
+                p.syncState.equals('deleted').not() &
+                p.receivedAt.isBiggerOrEqualValue(cutoff),
+          ))
+        .get();
+    return rows.any((r) => _normalizeTitle(r.taskTitle) == normalized);
+  }
+
   /// Check if a task was accepted from a partner proposal.
   /// Returns true when the task title matches an accepted proposal from a partner.
   Stream<bool> watchAcceptedProposalForTask({required String taskTitle}) {

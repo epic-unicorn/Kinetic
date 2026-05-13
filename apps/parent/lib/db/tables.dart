@@ -196,8 +196,38 @@ class ExclusionRules extends Table {
 }
 
 // ---------------------------------------------------------------------------
-// AppSettings — singleton preferences table (only one row at a time)
+// AiSuggestions — locally generated task suggestions (never synced)
 // ---------------------------------------------------------------------------
+
+@DataClassName('AiSuggestionRow')
+class AiSuggestions extends Table {
+  TextColumn get id => text()();
+
+  TextColumn get title => text()();
+  TextColumn get notes => text().nullable()();
+
+  // 0=none 1=low 2=medium 3=high
+  IntColumn get priority => integer().withDefault(const Constant(0))();
+
+  TextColumn get category =>
+      text().withDefault(const Constant('other'))();
+
+  DateTimeColumn get suggestedDueDate => dateTime().nullable()();
+
+  // habit | partnerComplement | seasonal | loadBalance
+  TextColumn get reason => text()();
+
+  // pending | accepted | dismissed | snoozed
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  DateTimeColumn get snoozeUntil => dateTime().nullable()();
+
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
 
 @DataClassName('AppSettingsRow')
 class AppSettings extends Table {
@@ -213,6 +243,10 @@ class AppSettings extends Table {
 
   // JSON-encoded ordered list of note category labels (nullable = no saved order)
   TextColumn get noteCategoryOrder => text().nullable()();
+
+  // Throttle timestamps for the AI suggestion engine
+  DateTimeColumn get lastSuggestionRunAt => dateTime().nullable()();
+  DateTimeColumn get lastPartnerSuggestionRunAt => dateTime().nullable()();
 
   DateTimeColumn get updatedAt => dateTime()();
 

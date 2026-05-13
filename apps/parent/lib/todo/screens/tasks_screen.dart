@@ -6,8 +6,10 @@ import '../../settings/settings_repository.dart';
 import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_header.dart';
 import '../../todo/models/personal_task.dart';
+import '../../todo/services/ai_suggestion_repository.dart';
 import '../../todo/services/todo_repository.dart';
 import '../../todo/widgets/quick_add_bar.dart';
+import '../../todo/widgets/suggestion_banner.dart';
 import '../../todo/widgets/task_detail_sheet.dart';
 import '../../todo/widgets/task_tile.dart';
 
@@ -19,9 +21,11 @@ class TasksScreen extends StatefulWidget {
   final TodoRepository repo;
   final SettingsRepository? settingsRepo;
   final PartnerProposalRepository? proposalRepo;
+  final AiSuggestionRepository? suggestionRepo;
   final String? myParentId;
   final ValueNotifier<SyncStatus>? syncStatus;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final VoidCallback? onSyncRetry;
   final WebDavConfigRepository? configRepo;
 
@@ -30,9 +34,11 @@ class TasksScreen extends StatefulWidget {
     required this.repo,
     this.settingsRepo,
     this.proposalRepo,
+    this.suggestionRepo,
     this.myParentId,
     this.syncStatus,
     this.hasFamilyKey = false,
+    this.partnerPaired = false,
     this.onSyncRetry,
     this.configRepo,
   });
@@ -100,7 +106,9 @@ class _TasksScreenState extends State<TasksScreen>
             hasFamilyKey: widget.hasFamilyKey,
             settingsRepo: widget.settingsRepo,
             proposalRepo: widget.proposalRepo,
+            suggestionRepo: widget.suggestionRepo,
             myParentId: widget.myParentId,
+            partnerPaired: widget.partnerPaired,
             configRepo: widget.configRepo,
           ),
           _CompletedTasksTab(
@@ -181,7 +189,9 @@ class _OpenTasksTab extends StatefulWidget {
   final bool hasFamilyKey;
   final SettingsRepository? settingsRepo;
   final PartnerProposalRepository? proposalRepo;
+  final AiSuggestionRepository? suggestionRepo;
   final String? myParentId;
+  final bool partnerPaired;
   final WebDavConfigRepository? configRepo;
 
   const _OpenTasksTab({
@@ -189,7 +199,9 @@ class _OpenTasksTab extends StatefulWidget {
     this.hasFamilyKey = false,
     this.settingsRepo,
     this.proposalRepo,
+    this.suggestionRepo,
     this.myParentId,
+    this.partnerPaired = false,
     this.configRepo,
   });
 
@@ -281,7 +293,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
             ? const Color(0xFF333333)
             : const Color(0xFFEEEEEE);
 
-        return ReorderableListView.builder(
+        final listView = ReorderableListView.builder(
           buildDefaultDragHandles: false,
           padding: const EdgeInsets.only(top: 8, bottom: 80),
           itemCount: flatItems.length,
@@ -312,6 +324,21 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
           onReorder: (oldIndex, newIndex) {
             _onReorder(flatItems, oldIndex, newIndex);
           },
+        );
+
+        if (widget.suggestionRepo == null) return listView;
+
+        return Column(
+          children: [
+            SuggestionBanner(
+              suggestionRepo: widget.suggestionRepo!,
+              todoRepo: widget.repo,
+              proposalRepo: widget.proposalRepo,
+              myParentId: widget.myParentId,
+              partnerPaired: widget.partnerPaired,
+            ),
+            Expanded(child: listView),
+          ],
         );
       },
     );
@@ -523,10 +550,11 @@ class _CompletedTasksTab extends StatelessWidget {
               hasFamilyKey: hasFamilyKey,
             ),
           );
-          if (i < completed.length - 1)
+          if (i < completed.length - 1) {
             items.add(
               Divider(height: 1, indent: 0, endIndent: 0, color: dividerColor),
             );
+          }
         }
         items.add(const SizedBox(height: 80)); // room for QuickAddBar
 

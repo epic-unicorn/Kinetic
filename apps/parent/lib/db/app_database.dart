@@ -15,6 +15,7 @@ part 'app_database.drift.dart';
     PartnerProposals,
     AppSettings,
     ExclusionRules,
+    AiSuggestions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -24,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +66,15 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 10) {
         await m.addColumn(personalTasks, personalTasks.xpReward);
+      }
+      if (from < 11) {
+        await customStatement(
+          'ALTER TABLE app_settings ADD COLUMN last_suggestion_run_at INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE app_settings ADD COLUMN last_partner_suggestion_run_at INTEGER',
+        );
+        await m.createTable(aiSuggestions);
       }
     },
   );

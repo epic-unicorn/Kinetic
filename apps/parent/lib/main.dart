@@ -16,6 +16,8 @@ import 'sync/webdav_config_repository.dart';
 import 'theme/app_themes.dart';
 import 'todo/screens/notes_screen.dart';
 import 'todo/screens/tasks_screen.dart';
+import 'todo/services/ai_suggestion_engine.dart';
+import 'todo/services/ai_suggestion_repository.dart';
 import 'todo/services/note_repository.dart';
 import 'todo/services/todo_repository.dart';
 
@@ -82,6 +84,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   late final NoteRepository _noteRepository;
   late final PartnerProposalRepository _proposalRepository;
   late final WebDavConfigRepository _webDavConfig;
+  late final AiSuggestionRepository _aiSuggestionRepository;
+  AiSuggestionEngine? _aiSuggestionEngine;
   SyncOrchestrator? _syncOrchestrator;
   final syncStatus = ValueNotifier<SyncStatus>(SyncStatus.idle);
   final partnerPaired = ValueNotifier<bool>(false);
@@ -138,6 +142,8 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       todoRepository: _todoRepository,
     );
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
+
+    _aiSuggestionRepository = AiSuggestionRepository(widget.db);
 
     // Subscribe to the pending count so the nav badge stays live.
     _proposalCountSub = _proposalRepository.watchPendingCount().listen(
@@ -204,6 +210,16 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     enrolledKidsCount.value = kidsCount;
 
     if (config != null) _triggerSync(); // fire-and-forget initial sync
+
+    // Rebuild engine whenever sync config changes (partner repo may be null initially).
+    _aiSuggestionEngine = AiSuggestionEngine(
+      db: widget.db,
+      suggestionRepo: _aiSuggestionRepository,
+      todoRepo: _todoRepository,
+      proposalRepo: isPaired ? _proposalRepository : null,
+      myParentId: config?.parentId,
+    );
+    unawaited(_aiSuggestionEngine!.runIfDue());
   }
 
   Future<void> _triggerSync() async {
@@ -255,6 +271,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _triggerSync();
       _checkNotificationPermission();
+      unawaited(_aiSuggestionEngine?.runIfDue());
     }
   }
 
@@ -316,9 +333,11 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                         repo: _todoRepository,
                         settingsRepo: widget.settingsRepo,
                         proposalRepo: paired ? _proposalRepository : null,
+                        suggestionRepo: _aiSuggestionRepository,
                         myParentId: _syncOrchestrator?.parentId,
                         syncStatus: hasWebDav ? syncStatus : null,
                         hasFamilyKey: paired || kidsCount > 0,
+                        partnerPaired: paired,
                         onSyncRetry: _triggerSync,
                         configRepo: _webDavConfig,
                       ),

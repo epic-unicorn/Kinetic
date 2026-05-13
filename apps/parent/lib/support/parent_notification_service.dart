@@ -170,7 +170,7 @@ class ParentNotificationService implements NotificationService {
     final reminder = _scheduledReminders[reminderId];
 
     if (reminder != null && _onActionCallback != null) {
-      _onActionCallback!.call(
+      _onActionCallback.call(
         reminderId,
         actionId,
         reminder.title,
