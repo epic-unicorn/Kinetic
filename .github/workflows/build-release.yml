@@ -210,10 +210,15 @@ jobs:
 
       - name: Extract certificate fingerprints
         run: |
-          KIDS_CERT=$(keytool -printcert -jarfile ./artifacts/kids/kinetic-kids-*.apk 2>/dev/null | grep "SHA256:" | awk '{print $2}')
-          PARENT_CERT=$(keytool -printcert -jarfile ./artifacts/parent/kinetic-parent-*.apk 2>/dev/null | grep "SHA256:" | awk '{print $2}')
-          echo "KIDS_CERT_SHA256=$KIDS_CERT" >> $GITHUB_ENV
-          echo "PARENT_CERT_SHA256=$PARENT_CERT" >> $GITHUB_ENV
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > /tmp/keystore.jks
+          CERT_FP=$(keytool -list -v \
+            -keystore /tmp/keystore.jks \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            2>/dev/null | grep "SHA256:" | awk '{print $2}')
+          rm -f /tmp/keystore.jks
+          echo "KIDS_CERT_SHA256=$CERT_FP" >> $GITHUB_ENV
+          echo "PARENT_CERT_SHA256=$CERT_FP" >> $GITHUB_ENV
 
       - name: Create Kids App Release
         uses: softprops/action-gh-release@v1
@@ -228,7 +233,7 @@ jobs:
             ```
 
             ## Certificate Fingerprint (AppVerifier)
-            SHA-256 fingerprint of the signing certificate (`AA:BB:CC:DD:...` format as shown by AppVerifier):
+            SHA-256 fingerprint of the signing certificate:
             ```
             ${{ env.KIDS_CERT_SHA256 }}
             ```
@@ -251,7 +256,7 @@ jobs:
             ```
 
             ## Certificate Fingerprint (AppVerifier)
-            SHA-256 fingerprint of the signing certificate (`AA:BB:CC:DD:...` format as shown by AppVerifier):
+            SHA-256 fingerprint of the signing certificate:
             ```
             ${{ env.PARENT_CERT_SHA256 }}
             ```
