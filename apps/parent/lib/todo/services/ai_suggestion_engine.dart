@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../db/app_database.dart';
 import '../../partner/services/partner_proposal_repository.dart';
 import '../../todo/models/enums.dart';
+import '../../todo/models/personal_task.dart';
 import '../../todo/services/todo_repository.dart';
 import 'ai_suggestion_repository.dart';
 import '../models/ai_suggestion.dart';
@@ -70,7 +71,7 @@ class AiSuggestionEngine {
   // ---------------------------------------------------------------------------
 
   Future<void> _runHabitDetector(
-    List<dynamic> completed,
+    List<PersonalTask> completed,
     Set<String> openTitlesNorm,
   ) async {
     if (await _suggestionRepo.countPending() >= _maxPendingSelf) return;
@@ -164,7 +165,7 @@ class AiSuggestionEngine {
   // ---------------------------------------------------------------------------
 
   Future<void> _runSeasonalDetector(
-    List<dynamic> completed,
+    List<PersonalTask> completed,
     Set<String> openTitlesNorm,
   ) async {
     if (await _suggestionRepo.countPending() >= _maxPendingSelf) return;
@@ -208,7 +209,7 @@ class AiSuggestionEngine {
   // Detector 4 — Load balance (→ partner, auto)
   // ---------------------------------------------------------------------------
 
-  Future<void> _runLoadBalanceDetector(List<dynamic> openTasks) async {
+  Future<void> _runLoadBalanceDetector(List<PersonalTask> openTasks) async {
     final proposalRepo = _proposalRepo;
     if (proposalRepo == null) return;
     final parentId = myParentId;

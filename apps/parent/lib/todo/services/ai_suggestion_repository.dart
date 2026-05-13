@@ -107,31 +107,25 @@ class AiSuggestionRepository {
         .insert(_modelToCompanion(suggestion), mode: InsertMode.insertOrIgnore);
   }
 
-  Future<void> accept(String id) => _db
-      .update(_db.aiSuggestions)
-      .replace(
+  Future<void> accept(String id) =>
+      (_db.update(_db.aiSuggestions)..where((t) => t.id.equals(id))).write(
         AiSuggestionsCompanion(
-          id: Value(id),
           status: const Value('accepted'),
           updatedAt: Value(DateTime.now().toUtc()),
         ),
       );
 
-  Future<void> dismiss(String id) => _db
-      .update(_db.aiSuggestions)
-      .replace(
+  Future<void> dismiss(String id) =>
+      (_db.update(_db.aiSuggestions)..where((t) => t.id.equals(id))).write(
         AiSuggestionsCompanion(
-          id: Value(id),
           status: const Value('dismissed'),
           updatedAt: Value(DateTime.now().toUtc()),
         ),
       );
 
-  Future<void> snooze(String id) => _db
-      .update(_db.aiSuggestions)
-      .replace(
+  Future<void> snooze(String id) =>
+      (_db.update(_db.aiSuggestions)..where((t) => t.id.equals(id))).write(
         AiSuggestionsCompanion(
-          id: Value(id),
           status: const Value('snoozed'),
           snoozeUntil: Value(
             DateTime.now().toUtc().add(const Duration(days: 7)),

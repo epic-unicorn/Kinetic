@@ -6,7 +6,7 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. |
+| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. A **suggestion banner** appears above the task list with AI-generated task suggestions (see [AI Suggestion Engine](#ai-suggestion-engine)). |
 | **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: Incoming task proposals (accept/snooze/dismiss). **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
 | **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. Reminder uses separate date and time pickers; time defaults to current time + 1 hour rounded to the full hour. |
 | **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). Restoring a backup automatically reschedules all notifications. |
@@ -62,16 +62,41 @@ All secrets are stored at runtime via secure storage — no `--dart-define` flag
 
 ```
 lib/
-├── db/            — Drift schema (PersonalTasks with targetKidId column, PersonalNotes, PartnerProposals)
+├── db/            — Drift schema (PersonalTasks with targetKidId column, PersonalNotes, PartnerProposals, AiSuggestions)
 ├── notifications/ — local notification scheduling
 ├── partner/       — proposals, family screen, services
 ├── secure/        — secure storage wrappers
 ├── settings/      — WebDAV config, theme, family key share/scan screens
 ├── sync/          — SyncOrchestrator (WebDAV pull/push, LWW merge, xKineticTargetKidId embedding)
 ├── theme/         — Material 3 color schemes
-├── todo/          — task & note models, repositories, screens
+├── todo/          — task & note models, repositories, screens, AI suggestion engine
 └── main.dart      — root shell with conditional Familie nav item
 ```
+
+## AI Suggestion Engine
+
+A fully **offline, heuristic-based** engine that surfaces task suggestions in the **Taken** screen. No API calls or external models are used.
+
+### How it works
+
+The engine runs at most once per 24 hours (throttled via `AppSettings.lastSuggestionRunAt`). On each run it executes four detectors:
+
+| Detector | Trigger | Action |
+|---|---|---|
+| **Habit** | You've completed the same non-recurring task ≥ 2 times and the median interval has been exceeded by ≥ 80% | Suggests re-doing the task (→ you) |
+| **Partner complement** | You accepted a partner proposal whose title contains a keyword (e.g. "vakantie", "sport") | Sends the logical follow-up task to your partner automatically |
+| **Seasonal** | A task was completed in the same calendar month in a prior year | Suggests re-doing it this year (→ you) |
+| **Load balance** | You have ≥ 3 open non-private tasks in the same category | Proposes the oldest/most overdue one to your partner |
+
+### Suggestion banner
+
+The `SuggestionBanner` widget appears at the top of the open-tasks list when pending suggestions exist. Each card shows:
+- Title and reason chip (habit / seizoen / partner / balans)
+- **Toevoegen** — accepts the suggestion and creates a task in your list
+- **→ Partner** (only when partner is paired) — sends it as a proposal instead
+- **Sluiten** — dismisses the suggestion; long-press to snooze for 7 days
+
+Suggestions are stored in the local `AiSuggestions` table and never synced to WebDAV.
 
 ### WebDAV layout
 
