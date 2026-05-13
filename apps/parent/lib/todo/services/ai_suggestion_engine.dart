@@ -50,8 +50,7 @@ class AiSuggestionEngine {
 
     final completedTasks = await _todoRepo.watchCompletedTasks().first;
     final openTasks = await _todoRepo.watchOpenTasks().first;
-    final openTitlesNorm =
-        openTasks.map((t) => _normalize(t.title)).toSet();
+    final openTitlesNorm = openTasks.map((t) => _normalize(t.title)).toSet();
 
     if (selfDue) {
       await _runHabitDetector(completedTasks, openTitlesNorm);
@@ -105,8 +104,9 @@ class AiSuggestionEngine {
         notes: original.notes,
         priority: original.priority.index,
         category: original.category.name,
-        suggestedDueDate:
-            lastDone.add(Duration(days: medianInterval.round())).toLocal(),
+        suggestedDueDate: lastDone
+            .add(Duration(days: medianInterval.round()))
+            .toLocal(),
         reason: SuggestionReason.habit,
       );
       await _suggestionRepo.upsertSuggestion(suggested);
@@ -186,8 +186,7 @@ class AiSuggestionEngine {
       if (openTitlesNorm.contains(entry.key)) continue;
 
       final priorYearMatch = entry.value.any(
-        (dt) =>
-            dt.month == currentMonth && dt.year < currentYear,
+        (dt) => dt.month == currentMonth && dt.year < currentYear,
       );
       if (!priorYearMatch) continue;
 
@@ -230,9 +229,8 @@ class AiSuggestionEngine {
       // Pick the most overdue / oldest candidate.
       final candidates = List<dynamic>.from(entry.value)
         ..sort(
-          (a, b) => (a.dueDate ?? a.createdAt).compareTo(
-            b.dueDate ?? b.createdAt,
-          ),
+          (a, b) =>
+              (a.dueDate ?? a.createdAt).compareTo(b.dueDate ?? b.createdAt),
         );
       final candidate = candidates.first;
       final alreadySent = await proposalRepo.hasRecentOutgoing(
@@ -273,15 +271,15 @@ class AiSuggestionEngine {
         .insertOnConflictUpdate(
           selfPath
               ? AppSettingsCompanion(
-                key: const Value('default'),
-                lastSuggestionRunAt: Value(now),
-                updatedAt: Value(now),
-              )
+                  key: const Value('default'),
+                  lastSuggestionRunAt: Value(now),
+                  updatedAt: Value(now),
+                )
               : AppSettingsCompanion(
-                key: const Value('default'),
-                lastPartnerSuggestionRunAt: Value(now),
-                updatedAt: Value(now),
-              ),
+                  key: const Value('default'),
+                  lastPartnerSuggestionRunAt: Value(now),
+                  updatedAt: Value(now),
+                ),
         );
   }
 
@@ -289,8 +287,11 @@ class AiSuggestionEngine {
   // Utilities
   // ---------------------------------------------------------------------------
 
-  String _normalize(String s) =>
-      s.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9\u00c0-\u024f]'), ' ').trim();
+  String _normalize(String s) => s
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9\u00c0-\u024f]'), ' ')
+      .trim();
 
   int _medianInterval(List<DateTime> sorted) {
     final gaps = <int>[];

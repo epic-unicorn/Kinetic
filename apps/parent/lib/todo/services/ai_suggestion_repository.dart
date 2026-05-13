@@ -72,26 +72,25 @@ class AiSuggestionRepository {
   /// Returns how many pending non-snoozed suggestions exist right now.
   Future<int> countPending() async {
     final now = DateTime.now().toUtc();
-    final rows = await (_db.select(_db.aiSuggestions)
-          ..where(
-            (t) =>
-                t.status.equals('pending') &
-                (t.snoozeUntil.isNull() |
-                    t.snoozeUntil.isSmallerThanValue(now)),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.aiSuggestions)..where(
+              (t) =>
+                  t.status.equals('pending') &
+                  (t.snoozeUntil.isNull() |
+                      t.snoozeUntil.isSmallerThanValue(now)),
+            ))
+            .get();
     return rows.length;
   }
 
   /// Returns true if a pending/snoozed suggestion with [title] already exists.
   Future<bool> hasPendingWithTitle(String title) async {
     final normalized = title.trim().toLowerCase();
-    final rows = await (_db.select(_db.aiSuggestions)
-          ..where(
-            (t) =>
-                t.status.equals('pending') | t.status.equals('snoozed'),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.aiSuggestions)..where(
+              (t) => t.status.equals('pending') | t.status.equals('snoozed'),
+            ))
+            .get();
     return rows.any((r) => r.title.trim().toLowerCase() == normalized);
   }
 

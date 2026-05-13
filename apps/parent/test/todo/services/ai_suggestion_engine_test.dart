@@ -22,19 +22,21 @@ Future<void> _insertCompletedTask(
   String? recurrenceRule,
 }) async {
   final now = DateTime.now().toUtc();
-  await db.into(db.personalTasks).insert(
-    PersonalTasksCompanion(
-      id: Value(id),
-      title: Value(title),
-      isCompleted: const Value(true),
-      completedAt: Value(completedAt.toUtc()),
-      category: Value(category),
-      isPrivate: Value(isPrivate),
-      recurrenceRule: Value(recurrenceRule),
-      createdAt: Value(completedAt.toUtc()),
-      updatedAt: Value(now),
-    ),
-  );
+  await db
+      .into(db.personalTasks)
+      .insert(
+        PersonalTasksCompanion(
+          id: Value(id),
+          title: Value(title),
+          isCompleted: const Value(true),
+          completedAt: Value(completedAt.toUtc()),
+          category: Value(category),
+          isPrivate: Value(isPrivate),
+          recurrenceRule: Value(recurrenceRule),
+          createdAt: Value(completedAt.toUtc()),
+          updatedAt: Value(now),
+        ),
+      );
 }
 
 Future<void> _insertOpenTask(
@@ -45,17 +47,19 @@ Future<void> _insertOpenTask(
   bool isPrivate = false,
 }) async {
   final now = DateTime.now().toUtc();
-  await db.into(db.personalTasks).insert(
-    PersonalTasksCompanion(
-      id: Value(id),
-      title: Value(title),
-      isCompleted: const Value(false),
-      category: Value(category),
-      isPrivate: Value(isPrivate),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-    ),
-  );
+  await db
+      .into(db.personalTasks)
+      .insert(
+        PersonalTasksCompanion(
+          id: Value(id),
+          title: Value(title),
+          isCompleted: const Value(false),
+          category: Value(category),
+          isPrivate: Value(isPrivate),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
 }
 
 // ---------------------------------------------------------------------------
@@ -77,14 +81,13 @@ void main() {
     AiSuggestionEngine _engine({
       PartnerProposalRepository? proposalRepo,
       String? myParentId,
-    }) =>
-        AiSuggestionEngine(
-          db: db,
-          suggestionRepo: suggestionRepo,
-          todoRepo: todoRepo,
-          proposalRepo: proposalRepo,
-          myParentId: myParentId,
-        );
+    }) => AiSuggestionEngine(
+      db: db,
+      suggestionRepo: suggestionRepo,
+      todoRepo: todoRepo,
+      proposalRepo: proposalRepo,
+      myParentId: myParentId,
+    );
 
     // -----------------------------------------------------------------------
     // Habit detector
@@ -94,15 +97,24 @@ void main() {
       test('creates suggestion when median interval is exceeded', () async {
         final now = DateTime.now().toUtc();
         // 3 completions ~30 days apart; last was 35 days ago → 35 > 30 * 0.8 = 24
-        await _insertCompletedTask(db,
-            id: 'h1', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 95)));
-        await _insertCompletedTask(db,
-            id: 'h2', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 65)));
-        await _insertCompletedTask(db,
-            id: 'h3', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 35)));
+        await _insertCompletedTask(
+          db,
+          id: 'h1',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 95)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h2',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 65)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h3',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 35)),
+        );
 
         await _engine().runIfDue();
 
@@ -115,15 +127,24 @@ void main() {
       test('does not suggest when interval not yet exceeded', () async {
         final now = DateTime.now().toUtc();
         // Last completion was only 10 days ago; median ~30 → 10 < 24 → skip
-        await _insertCompletedTask(db,
-            id: 'h1', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 70)));
-        await _insertCompletedTask(db,
-            id: 'h2', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 40)));
-        await _insertCompletedTask(db,
-            id: 'h3', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 10)));
+        await _insertCompletedTask(
+          db,
+          id: 'h1',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 70)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h2',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 40)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h3',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 10)),
+        );
 
         await _engine().runIfDue();
 
@@ -132,15 +153,24 @@ void main() {
 
       test('does not suggest when open task with same title exists', () async {
         final now = DateTime.now().toUtc();
-        await _insertCompletedTask(db,
-            id: 'h1', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 95)));
-        await _insertCompletedTask(db,
-            id: 'h2', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 65)));
-        await _insertCompletedTask(db,
-            id: 'h3', title: 'Boodschappen doen',
-            completedAt: now.subtract(const Duration(days: 35)));
+        await _insertCompletedTask(
+          db,
+          id: 'h1',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 95)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h2',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 65)),
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'h3',
+          title: 'Boodschappen doen',
+          completedAt: now.subtract(const Duration(days: 35)),
+        );
         await _insertOpenTask(db, id: 'o1', title: 'Boodschappen doen');
 
         await _engine().runIfDue();
@@ -148,27 +178,39 @@ void main() {
         expect(await suggestionRepo.countPending(), 0);
       });
 
-      test('does not suggest when only one completion (no interval to compute)', () async {
-        final now = DateTime.now().toUtc();
-        await _insertCompletedTask(db,
-            id: 'h1', title: 'Eenmalige taak',
-            completedAt: now.subtract(const Duration(days: 50)));
+      test(
+        'does not suggest when only one completion (no interval to compute)',
+        () async {
+          final now = DateTime.now().toUtc();
+          await _insertCompletedTask(
+            db,
+            id: 'h1',
+            title: 'Eenmalige taak',
+            completedAt: now.subtract(const Duration(days: 50)),
+          );
 
-        await _engine().runIfDue();
+          await _engine().runIfDue();
 
-        expect(await suggestionRepo.countPending(), 0);
-      });
+          expect(await suggestionRepo.countPending(), 0);
+        },
+      );
 
       test('does not suggest recurring tasks', () async {
         final now = DateTime.now().toUtc();
-        await _insertCompletedTask(db,
-            id: 'r1', title: 'Medicijnen innemen',
-            completedAt: now.subtract(const Duration(days: 60)),
-            recurrenceRule: 'FREQ=DAILY');
-        await _insertCompletedTask(db,
-            id: 'r2', title: 'Medicijnen innemen',
-            completedAt: now.subtract(const Duration(days: 30)),
-            recurrenceRule: 'FREQ=DAILY');
+        await _insertCompletedTask(
+          db,
+          id: 'r1',
+          title: 'Medicijnen innemen',
+          completedAt: now.subtract(const Duration(days: 60)),
+          recurrenceRule: 'FREQ=DAILY',
+        );
+        await _insertCompletedTask(
+          db,
+          id: 'r2',
+          title: 'Medicijnen innemen',
+          completedAt: now.subtract(const Duration(days: 30)),
+          recurrenceRule: 'FREQ=DAILY',
+        );
 
         await _engine().runIfDue();
 
@@ -184,8 +226,12 @@ void main() {
       test('suggests task completed in same month in prior year', () async {
         final now = DateTime.now().toUtc();
         final lastYear = DateTime(now.year - 1, now.month, 15).toUtc();
-        await _insertCompletedTask(db,
-            id: 's1', title: 'Zomerschoonmaak', completedAt: lastYear);
+        await _insertCompletedTask(
+          db,
+          id: 's1',
+          title: 'Zomerschoonmaak',
+          completedAt: lastYear,
+        );
 
         await _engine().runIfDue();
 
@@ -195,29 +241,46 @@ void main() {
         expect(suggestions.first.title, 'Zomerschoonmaak');
       });
 
-      test('does not suggest when open task with same title already exists', () async {
-        final now = DateTime.now().toUtc();
-        final lastYear = DateTime(now.year - 1, now.month, 15).toUtc();
-        await _insertCompletedTask(db,
-            id: 's1', title: 'Zomerschoonmaak', completedAt: lastYear);
-        await _insertOpenTask(db, id: 'o1', title: 'Zomerschoonmaak');
+      test(
+        'does not suggest when open task with same title already exists',
+        () async {
+          final now = DateTime.now().toUtc();
+          final lastYear = DateTime(now.year - 1, now.month, 15).toUtc();
+          await _insertCompletedTask(
+            db,
+            id: 's1',
+            title: 'Zomerschoonmaak',
+            completedAt: lastYear,
+          );
+          await _insertOpenTask(db, id: 'o1', title: 'Zomerschoonmaak');
 
-        await _engine().runIfDue();
+          await _engine().runIfDue();
 
-        expect(await suggestionRepo.countPending(), 0);
-      });
+          expect(await suggestionRepo.countPending(), 0);
+        },
+      );
 
-      test('does not suggest task completed in a different month last year', () async {
-        final now = DateTime.now().toUtc();
-        final differentMonth =
-            DateTime(now.year - 1, (now.month % 12) + 1, 10).toUtc();
-        await _insertCompletedTask(db,
-            id: 's1', title: 'Jaarschoonmaak', completedAt: differentMonth);
+      test(
+        'does not suggest task completed in a different month last year',
+        () async {
+          final now = DateTime.now().toUtc();
+          final differentMonth = DateTime(
+            now.year - 1,
+            (now.month % 12) + 1,
+            10,
+          ).toUtc();
+          await _insertCompletedTask(
+            db,
+            id: 's1',
+            title: 'Jaarschoonmaak',
+            completedAt: differentMonth,
+          );
 
-        await _engine().runIfDue();
+          await _engine().runIfDue();
 
-        expect(await suggestionRepo.countPending(), 0);
-      });
+          expect(await suggestionRepo.countPending(), 0);
+        },
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -225,63 +288,102 @@ void main() {
     // -----------------------------------------------------------------------
 
     group('load balance detector', () {
-      test('proposes oldest task to partner when ≥3 open tasks in same category', () async {
-        final proposalRepo = PartnerProposalRepository(
-            db: db, todoRepository: todoRepo);
+      test(
+        'proposes oldest task to partner when ≥3 open tasks in same category',
+        () async {
+          final proposalRepo = PartnerProposalRepository(
+            db: db,
+            todoRepository: todoRepo,
+          );
 
-        await _insertOpenTask(db,
-            id: 'lb1', title: 'Afwas doen',
-            category: 'household');
-        await _insertOpenTask(db,
-            id: 'lb2', title: 'Stofzuigen',
-            category: 'household');
-        await _insertOpenTask(db,
-            id: 'lb3', title: 'Ramen lappen',
-            category: 'household');
+          await _insertOpenTask(
+            db,
+            id: 'lb1',
+            title: 'Afwas doen',
+            category: 'household',
+          );
+          await _insertOpenTask(
+            db,
+            id: 'lb2',
+            title: 'Stofzuigen',
+            category: 'household',
+          );
+          await _insertOpenTask(
+            db,
+            id: 'lb3',
+            title: 'Ramen lappen',
+            category: 'household',
+          );
 
-        await _engine(
-          proposalRepo: proposalRepo,
-          myParentId: 'parent-1',
-        ).runIfDue();
+          await _engine(
+            proposalRepo: proposalRepo,
+            myParentId: 'parent-1',
+          ).runIfDue();
 
-        final proposals = await db.select(db.partnerProposals).get();
-        expect(proposals, hasLength(1));
-        expect(proposals.first.fromParentId, 'parent-1');
-      });
+          final proposals = await db.select(db.partnerProposals).get();
+          expect(proposals, hasLength(1));
+          expect(proposals.first.fromParentId, 'parent-1');
+        },
+      );
 
-      test('does not propose when fewer than 3 open tasks in a category', () async {
-        final proposalRepo = PartnerProposalRepository(
-            db: db, todoRepository: todoRepo);
+      test(
+        'does not propose when fewer than 3 open tasks in a category',
+        () async {
+          final proposalRepo = PartnerProposalRepository(
+            db: db,
+            todoRepository: todoRepo,
+          );
 
-        await _insertOpenTask(db,
-            id: 'lb1', title: 'Afwas doen',
-            category: 'household');
-        await _insertOpenTask(db,
-            id: 'lb2', title: 'Stofzuigen',
-            category: 'household');
+          await _insertOpenTask(
+            db,
+            id: 'lb1',
+            title: 'Afwas doen',
+            category: 'household',
+          );
+          await _insertOpenTask(
+            db,
+            id: 'lb2',
+            title: 'Stofzuigen',
+            category: 'household',
+          );
 
-        await _engine(
-          proposalRepo: proposalRepo,
-          myParentId: 'parent-1',
-        ).runIfDue();
+          await _engine(
+            proposalRepo: proposalRepo,
+            myParentId: 'parent-1',
+          ).runIfDue();
 
-        final proposals = await db.select(db.partnerProposals).get();
-        expect(proposals, isEmpty);
-      });
+          final proposals = await db.select(db.partnerProposals).get();
+          expect(proposals, isEmpty);
+        },
+      );
 
       test('does not propose private tasks', () async {
         final proposalRepo = PartnerProposalRepository(
-            db: db, todoRepository: todoRepo);
+          db: db,
+          todoRepository: todoRepo,
+        );
 
-        await _insertOpenTask(db,
-            id: 'lb1', title: 'Afwas doen',
-            category: 'household', isPrivate: true);
-        await _insertOpenTask(db,
-            id: 'lb2', title: 'Stofzuigen',
-            category: 'household', isPrivate: true);
-        await _insertOpenTask(db,
-            id: 'lb3', title: 'Ramen lappen',
-            category: 'household', isPrivate: true);
+        await _insertOpenTask(
+          db,
+          id: 'lb1',
+          title: 'Afwas doen',
+          category: 'household',
+          isPrivate: true,
+        );
+        await _insertOpenTask(
+          db,
+          id: 'lb2',
+          title: 'Stofzuigen',
+          category: 'household',
+          isPrivate: true,
+        );
+        await _insertOpenTask(
+          db,
+          id: 'lb3',
+          title: 'Ramen lappen',
+          category: 'household',
+          isPrivate: true,
+        );
 
         await _engine(
           proposalRepo: proposalRepo,
@@ -301,8 +403,12 @@ void main() {
       test('second runIfDue within 24 hours skips self detectors', () async {
         final now = DateTime.now().toUtc();
         final lastYear = DateTime(now.year - 1, now.month, 15).toUtc();
-        await _insertCompletedTask(db,
-            id: 's1', title: 'Zomerschoonmaak', completedAt: lastYear);
+        await _insertCompletedTask(
+          db,
+          id: 's1',
+          title: 'Zomerschoonmaak',
+          completedAt: lastYear,
+        );
 
         final engine = _engine();
 

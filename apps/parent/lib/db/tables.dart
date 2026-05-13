@@ -209,8 +209,7 @@ class AiSuggestions extends Table {
   // 0=none 1=low 2=medium 3=high
   IntColumn get priority => integer().withDefault(const Constant(0))();
 
-  TextColumn get category =>
-      text().withDefault(const Constant('other'))();
+  TextColumn get category => text().withDefault(const Constant('other'))();
 
   DateTimeColumn get suggestedDueDate => dateTime().nullable()();
 
