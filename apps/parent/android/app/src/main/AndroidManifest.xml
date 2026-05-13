@@ -13,8 +13,9 @@
     <!-- Notification permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Exact alarm scheduling for reminders (Android 12+) -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Exact alarm scheduling for reminders (Android 12+).
+         USE_EXACT_ALARM is restricted to alarm/clock apps on API 35+ — do not declare it.
+         SCHEDULE_EXACT_ALARM requires user approval in Alarms & Reminders settings. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application

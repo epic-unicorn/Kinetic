@@ -189,21 +189,35 @@ class ParentNotificationService implements NotificationService {
     final scheduled = tz.TZDateTime.from(at, tz.local);
     if (scheduled.isBefore(DateTime.now())) return; // skip past reminders
 
-    // Use exact scheduling when permitted; fall back to inexact (±15 min) so
-    // reminders always fire even if the Alarms & Reminders grant is missing.
-    final exact = await canScheduleExactAlarms();
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduled,
-      _details,
-      androidScheduleMode: exact
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    // Try exact alarm first (fires on time). If the OS throws a SecurityException
+    // because SCHEDULE_EXACT_ALARM was not granted by the user (Android 12+),
+    // fall back to inexact which fires within ±15 minutes and needs no special
+    // permission. USE_EXACT_ALARM is intentionally not declared in the manifest
+    // because it is restricted to alarm/clock apps on API 35+.
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        _details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (_) {
+      // SecurityException: SCHEDULE_EXACT_ALARM not granted — use inexact fallback.
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        _details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
   }
 
   @override
