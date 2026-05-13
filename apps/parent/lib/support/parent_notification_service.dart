@@ -32,15 +32,16 @@ class ParentNotificationService implements NotificationService {
   static const _channelName = 'Taakopdrachten';
   static const _channelDesc = 'Herinneringen voor taken en opdrachten';
 
-  // Action IDs for snooze
+  // Action IDs for snooze / dismiss
+  static const _snooze10MinId = 'snooze_10min';
   static const _snooze1HourId = 'snooze_1hour';
-  static const _snooze1DayId = 'snooze_1day';
+  static const _dismissId = 'dismiss';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
-  OnReminderActionCallback? _onActionCallback;
+  final OnReminderActionCallback? _onActionCallback;
 
   // Store reminder metadata for rescheduling
   final Map<int, ({String title, String body, DateTime originalTime})>
@@ -138,13 +139,18 @@ class ParentNotificationService implements NotificationService {
       icon: 'ic_notification',
       actions: [
         AndroidNotificationAction(
+          _snooze10MinId,
+          '10 min',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
           _snooze1HourId,
           '1 uur',
           showsUserInterface: false,
         ),
         AndroidNotificationAction(
-          _snooze1DayId,
-          '1 dag',
+          _dismissId,
+          'Verwijderen',
           showsUserInterface: false,
         ),
       ],
@@ -239,6 +245,7 @@ class ParentNotificationService implements NotificationService {
 
   /// Reschedule a reminder for a later time based on the action taken.
   /// Returns the new scheduled time.
+  @override
   Future<DateTime> rescheduleReminder({
     required int id,
     required String actionId,
@@ -248,8 +255,8 @@ class ParentNotificationService implements NotificationService {
     await _ensureInitialized();
 
     final newTime = switch (actionId) {
+      _snooze10MinId => DateTime.now().add(const Duration(minutes: 10)),
       _snooze1HourId => DateTime.now().add(const Duration(hours: 1)),
-      _snooze1DayId => DateTime.now().add(const Duration(days: 1)),
       _ => DateTime.now().add(const Duration(hours: 1)),
     };
 
@@ -257,4 +264,6 @@ class ParentNotificationService implements NotificationService {
 
     return newTime;
   }
+
+  static bool isDismissAction(String actionId) => actionId == _dismissId;
 }
