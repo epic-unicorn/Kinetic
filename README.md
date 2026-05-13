@@ -97,6 +97,12 @@ Each release includes a `sha256.txt` checksum file.
 
 ### Verifying release APKs
 
+There are two separate things you can verify — choose the right one for your use case:
+
+#### 1. APK file integrity (SHA-256 file hash)
+
+`sha256sum` outputs a continuous lowercase hex string (e.g. `abc123def456...`). This matches the value in `sha256.txt` and in the release notes.
+
 After downloading the APK and its `sha256.txt` from a GitHub Release:
 
 ```bash
@@ -108,4 +114,17 @@ Or manually compare:
 ```bash
 sha256sum kinetic-parent-0.2.0.apk
 # compare with the digest listed in sha256.txt
+```
+
+#### 2. Signing certificate fingerprint (AppVerifier format)
+
+AppVerifier and tools like `keytool` show the SHA-256 fingerprint of the **signing certificate** in `AA:BB:CC:DD:...` format (uppercase colon-separated pairs). This is a different value from the APK file hash above.
+
+The certificate fingerprint is listed in the GitHub Release notes under **Certificate Fingerprint (AppVerifier)**.
+
+To extract it yourself from the downloaded APK:
+
+```bash
+keytool -printcert -jarfile kinetic-parent-0.2.0.apk
+# look for the SHA256: line — format is AA:BB:CC:DD:...
 ```

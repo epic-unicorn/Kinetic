@@ -206,6 +206,13 @@ jobs:
           echo "KIDS_SHA256=$(cat ./artifacts/kids/sha256.txt)" >> $GITHUB_ENV
           echo "PARENT_SHA256=$(cat ./artifacts/parent/sha256.txt)" >> $GITHUB_ENV
 
+      - name: Extract certificate fingerprints
+        run: |
+          KIDS_CERT=$(keytool -printcert -jarfile ./artifacts/kids/kinetic-kids-*.apk 2>/dev/null | grep "SHA256:" | awk '{print $2}')
+          PARENT_CERT=$(keytool -printcert -jarfile ./artifacts/parent/kinetic-parent-*.apk 2>/dev/null | grep "SHA256:" | awk '{print $2}')
+          echo "KIDS_CERT_SHA256=$KIDS_CERT" >> $GITHUB_ENV
+          echo "PARENT_CERT_SHA256=$PARENT_CERT" >> $GITHUB_ENV
+
       - name: Create Kids App Release
         uses: softprops/action-gh-release@v1
         with:
@@ -216,6 +223,12 @@ jobs:
             Verify the integrity of the downloaded APK:
             ```
             ${{ env.KIDS_SHA256 }}  kinetic-kids-${{ steps.version.outputs.version }}.apk
+            ```
+
+            ## Certificate Fingerprint (AppVerifier)
+            SHA-256 fingerprint of the signing certificate (`AA:BB:CC:DD:...` format as shown by AppVerifier):
+            ```
+            ${{ env.KIDS_CERT_SHA256 }}
             ```
           files: |
             ./artifacts/kids/kinetic-kids-${{ steps.version.outputs.version }}.apk
@@ -233,6 +246,12 @@ jobs:
             Verify the integrity of the downloaded APK:
             ```
             ${{ env.PARENT_SHA256 }}  kinetic-parent-${{ steps.version.outputs.version }}.apk
+            ```
+
+            ## Certificate Fingerprint (AppVerifier)
+            SHA-256 fingerprint of the signing certificate (`AA:BB:CC:DD:...` format as shown by AppVerifier):
+            ```
+            ${{ env.PARENT_CERT_SHA256 }}
             ```
           files: |
             ./artifacts/parent/kinetic-parent-${{ steps.version.outputs.version }}.apk
