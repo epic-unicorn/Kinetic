@@ -158,6 +158,76 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (mounted) Navigator.pop(context);
   }
 
+  void _showSendDialog(BuildContext context) {
+    final task = widget.task;
+    if (task == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withAlpha(80),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Taak doorsturen',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              if (widget.proposalRepo != null)
+                ListTile(
+                  leading: const Icon(Icons.people_outline),
+                  title: const Text('Stuur naar partner'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _sendToPartner(context);
+                  },
+                ),
+              if (task.kidsTaskId != null)
+                ListTile(
+                  leading: Icon(Icons.bolt, color: kColorTeal),
+                  title: const Text('Opdracht aangemaakt \u2713'),
+                  enabled: false,
+                )
+              else ...[
+                ListTile(
+                  leading: const Icon(Icons.bolt),
+                  title: const Text('Stuur naar kinderen'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _sendToKids(context);
+                  },
+                ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _sendToPartner(BuildContext context) async {
     final task = widget.task;
     if (task == null || widget.proposalRepo == null) return;
@@ -248,10 +318,41 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Stuur naar kinderen?'),
-        content: Text(
-          selectedKid != null
-              ? '"${task.title}" wordt als opdracht naar ${selectedKid.name} gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
-              : '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              selectedKid != null
+                  ? '"${task.title}" wordt als opdracht naar ${selectedKid.name} gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
+                  : '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.star_outline, size: 18),
+                const SizedBox(width: 8),
+                const Text('XP beloning:'),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 72,
+                  child: TextField(
+                    controller: _xpCtrl,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -341,14 +442,68 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           const Divider(height: 16),
 
           // ── Metadata rows ────────────────────────────────────────────────
-          // Date row — auto-selects today when toggled on
+          // Herinnering row — combined date + time
           _MetaRow(
-            icon: Icons.calendar_today_outlined,
-            label: _dueDate != null
-                ? _formatDateOnly(_dueDate!.toLocal())
-                : 'Vervaldatum',
+            icon: Icons.alarm_outlined,
+            label: 'Herinnering',
             active: _dueDate != null,
-            onTap: () => _pickDate(),
+            onTap: _dueDate != null ? null : () => _pickReminder(),
+            titleWidget: _dueDate != null
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: _pickDateOnly,
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            _formatDateOnly(_dueDate!.toLocal()),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: kColorTeal,
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '·',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: _pickTimeOnly,
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            _isAllDay
+                                ? 'Tijd toevoegen'
+                                : _formatTimeOnly(_dueDate!.toLocal()),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: kColorTeal,
+                                  decoration: TextDecoration.underline,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
             trailing: _dueDate != null
                 ? IconButton(
                     icon: const Icon(Icons.close, size: 16),
@@ -362,61 +517,62 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             leadingCheckbox: true,
             checked: _dueDate != null,
             onCheckChanged: (v) {
-              setState(() {
-                if (v) {
-                  final now = DateTime.now();
-                  _dueDate = DateTime(now.year, now.month, now.day).toUtc();
-                  _isAllDay = true;
-                } else {
+              if (v) {
+                _setDefaultReminder();
+              } else {
+                setState(() {
                   _dueDate = null;
                   _isAllDay = true;
                   _recurrenceRule = null;
-                }
-              });
-            },
-          ),
-          // Time row — always visible; checking it auto-sets date to today
-          _MetaRow(
-            icon: Icons.access_time_outlined,
-            label: !_isAllDay && _dueDate != null
-                ? _formatTimeOnly(_dueDate!.toLocal())
-                : 'Tijd instellen',
-            active: !_isAllDay && _dueDate != null,
-            onTap: () {
-              if (!_isAllDay && _dueDate != null) {
-                _pickTime();
-              } else {
-                _enableTimeWithDate();
-              }
-            },
-            trailing: !_isAllDay && _dueDate != null
-                ? IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () => setState(() {
-                      if (_dueDate != null) {
-                        final d = _dueDate!.toLocal();
-                        _dueDate = DateTime(d.year, d.month, d.day).toUtc();
-                      }
-                      _isAllDay = true;
-                    }),
-                  )
-                : null,
-            leadingCheckbox: true,
-            checked: !_isAllDay && _dueDate != null,
-            onCheckChanged: (v) {
-              if (v) {
-                _enableTimeWithDate();
-              } else {
-                setState(() {
-                  if (_dueDate != null) {
-                    final d = _dueDate!.toLocal();
-                    _dueDate = DateTime(d.year, d.month, d.day).toUtc();
-                  }
-                  _isAllDay = true;
                 });
               }
             },
           ),
+          // Preset chips — only when no reminder is set
+          if (_dueDate == null)
+            ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              leading: const SizedBox(width: 40),
+              title: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  ActionChip(
+                    label: const Text('1 uur'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        _applyReminderPreset(const Duration(hours: 1)),
+                  ),
+                  ActionChip(
+                    label: const Text('Vanavond 20:00'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      final now = DateTime.now();
+                      _applyReminderAt(
+                        DateTime(now.year, now.month, now.day, 20, 0),
+                      );
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Morgen 09:00'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      final t = DateTime.now().add(const Duration(days: 1));
+                      _applyReminderAt(DateTime(t.year, t.month, t.day, 9, 0));
+                    },
+                  ),
+                  ActionChip(
+                    label: const Text('Morgen 20:00'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      final t = DateTime.now().add(const Duration(days: 1));
+                      _applyReminderAt(DateTime(t.year, t.month, t.day, 20, 0));
+                    },
+                  ),
+                ],
+              ),
+            ),
           _MetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
@@ -453,70 +609,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               onTap: () => _pickRecurrence(context),
             ),
 
-          // ── Family action buttons (partner + kids) ───────────────────────
-          if (widget.hasFamilyKey && widget.task != null) ...[
-            const Divider(height: 16, indent: 20, endIndent: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.proposalRepo != null)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.people_outline, size: 18),
-                      label: const Text('Stuur naar partner'),
-                      onPressed: _saving ? null : () => _sendToPartner(context),
-                    ),
-                  const SizedBox(height: 8),
-                  if (widget.task!.kidsTaskId != null)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.bolt, size: 18),
-                      label: const Text('Opdracht aangemaakt \u2713'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: kColorTeal,
-                        side: BorderSide(
-                          color: kColorTeal.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      onPressed: null,
-                    )
-                  else ...[
-                    Row(
-                      children: [
-                        const Icon(Icons.star_outline, size: 18),
-                        const SizedBox(width: 8),
-                        const Text('XP beloning:'),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 64,
-                          child: TextField(
-                            controller: _xpCtrl,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.bolt, size: 18),
-                      label: const Text('Stuur naar kinderen'),
-                      onPressed: _saving ? null : () => _sendToKids(context),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-
           const SizedBox(height: 8),
 
           // ── Action bar ───────────────────────────────────────────────────
@@ -530,6 +622,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     color: Theme.of(context).colorScheme.error,
                     tooltip: 'Verwijderen',
                     onPressed: _saving ? null : () => _confirmDelete(context),
+                  ),
+                if (widget.hasFamilyKey && widget.task != null)
+                  IconButton(
+                    icon: const Icon(Icons.send_outlined),
+                    tooltip: 'Doorsturen',
+                    onPressed: _saving ? null : () => _showSendDialog(context),
                   ),
                 const Spacer(),
                 TextButton(
@@ -549,7 +647,28 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     );
   }
 
-  Future<void> _pickDate() async {
+  void _setDefaultReminder() {
+    final now = DateTime.now();
+    setState(() {
+      _dueDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+      ).toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  void _applyReminderAt(DateTime when) {
+    setState(() {
+      _dueDate = when.toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  Future<void> _pickDateOnly() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _dueDate?.toLocal() ?? DateTime.now(),
@@ -557,79 +676,23 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       lastDate: DateTime(2099),
     );
     if (picked == null || !mounted) return;
-    setState(() {
-      final existing = _dueDate?.toLocal();
-      if (!_isAllDay && existing != null) {
-        // Preserve existing time when only changing the date.
-        _dueDate = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          existing.hour,
-          existing.minute,
-        ).toUtc();
-      } else {
-        _dueDate = DateTime(picked.year, picked.month, picked.day).toUtc();
-        _isAllDay = true;
-      }
-    });
-  }
-
-  /// Enable time: auto-set to current time + 1 hour, rounded to full hour.
-  void _enableTime() {
-    final base = _dueDate?.toLocal() ?? DateTime.now();
-    final now = DateTime.now();
-    // Round now + 1h up to the next full hour.
-    final target = now.add(const Duration(hours: 1));
-    final rounded = DateTime(
-      target.year,
-      target.month,
-      target.day,
-      target.hour,
-    );
+    final existing = _dueDate?.toLocal() ?? DateTime.now();
     setState(() {
       _dueDate = DateTime(
-        base.year,
-        base.month,
-        base.day,
-        rounded.hour,
-        0,
+        picked.year,
+        picked.month,
+        picked.day,
+        _isAllDay ? 0 : existing.hour,
+        _isAllDay ? 0 : existing.minute,
       ).toUtc();
-      _isAllDay = false;
     });
   }
 
-  /// Like [_enableTime] but also sets date to today if no date is set yet.
-  void _enableTimeWithDate() {
-    final now = DateTime.now();
-    final base = _dueDate?.toLocal() ?? now;
-    final target = now.add(const Duration(hours: 1));
-    setState(() {
-      _dueDate = DateTime(
-        base.year,
-        base.month,
-        base.day,
-        target.hour,
-        0,
-      ).toUtc();
-      _isAllDay = false;
-      // If date wasn't set yet, default to today.
-      if (_dueDate == null) {
-        _dueDate = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          target.hour,
-          0,
-        ).toUtc();
-      }
-    });
-  }
-
-  Future<void> _pickTime() async {
+  Future<void> _pickTimeOnly() async {
     final current = _dueDate?.toLocal() ?? DateTime.now();
     final picked = await showTimePicker(
       context: context,
+      initialEntryMode: TimePickerEntryMode.input,
       initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -637,14 +700,61 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       ),
     );
     if (picked == null || !mounted) return;
+    final d = _dueDate?.toLocal() ?? DateTime.now();
     setState(() {
-      final d = _dueDate?.toLocal() ?? DateTime.now();
       _dueDate = DateTime(
         d.year,
         d.month,
         d.day,
         picked.hour,
         picked.minute,
+      ).toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  void _applyReminderPreset(Duration offset) {
+    final target = DateTime.now().add(offset);
+    setState(() {
+      _dueDate = DateTime(
+        target.year,
+        target.month,
+        target.day,
+        target.hour,
+        0,
+      ).toUtc();
+      _isAllDay = false;
+    });
+  }
+
+  Future<void> _pickReminder() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _dueDate?.toLocal() ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2099),
+    );
+    if (pickedDate == null || !mounted) return;
+    final current = _dueDate?.toLocal() ?? DateTime.now();
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialEntryMode: TimePickerEntryMode.input,
+      initialTime: _isAllDay
+          ? TimeOfDay.now()
+          : TimeOfDay(hour: current.hour, minute: current.minute),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (pickedTime == null || !mounted) return;
+    setState(() {
+      _dueDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
       ).toUtc();
       _isAllDay = false;
     });
@@ -770,6 +880,7 @@ class _MetaRow extends StatelessWidget {
   final Color? color;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final Widget? titleWidget;
   final bool leadingCheckbox;
   final bool checked;
   final ValueChanged<bool>? onCheckChanged;
@@ -781,6 +892,7 @@ class _MetaRow extends StatelessWidget {
     required this.onTap,
     this.color,
     this.trailing,
+    this.titleWidget,
     this.leadingCheckbox = false,
     this.checked = false,
     this.onCheckChanged,
@@ -795,20 +907,22 @@ class _MetaRow extends StatelessWidget {
     if (leadingCheckbox) {
       return ListTile(
         dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        leading: Checkbox(
-          value: checked,
-          onChanged: onCheckChanged != null
-              ? (v) => onCheckChanged!(v ?? false)
-              : null,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        leading: GestureDetector(
+          onTap: () => onCheckChanged?.call(!checked),
+          child: Icon(
+            checked ? Icons.check_box : Icons.check_box_outline_blank,
+            size: 20,
+            color: effectiveColor,
+          ),
         ),
-        title: Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
-        ),
+        title:
+            titleWidget ??
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
+            ),
         trailing: trailing,
         onTap: checked ? onTap : () => onCheckChanged?.call(true),
       );
@@ -817,12 +931,14 @@ class _MetaRow extends StatelessWidget {
     return ListTile(
       dense: true,
       leading: Icon(icon, size: 20, color: effectiveColor),
-      title: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
-      ),
+      title:
+          titleWidget ??
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
+          ),
       trailing: trailing,
       onTap: onTap,
     );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -8,7 +9,126 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../notifications/notification_service.dart';
 
-// Callback function type for snooze/postpone actions
+// ---------------------------------------------------------------------------
+// Top-level constants — shared between the service and the background isolate
+// handler so they can be referenced from a @pragma('vm:entry-point') function.
+// ---------------------------------------------------------------------------
+
+const _kChannelId = 'task_reminders';
+const _kChannelName = 'Taakopdrachten';
+const _kChannelDesc = 'Herinneringen voor taken en opdrachten';
+const _kSnooze10MinId = 'snooze_10min';
+const _kDismissId = 'dismiss';
+
+const _kNotifDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    _kChannelId,
+    _kChannelName,
+    channelDescription: _kChannelDesc,
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: 'ic_notification',
+    actions: [
+      AndroidNotificationAction(
+        _kSnooze10MinId,
+        'Snooze 10min',
+        showsUserInterface: false,
+      ),
+      AndroidNotificationAction(
+        _kDismissId,
+        'Negeren',
+        showsUserInterface: false,
+      ),
+    ],
+  ),
+  iOS: DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  ),
+);
+
+// ---------------------------------------------------------------------------
+// Background notification handler.
+//
+// Must be a top-level function with @pragma so the Dart VM can call it in a
+// background isolate when the app is in the background or terminated.
+// "Negeren" simply dismisses — the notification is already gone from the
+// tray, so nothing needs to happen.  "Snooze 10min" re-schedules using a
+// freshly created plugin instance; title/body are recovered from the payload
+// that was stored when the notification was first scheduled.
+// ---------------------------------------------------------------------------
+
+@pragma('vm:entry-point')
+Future<void> _notifBackgroundHandler(NotificationResponse response) async {
+  final actionId = response.actionId;
+  if (actionId == null || actionId == _kDismissId) return;
+
+  if (actionId == _kSnooze10MinId) {
+    String title = 'Herinnering';
+    String body = '';
+    final payload = response.payload;
+    if (payload != null) {
+      try {
+        final data = jsonDecode(payload) as Map<String, dynamic>;
+        title = data['title'] as String? ?? title;
+        body = data['body'] as String? ?? body;
+      } catch (_) {}
+    }
+
+    // Timezone initialisation — fall back to UTC on any failure.
+    tz.initializeTimeZones();
+    try {
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+    } catch (_) {
+      tz.setLocalLocation(tz.UTC);
+    }
+
+    final plugin = FlutterLocalNotificationsPlugin();
+    await plugin.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('ic_notification'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+      ),
+    );
+
+    final newTime = tz.TZDateTime.now(
+      tz.local,
+    ).add(const Duration(minutes: 10));
+    try {
+      await plugin.zonedSchedule(
+        response.id ?? 0,
+        title,
+        body,
+        newTime,
+        _kNotifDetails,
+        payload: payload,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (_) {
+      await plugin.zonedSchedule(
+        response.id ?? 0,
+        title,
+        body,
+        newTime,
+        _kNotifDetails,
+        payload: payload,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+  }
+}
+
+// Callback function type for snooze/dismiss actions
 typedef OnReminderActionCallback =
     Future<void> Function(
       int reminderId,
@@ -28,22 +148,13 @@ typedef OnReminderActionCallback =
 // ---------------------------------------------------------------------------
 
 class ParentNotificationService implements NotificationService {
-  static const _channelId = 'task_reminders';
-  static const _channelName = 'Taakopdrachten';
-  static const _channelDesc = 'Herinneringen voor taken en opdrachten';
-
-  // Action IDs for snooze / dismiss
-  static const _snooze10MinId = 'snooze_10min';
-  static const _snooze1HourId = 'snooze_1hour';
-  static const _dismissId = 'dismiss';
-
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
   final OnReminderActionCallback? _onActionCallback;
 
-  // Store reminder metadata for rescheduling
+  // Store reminder metadata for rescheduling (foreground use)
   final Map<int, ({String title, String body, DateTime originalTime})>
   _scheduledReminders = {};
 
@@ -104,6 +215,9 @@ class ParentNotificationService implements NotificationService {
           ),
         ),
         onDidReceiveNotificationResponse: _handleNotificationAction,
+        // Handles action button taps when the app is in the background or
+        // terminated.  Must reference a top-level @pragma function.
+        onDidReceiveBackgroundNotificationResponse: _notifBackgroundHandler,
       );
 
       // Request Android 13+ POST_NOTIFICATIONS permission.
@@ -129,39 +243,6 @@ class ParentNotificationService implements NotificationService {
     }
   }
 
-  static const _details = NotificationDetails(
-    android: AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: 'ic_notification',
-      actions: [
-        AndroidNotificationAction(
-          _snooze10MinId,
-          '10 min',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
-          _snooze1HourId,
-          '1 uur',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
-          _dismissId,
-          'Verwijderen',
-          showsUserInterface: false,
-        ),
-      ],
-    ),
-    iOS: DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    ),
-  );
-
   void _handleNotificationAction(NotificationResponse response) {
     final actionId = response.actionId;
     if (actionId == null || actionId.isEmpty) return;
@@ -169,14 +250,27 @@ class ParentNotificationService implements NotificationService {
     final reminderId = response.id ?? 0;
     final reminder = _scheduledReminders[reminderId];
 
-    if (reminder != null && _onActionCallback != null) {
-      _onActionCallback.call(
-        reminderId,
-        actionId,
-        reminder.title,
-        reminder.body,
-        reminder.originalTime,
-      );
+    // Fall back to payload when the in-memory map is empty (e.g. after a hot
+    // restart or if the task was scheduled in a previous session).
+    final title =
+        reminder?.title ??
+        _fieldFromPayload(response.payload, 'title', 'Herinnering');
+    final body =
+        reminder?.body ?? _fieldFromPayload(response.payload, 'body', '');
+    final originalTime = reminder?.originalTime ?? DateTime.now();
+
+    if (_onActionCallback != null) {
+      _onActionCallback.call(reminderId, actionId, title, body, originalTime);
+    }
+  }
+
+  String _fieldFromPayload(String? payload, String key, String fallback) {
+    if (payload == null) return fallback;
+    try {
+      return (jsonDecode(payload) as Map<String, dynamic>)[key] as String? ??
+          fallback;
+    } catch (_) {
+      return fallback;
     }
   }
 
@@ -189,36 +283,39 @@ class ParentNotificationService implements NotificationService {
   }) async {
     await _ensureInitialized();
 
-    // Store reminder metadata for action handling
+    // Store reminder metadata for action handling (foreground)
     _scheduledReminders[id] = (title: title, body: body, originalTime: at);
 
     final scheduled = tz.TZDateTime.from(at, tz.local);
     if (scheduled.isBefore(DateTime.now())) return; // skip past reminders
 
-    // Try exact alarm first (fires on time). If the OS throws a SecurityException
-    // because SCHEDULE_EXACT_ALARM was not granted by the user (Android 12+),
-    // fall back to inexact which fires within ±15 minutes and needs no special
-    // permission. USE_EXACT_ALARM is intentionally not declared in the manifest
-    // because it is restricted to alarm/clock apps on API 35+.
+    // Encode title/body into the payload so the background handler can
+    // recover them without needing the in-memory map.
+    final payload = jsonEncode({'title': title, 'body': body});
+
+    // Try exact alarm first (fires on time). If the OS throws a
+    // SecurityException because SCHEDULE_EXACT_ALARM was not granted (Android
+    // 12+), fall back to inexact which fires within ±15 minutes.
     try {
       await _plugin.zonedSchedule(
         id,
         title,
         body,
         scheduled,
-        _details,
+        _kNotifDetails,
+        payload: payload,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (_) {
-      // SecurityException: SCHEDULE_EXACT_ALARM not granted — use inexact fallback.
       await _plugin.zonedSchedule(
         id,
         title,
         body,
         scheduled,
-        _details,
+        _kNotifDetails,
+        payload: payload,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -240,10 +337,10 @@ class ParentNotificationService implements NotificationService {
     String? payload,
   }) async {
     await _ensureInitialized();
-    await _plugin.show(0, title, body, _details, payload: payload);
+    await _plugin.show(0, title, body, _kNotifDetails, payload: payload);
   }
 
-  /// Reschedule a reminder for a later time based on the action taken.
+  /// Reschedule a reminder 10 minutes from now (snooze).
   /// Returns the new scheduled time.
   @override
   Future<DateTime> rescheduleReminder({
@@ -254,16 +351,10 @@ class ParentNotificationService implements NotificationService {
   }) async {
     await _ensureInitialized();
 
-    final newTime = switch (actionId) {
-      _snooze10MinId => DateTime.now().add(const Duration(minutes: 10)),
-      _snooze1HourId => DateTime.now().add(const Duration(hours: 1)),
-      _ => DateTime.now().add(const Duration(hours: 1)),
-    };
-
+    final newTime = DateTime.now().add(const Duration(minutes: 10));
     await scheduleReminder(id: id, title: title, body: body, at: newTime);
-
     return newTime;
   }
 
-  static bool isDismissAction(String actionId) => actionId == _dismissId;
+  static bool isDismissAction(String actionId) => actionId == _kDismissId;
 }

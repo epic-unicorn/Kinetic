@@ -6,7 +6,6 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
 import 'notifications/notification_service.dart';
-import 'partner/screens/family_screen.dart';
 import 'partner/services/partner_proposal_repository.dart';
 import 'settings/settings_repository.dart';
 import 'settings/settings_screen.dart';
@@ -91,7 +90,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   final partnerPaired = ValueNotifier<bool>(false);
   final enrolledKidsCount = ValueNotifier<int>(0);
   final webDavConfigured = ValueNotifier<bool>(false);
-  final pendingProposalCount = ValueNotifier<int>(0);
 
   /// Incremented after every successful sync — lets the Kinderen tab reload.
   final _syncDoneCount = ValueNotifier<int>(0);
@@ -104,7 +102,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   /// Non-null when notification plugin initialization failed.
   final notifInitError = ValueNotifier<String?>(null);
-  StreamSubscription<int>? _proposalCountSub;
   Timer? _syncDebounce;
 
   int _selectedIndex = 0;
@@ -144,11 +141,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
     _webDavConfig = WebDavConfigRepository(FlutterSecureKeyValueStore());
 
     _aiSuggestionRepository = AiSuggestionRepository(widget.db);
-
-    // Subscribe to the pending count so the nav badge stays live.
-    _proposalCountSub = _proposalRepository.watchPendingCount().listen(
-      (count) => pendingProposalCount.value = count,
-    );
 
     _initSync();
     // Request notification permissions immediately so the Android dialog
@@ -191,13 +183,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
         onDisconnectsDetected: _handleDisconnects,
       );
       webDavConfigured.value = true;
-
-      // Re-subscribe badge count with myParentId so own outgoing proposals
-      // are excluded from the count.
-      _proposalCountSub?.cancel();
-      _proposalCountSub = _proposalRepository
-          .watchPendingCount(myParentId: config.parentId)
-          .listen((count) => pendingProposalCount.value = count);
     } else {
       _syncOrchestrator = null;
       webDavConfigured.value = false;
@@ -277,7 +262,6 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _proposalCountSub?.cancel();
     _syncDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     widget.db.close();
@@ -324,181 +308,151 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
             return ValueListenableBuilder<bool>(
               valueListenable: webDavConfigured,
               builder: (context, hasWebDav, _) {
-                return ValueListenableBuilder<int>(
-                  valueListenable: pendingProposalCount,
-                  builder: (context, pendingCount, _) {
-                    final hasFamily = paired || kidsCount > 0;
-                    final screens = <Widget>[
-                      TasksScreen(
-                        repo: _todoRepository,
-                        settingsRepo: widget.settingsRepo,
-                        proposalRepo: paired ? _proposalRepository : null,
-                        suggestionRepo: _aiSuggestionRepository,
-                        myParentId: _syncOrchestrator?.parentId,
-                        syncStatus: hasWebDav ? syncStatus : null,
-                        hasFamilyKey: paired || kidsCount > 0,
-                        partnerPaired: paired,
-                        onSyncRetry: _triggerSync,
-                        configRepo: _webDavConfig,
-                      ),
-                      if (hasFamily)
-                        FamilyScreen(
-                          proposalRepository: _proposalRepository,
-                          myParentId: _syncOrchestrator?.username,
-                          configRepo: _webDavConfig,
-                          syncConfig: _syncOrchestrator!.config,
-                          partnerPaired: paired,
-                          enrolledKidsCount: kidsCount,
-                          syncDoneCount: _syncDoneCount,
+                final screens = <Widget>[
+                  TasksScreen(
+                    repo: _todoRepository,
+                    settingsRepo: widget.settingsRepo,
+                    proposalRepo: paired ? _proposalRepository : null,
+                    suggestionRepo: _aiSuggestionRepository,
+                    myParentId: _syncOrchestrator?.parentId,
+                    syncStatus: hasWebDav ? syncStatus : null,
+                    hasFamilyKey: paired || kidsCount > 0,
+                    partnerPaired: paired,
+                    onSyncRetry: _triggerSync,
+                    configRepo: _webDavConfig,
+                    enrolledKidsCount: kidsCount,
+                    syncDoneCount: _syncDoneCount,
+                    syncConfig: _syncOrchestrator?.config,
+                  ),
+                  NotesScreen(
+                    repo: _noteRepository,
+                    settingsRepo: widget.settingsRepo,
+                    onSyncRetry: _triggerSync,
+                    syncStatus: hasWebDav ? syncStatus : null,
+                    hasFamilyKey: ValueNotifier(paired || kidsCount > 0),
+                  ),
+                  SettingsScreen(
+                    db: widget.db,
+                    configRepo: _webDavConfig,
+                    settingsRepo: widget.settingsRepo,
+                    syncOrchestrator: _syncOrchestrator,
+                    onConfigSaved: _initSync,
+                    onRestoreComplete: _onRestoreComplete,
+                  ),
+                ];
+
+                const destinations = <NavigationDestination>[
+                  NavigationDestination(
+                    icon: Icon(Icons.check_circle_outline),
+                    selectedIcon: Icon(Icons.check_circle),
+                    label: 'Taken',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.note_outlined),
+                    selectedIcon: Icon(Icons.note),
+                    label: 'Notities',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
+                    label: 'Instellingen',
+                  ),
+                ];
+
+                final clampedIndex = _selectedIndex.clamp(
+                  0,
+                  screens.length - 1,
+                );
+
+                return Scaffold(
+                  body: Column(
+                    children: [
+                      if (initErr != null)
+                        MaterialBanner(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          content: Text(
+                            'Meldingenservice kon niet starten: $initErr',
+                          ),
+                          leading: const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => notifInitError.value = null,
+                              child: const Text('Sluiten'),
+                            ),
+                          ],
                         ),
-                      NotesScreen(
-                        repo: _noteRepository,
-                        settingsRepo: widget.settingsRepo,
-                        onSyncRetry: _triggerSync,
-                        syncStatus: hasWebDav ? syncStatus : null,
-                        hasFamilyKey: ValueNotifier(paired || kidsCount > 0),
-                      ),
-                      SettingsScreen(
-                        db: widget.db,
-                        configRepo: _webDavConfig,
-                        settingsRepo: widget.settingsRepo,
-                        syncOrchestrator: _syncOrchestrator,
-                        onConfigSaved: _initSync,
-                        onRestoreComplete: _onRestoreComplete,
-                      ),
-                    ];
-
-                    final destinations = <NavigationDestination>[
-                      const NavigationDestination(
-                        icon: Icon(Icons.check_circle_outline),
-                        selectedIcon: Icon(Icons.check_circle),
-                        label: 'Taken',
-                      ),
-                      if (hasFamily)
-                        NavigationDestination(
-                          icon: Badge(
-                            isLabelVisible: pendingCount > 0,
-                            label: Text('$pendingCount'),
-                            child: const Icon(Icons.family_restroom),
+                      if (!notifEnabled)
+                        MaterialBanner(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                          selectedIcon: Badge(
-                            isLabelVisible: pendingCount > 0,
-                            label: Text('$pendingCount'),
-                            child: const Icon(Icons.family_restroom_outlined),
+                          content: const Text(
+                            'Meldingen zijn uitgeschakeld. Zet ze aan in Instellingen om herinneringen te ontvangen.',
                           ),
-                          label: 'Familie',
+                          leading: const Icon(Icons.notifications_off_outlined),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                const channel = MethodChannel(
+                                  'net.moonbaseone.kinetic.parent/settings',
+                                );
+                                channel
+                                    .invokeMethod<void>(
+                                      'openNotificationSettings',
+                                    )
+                                    .catchError((_) {});
+                              },
+                              child: const Text('Instellingen'),
+                            ),
+                          ],
                         ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.note_outlined),
-                        selectedIcon: Icon(Icons.note),
-                        label: 'Notities',
-                      ),
-                      const NavigationDestination(
-                        icon: Icon(Icons.settings_outlined),
-                        selectedIcon: Icon(Icons.settings),
-                        label: 'Instellingen',
-                      ),
-                    ];
-
-                    // Clamp selected index in case the Familie tab disappears
-                    final clampedIndex = _selectedIndex.clamp(
-                      0,
-                      screens.length - 1,
-                    );
-
-                    return Scaffold(
-                      body: Column(
-                        children: [
-                          if (initErr != null)
-                            MaterialBanner(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              content: Text(
-                                'Meldingenservice kon niet starten: $initErr',
-                              ),
-                              leading: const Icon(
-                                Icons.error_outline,
-                                color: Colors.red,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => notifInitError.value = null,
-                                  child: const Text('Sluiten'),
-                                ),
-                              ],
-                            ),
-                          if (!notifEnabled)
-                            MaterialBanner(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              content: const Text(
-                                'Meldingen zijn uitgeschakeld. Zet ze aan in Instellingen om herinneringen te ontvangen.',
-                              ),
-                              leading: const Icon(
-                                Icons.notifications_off_outlined,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    const channel = MethodChannel(
-                                      'net.moonbaseone.kinetic.parent/settings',
-                                    );
-                                    channel
-                                        .invokeMethod<void>(
-                                          'openNotificationSettings',
-                                        )
-                                        .catchError((_) {});
-                                  },
-                                  child: const Text('Instellingen'),
-                                ),
-                              ],
-                            ),
-                          if (notifEnabled && !exactEnabled)
-                            MaterialBanner(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              content: const Text(
-                                'Precieze herinneringen zijn uitgeschakeld. Sta "Alarmen & herinneringen" toe voor exacte tijden.',
-                              ),
-                              leading: const Icon(Icons.alarm_off_outlined),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    const channel = MethodChannel(
-                                      'net.moonbaseone.kinetic.parent/settings',
-                                    );
-                                    channel
-                                        .invokeMethod<void>(
-                                          'openExactAlarmSettings',
-                                        )
-                                        .catchError((_) {});
-                                  },
-                                  child: const Text('Instellingen'),
-                                ),
-                              ],
-                            ),
-                          Expanded(
-                            child: IndexedStack(
-                              index: clampedIndex,
-                              children: screens,
-                            ),
+                      if (notifEnabled && !exactEnabled)
+                        MaterialBanner(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                        ],
+                          content: const Text(
+                            'Precieze herinneringen zijn uitgeschakeld. Sta "Alarmen & herinneringen" toe voor exacte tijden.',
+                          ),
+                          leading: const Icon(Icons.alarm_off_outlined),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                const channel = MethodChannel(
+                                  'net.moonbaseone.kinetic.parent/settings',
+                                );
+                                channel
+                                    .invokeMethod<void>(
+                                      'openExactAlarmSettings',
+                                    )
+                                    .catchError((_) {});
+                              },
+                              child: const Text('Instellingen'),
+                            ),
+                          ],
+                        ),
+                      Expanded(
+                        child: IndexedStack(
+                          index: clampedIndex,
+                          children: screens,
+                        ),
                       ),
-                      bottomNavigationBar: NavigationBar(
-                        selectedIndex: clampedIndex,
-                        onDestinationSelected: (i) =>
-                            setState(() => _selectedIndex = i),
-                        destinations: destinations,
-                      ),
-                    );
-                  },
+                    ],
+                  ),
+                  bottomNavigationBar: NavigationBar(
+                    selectedIndex: clampedIndex,
+                    onDestinationSelected: (i) =>
+                        setState(() => _selectedIndex = i),
+                    destinations: destinations,
+                  ),
                 );
               },
             );
