@@ -22,15 +22,6 @@ abstract class NotificationService {
     String? payload,
   });
 
-  /// Reschedule a reminder for a later time based on snooze/postpone action.
-  /// Returns the new scheduled time.
-  Future<DateTime> rescheduleReminder({
-    required int id,
-    required String actionId,
-    required String title,
-    required String body,
-  });
-
   /// Returns true if the user has granted notification permission.
   /// Returns true on platforms where this check is not supported.
   Future<bool> areNotificationsEnabled();

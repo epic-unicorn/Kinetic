@@ -9,6 +9,9 @@
     <!-- Camera for proof-photo capture -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- Notifications for new task alerts (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="Kinetic"
         android:name="${applicationName}"

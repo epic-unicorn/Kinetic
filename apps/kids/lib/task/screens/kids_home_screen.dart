@@ -12,6 +12,7 @@ class KidsHomeScreen extends StatefulWidget {
   final KidsTaskRepository? repository;
   final KidsSyncOrchestrator? orchestrator;
   final VoidCallback? onLeaveFamily;
+  final DateTime? xpResetAt;
 
   const KidsHomeScreen({
     super.key,
@@ -19,6 +20,7 @@ class KidsHomeScreen extends StatefulWidget {
     this.repository,
     this.orchestrator,
     this.onLeaveFamily,
+    this.xpResetAt,
   });
 
   @override
@@ -103,24 +105,75 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
 
           final tasks = snapshot.data ?? [];
 
-          if (tasks.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.celebration, size: 64, color: scheme.primary),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Alles klaar!',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: scheme.onSurface,
+          // XP header
+          final xpHeader = StreamBuilder<int>(
+            stream: _taskRepository.watchTotalXp(
+              resetAt: widget.xpResetAt,
+            ),
+            builder: (context, xpSnap) {
+              final totalXp = xpSnap.data ?? 0;
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.stars_rounded,
+                      color: scheme.onPrimaryContainer,
+                      size: 28,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Geen opdrachten op dit moment.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
+                    const SizedBox(width: 10),
+                    Text(
+                      '$totalXp XP',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+
+          if (tasks.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  xpHeader,
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.celebration, size: 64, color: scheme.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Alles klaar!',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Geen opdrachten op dit moment.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -135,6 +188,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              xpHeader,
               if (pendingTasks.isNotEmpty) ...[
                 Text(
                   'Nog te doen',

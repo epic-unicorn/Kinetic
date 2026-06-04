@@ -517,4 +517,49 @@ class WebDavSyncService {
   /// Removes the presence entry for [deviceId] from the server.
   Future<void> deletePresence(String deviceId) =>
       client.delete('$_presencePath/$deviceId.json');
+
+  // ---------------------------------------------------------------------------
+  // XP Reset
+  // ---------------------------------------------------------------------------
+
+  String get _xpResetPath => '/kinetic/shared/xp-reset';
+
+  /// Writes an XP-reset timestamp for [kidId] to the shared folder.
+  /// The kids app reads this during sync and only counts XP earned after this time.
+  Future<void> pushXpReset(String kidId, DateTime resetAt) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) throw StateError('Family key required to push XP reset');
+    final json = jsonEncode({
+      'kidId': kidId,
+      'resetAt': resetAt.toUtc().toIso8601String(),
+    });
+    final plain = Uint8List.fromList(utf8.encode(json));
+    final blob = await KineticEncryption.encrypt(plain, familyKey);
+    try {
+      await client.put('$_xpResetPath/$kidId.json', blob);
+    } on WebDavException catch (e) {
+      if (e.message.contains('403') || e.message.contains('404')) {
+        try { await client.mkcol(_xpResetPath); } catch (_) {}
+        await client.put('$_xpResetPath/$kidId.json', blob);
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  /// Reads the XP-reset timestamp for [kidId], or null if none has been set.
+  Future<DateTime?> pullXpReset(String kidId) async {
+    final familyKey = config.familyKeyBytes;
+    if (familyKey == null) return null;
+    try {
+      final blob = await client.get('$_xpResetPath/$kidId.json');
+      final plain = await KineticEncryption.decrypt(blob, familyKey);
+      final data = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+      final resetAtStr = data['resetAt'] as String?;
+      if (resetAtStr == null) return null;
+      return DateTime.parse(resetAtStr);
+    } catch (_) {
+      return null;
+    }
+  }
 }

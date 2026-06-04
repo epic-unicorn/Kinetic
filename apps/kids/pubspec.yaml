@@ -48,6 +48,9 @@ dependencies:
   # QR scanning for family enrollment
   mobile_scanner: ^6.0.0
 
+  # Local notifications for task alerts
+  flutter_local_notifications: ^18.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -115,6 +115,24 @@ class KidsTaskRepository {
     await (_db.delete(_db.kidsTasks)..where((t) => t.id.equals(taskId))).go();
   }
 
+  /// Stream the total earned XP: sum of xpReward for completed tasks.
+  /// If [resetAt] is provided, only counts tasks completed after that time.
+  Stream<int> watchTotalXp({DateTime? resetAt}) {
+    return (_db.select(_db.kidsTasks)
+          ..where((t) => t.isCompleted.equals(true)))
+        .watch()
+        .map((rows) {
+          final filtered = resetAt == null
+              ? rows
+              : rows.where(
+                  (r) =>
+                      r.completedAt != null &&
+                      r.completedAt!.isAfter(resetAt),
+                ).toList();
+          return filtered.fold(0, (sum, r) => sum + r.xpReward);
+        });
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Convert Drift row to domain model

@@ -97,7 +97,8 @@ class TodoRepository {
           ..where(
             (t) =>
                 t.isCompleted.equals(false) &
-                t.syncState.equals('deleted').not(),
+                t.syncState.equals('deleted').not() &
+                t.kidsTaskId.isNull(),
           )
           ..orderBy([
             // Uncategorized (null) sorts before named categories
@@ -670,8 +671,8 @@ class TodoRepository {
     try {
       await notif.scheduleReminder(
         id: _notifId(task.id),
-        title: task.title,
-        body: 'Herinnering: ${task.title}',
+        title: 'Herinnering',
+        body: task.title,
         at: at,
       );
     } catch (_) {

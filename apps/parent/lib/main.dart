@@ -110,20 +110,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _notifSvc = ParentNotificationService(
-      onActionCallback: (id, actionId, title, body, _) async {
-        if (ParentNotificationService.isDismissAction(actionId)) {
-          await _notifSvc.cancelReminder(id);
-          return;
-        }
-        await _notifSvc.rescheduleReminder(
-          id: id,
-          actionId: actionId,
-          title: title,
-          body: body,
-        );
-      },
-    );
+    _notifSvc = ParentNotificationService();
     _todoRepository = TodoRepository(
       db: widget.db,
       notifications: _notifSvc,

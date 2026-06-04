@@ -3,6 +3,7 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
 import 'enrollment/kids_enrollment_screen.dart';
+import 'notifications/kids_notification_service.dart';
 import 'sync/sync_orchestrator.dart';
 import 'sync/webdav_config_repository.dart';
 import 'task/screens/kids_home_screen.dart';
@@ -11,13 +12,20 @@ import 'task/services/kids_task_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final appDb = AppDatabase();
-  runApp(KineticKidsApp(appDb: appDb));
+  final notificationService = KidsNotificationService();
+  await notificationService.initialize();
+  runApp(KineticKidsApp(appDb: appDb, notificationService: notificationService));
 }
 
 class KineticKidsApp extends StatelessWidget {
   final AppDatabase appDb;
+  final KidsNotificationService notificationService;
 
-  const KineticKidsApp({super.key, required this.appDb});
+  const KineticKidsApp({
+    super.key,
+    required this.appDb,
+    required this.notificationService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +69,7 @@ class KineticKidsApp extends StatelessWidget {
           backgroundColor: colorScheme.surface,
         ),
       ),
-      home: _KidsAppShell(appDb: appDb),
+      home: _KidsAppShell(appDb: appDb, notificationService: notificationService),
     );
   }
 }
@@ -69,8 +77,12 @@ class KineticKidsApp extends StatelessWidget {
 /// Shell widget that loads WebDAV config and wires up sync.
 class _KidsAppShell extends StatefulWidget {
   final AppDatabase appDb;
+  final KidsNotificationService notificationService;
 
-  const _KidsAppShell({required this.appDb});
+  const _KidsAppShell({
+    required this.appDb,
+    required this.notificationService,
+  });
 
   @override
   State<_KidsAppShell> createState() => _KidsAppShellState();
@@ -82,6 +94,7 @@ class _KidsAppShellState extends State<_KidsAppShell>
   KidsSyncOrchestrator? _orchestrator;
   bool _enrolled = false;
   bool _initDone = false;
+  DateTime? _xpResetAt;
 
   @override
   void initState() {
@@ -109,16 +122,33 @@ class _KidsAppShellState extends State<_KidsAppShell>
     final configRepo = WebDavConfigRepository(store);
     final config = await configRepo.load();
     final kidId = await configRepo.loadKidId() ?? '';
+    // Restore any previously-received XP reset timestamp.
+    final resetAtStr = await store.read(key: 'kinetic_xp_reset_at');
+    final xpResetAt = resetAtStr != null ? DateTime.tryParse(resetAtStr) : null;
     if (!mounted) return;
     if (config != null) {
       setState(() {
         _enrolled = true;
         _initDone = true;
+        _xpResetAt = xpResetAt;
         _orchestrator = KidsSyncOrchestrator(
           db: widget.appDb,
           repo: _repository,
           config: config,
           myKidId: kidId,
+          onDisconnected: () {
+            if (mounted) _leaveFamily();
+          },
+          onXpResetReceived: (resetAt) {
+            FlutterSecureKeyValueStore().write(
+              key: 'kinetic_xp_reset_at',
+              value: resetAt.toUtc().toIso8601String(),
+            );
+            if (mounted) setState(() => _xpResetAt = resetAt);
+          },
+          onNewTaskReceived: (taskTitle) {
+            widget.notificationService.showNewTaskNotification(taskTitle);
+          },
         );
       });
       unawaited(_orchestrator!.sync());
@@ -185,6 +215,7 @@ class _KidsAppShellState extends State<_KidsAppShell>
       appDb: widget.appDb,
       repository: _repository,
       orchestrator: _orchestrator,
+      xpResetAt: _xpResetAt,
       onLeaveFamily: _leaveFamily,
     );
   }

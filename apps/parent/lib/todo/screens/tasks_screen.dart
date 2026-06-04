@@ -169,12 +169,18 @@ class _TasksScreenState extends State<TasksScreen>
           controller: _tabController,
           tabs: [
             const Tab(text: 'Privé'),
-            const Tab(text: 'Voorstellen'),
-            if (widget.enrolledKidsCount > 0)
-              const Tab(
-                icon: Icon(Icons.child_care, size: 18),
-                text: 'Kinderen',
+            Tab(
+              child: Badge(
+                isLabelVisible: _pendingVoorstlagenCount > 0,
+                label: Text('$_pendingVoorstlagenCount'),
+                child: const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: Text('Voorstellen'),
+                ),
               ),
+            ),
+            if (widget.enrolledKidsCount > 0)
+              const Tab(text: 'Kinderen'),
           ],
         ),
       ),
@@ -195,6 +201,7 @@ class _TasksScreenState extends State<TasksScreen>
             proposalRepo: widget.proposalRepo,
             myParentId: widget.myParentId,
             partnerPaired: widget.partnerPaired,
+            onSyncRequested: widget.onSyncRetry,
           ),
           if (widget.enrolledKidsCount > 0)
             _KidsTasksTab(
@@ -221,36 +228,29 @@ class _SyncIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: switch (status) {
-        SyncStatus.syncing => const SizedBox(
+    return switch (status) {
+      SyncStatus.syncing => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: SizedBox(
           width: 20,
           height: 20,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        SyncStatus.error => GestureDetector(
-          onTap: onSyncPressed,
-          child: Tooltip(
-            message: 'Sync mislukt, tap om opnieuw te proberen.',
-            child: Icon(
-              Icons.sync_problem_outlined,
-              color: Theme.of(context).colorScheme.error,
-            ),
-          ),
+      ),
+      SyncStatus.error => IconButton(
+        onPressed: onSyncPressed,
+        tooltip: 'Sync mislukt, tap om opnieuw te proberen.',
+        icon: Icon(
+          Icons.sync_problem_outlined,
+          color: Theme.of(context).colorScheme.error,
         ),
-        SyncStatus.idle => GestureDetector(
-          onTap: onSyncPressed,
-          child: Tooltip(
-            message: 'Synchroniseren',
-            child: Icon(
-              Icons.cloud_done_outlined,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-        ),
-      },
-    );
+      ),
+      SyncStatus.idle => IconButton(
+        onPressed: onSyncPressed,
+        tooltip: 'Synchroniseren',
+        icon: const Icon(Icons.cloud_done_outlined),
+      ),
+    };
   }
 }
 
@@ -570,6 +570,7 @@ class _VoorstlagenTab extends StatefulWidget {
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
   final bool partnerPaired;
+  final VoidCallback? onSyncRequested;
 
   const _VoorstlagenTab({
     this.suggestionRepo,
@@ -577,6 +578,7 @@ class _VoorstlagenTab extends StatefulWidget {
     this.proposalRepo,
     this.myParentId,
     this.partnerPaired = false,
+    this.onSyncRequested,
   });
 
   @override
@@ -601,6 +603,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
               ? _PartnerProposalsSection(
                   proposalRepository: widget.proposalRepo!,
                   myParentId: widget.myParentId,
+                  onSyncRequested: widget.onSyncRequested,
                 )
               : _EmptyVoorstellen(),
         ),
@@ -613,10 +616,12 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
 class _PartnerProposalsSection extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
   final String? myParentId;
+  final VoidCallback? onSyncRequested;
 
   const _PartnerProposalsSection({
     required this.proposalRepository,
     this.myParentId,
+    this.onSyncRequested,
   });
 
   @override
@@ -768,22 +773,9 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.thumb_down_outlined),
-                  tooltip: 'Slecht voorstel',
-                  color: scheme.outline,
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _rejectProposal(proposal),
-                ),
-                const Spacer(),
-                TextButton(
+                OutlinedButton(
                   onPressed: () => _dismissProposal(proposal.id),
                   child: const Text('Afwijzen'),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => _snoozeProposal(proposal.id),
-                  child: const Text('Later'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
@@ -801,6 +793,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
 
   Future<void> _acceptProposal(String proposalId) async {
     await widget.proposalRepository.accept(proposalId);
+    widget.onSyncRequested?.call();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -819,6 +812,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
 
   Future<void> _dismissProposal(String proposalId) async {
     await widget.proposalRepository.dismiss(proposalId);
+    widget.onSyncRequested?.call();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -902,13 +896,90 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
     );
     try {
       final tasks = await service.pullSharedTasks();
-      return _KidsTasksData(tasks: tasks, enrolledKids: enrolledKids);
+      // Compute total XP per kid label from completed tasks.
+      final Map<String, int> xpPerKid = {};
+      for (final task in tasks) {
+        if (task.status != ICalTaskStatus.completed) continue;
+        final targetId = _prop(task.description, 'xKineticTargetKidId');
+        final xpStr = _prop(task.description, 'xKineticXpReward');
+        final xp = int.tryParse(xpStr ?? '') ?? 0;
+        String label;
+        if (targetId == null || targetId.isEmpty) {
+          label = 'Iedereen';
+        } else {
+          final kid = enrolledKids.cast<EnrolledKid?>().firstWhere(
+            (k) => k?.id == targetId,
+            orElse: () => null,
+          );
+          label = kid?.name ?? targetId;
+        }
+        xpPerKid[label] = (xpPerKid[label] ?? 0) + xp;
+      }
+      return _KidsTasksData(
+        tasks: tasks,
+        enrolledKids: enrolledKids,
+        xpPerKid: xpPerKid,
+      );
     } finally {
       client.dispose();
     }
   }
 
   void _reload() => setState(() => _future = _load());
+
+  Future<void> _resetXp(String kidLabel, List<EnrolledKid> enrolledKids) async {
+    final kid = enrolledKids.cast<EnrolledKid?>().firstWhere(
+      (k) => k?.name == kidLabel,
+      orElse: () => null,
+    );
+    if (kid == null || !mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('XP resetten voor ${kid.name}?'),
+        content: const Text(
+          'Dit stelt de XP-teller terug naar 0. '
+          'De opdrachten blijven bewaard.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Resetten'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final client = WebDavClient(
+      baseUrl: widget.syncConfig.baseUrl,
+      username: widget.syncConfig.username,
+      password: widget.syncConfig.password,
+    );
+    final service = WebDavSyncService(client: client, config: widget.syncConfig);
+    try {
+      await service.pushXpReset(kid.id, DateTime.now().toUtc());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('XP gereset voor ${kid.name}')),
+        );
+        _reload();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fout bij resetten: $e')),
+        );
+      }
+    } finally {
+      client.dispose();
+    }
+  }
 
   String? _prop(String? desc, String key) {
     if (desc == null || desc.isEmpty) return null;
@@ -1002,11 +1073,38 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
               for (final entry in grouped.entries) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: Text(
-                    entry.key,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        entry.key,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${data.xpPerKid[entry.key] ?? 0} XP',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (entry.key != 'Iedereen') ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 0,
+                            ),
+                          ),
+                          onPressed: () =>
+                              _resetXp(entry.key, data.enrolledKids),
+                          child: const Text('Reset XP'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 for (final task in entry.value) _KidsTaskTile(task: task),
@@ -1022,7 +1120,12 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
 class _KidsTasksData {
   final List<ICalTask> tasks;
   final List<EnrolledKid> enrolledKids;
-  const _KidsTasksData({required this.tasks, required this.enrolledKids});
+  final Map<String, int> xpPerKid;
+  const _KidsTasksData({
+    required this.tasks,
+    required this.enrolledKids,
+    required this.xpPerKid,
+  });
 }
 
 class _KidsTaskTile extends StatelessWidget {
@@ -1031,28 +1134,41 @@ class _KidsTaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final isCompleted = task.status == ICalTaskStatus.completed;
+    final due = task.dueAt;
+    final completedAt = isCompleted ? task.updatedAt.toLocal() : null;
+
+    final subtitleParts = <String>[];
+    if (due != null) {
+      subtitleParts.add('${due.toLocal().day}/${due.toLocal().month}');
+    }
+    if (completedAt != null) {
+      subtitleParts.add(
+        'Gedaan op ${completedAt.day}/${completedAt.month}',
+      );
+    }
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      // Non-interactive indicator — parent cannot complete kid tasks
       leading: Icon(
-        isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-        color: isCompleted
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.outline,
+        isCompleted ? Icons.check_circle : Icons.hourglass_empty_rounded,
+        color: isCompleted ? scheme.primary : scheme.outline,
       ),
       title: Text(
         task.summary,
         style: TextStyle(
           decoration: isCompleted ? TextDecoration.lineThrough : null,
-          color: isCompleted
-              ? Theme.of(context).colorScheme.onSurfaceVariant
-              : null,
+          color: isCompleted ? scheme.onSurfaceVariant : null,
         ),
       ),
-      subtitle: task.dueAt != null
+      subtitle: subtitleParts.isNotEmpty
           ? Text(
-              '${task.dueAt!.toLocal().day}/${task.dueAt!.toLocal().month}',
-              style: Theme.of(context).textTheme.bodySmall,
+              subtitleParts.join(' · '),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isCompleted ? scheme.primary : null,
+              ),
             )
           : null,
     );

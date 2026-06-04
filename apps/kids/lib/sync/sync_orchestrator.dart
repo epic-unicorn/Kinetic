@@ -29,6 +29,8 @@ class KidsSyncOrchestrator {
     required SyncConfig config,
     String myKidId = '',
     this.onDisconnected,
+    this.onXpResetReceived,
+    this.onNewTaskReceived,
   }) : _db = db,
        _repo = repo,
        _config = config,
@@ -37,6 +39,14 @@ class KidsSyncOrchestrator {
   /// Optional callback invoked when the parent sends a disconnect tombstone
   /// for this kid device.  The caller should clear the enrollment.
   final VoidCallback? onDisconnected;
+
+  /// Optional callback invoked when a new XP-reset timestamp is received.
+  /// The caller should store it and pass it to [KidsTaskRepository.watchTotalXp].
+  final void Function(DateTime resetAt)? onXpResetReceived;
+
+  /// Optional callback invoked for each new task received from the parent.
+  /// The caller can use this to show a local notification.
+  final void Function(String taskTitle)? onNewTaskReceived;
 
   /// Main sync cycle: pull remote tasks, push local changes
   Future<void> sync() async {
@@ -56,6 +66,8 @@ class KidsSyncOrchestrator {
       await _pushPresence(service);
       // Check if the parent has disconnected this kid
       await _checkDisconnect(service);
+      // Pull XP reset timestamp set by the parent
+      await _pullXpReset(service);
     } finally {
       client.dispose();
     }
@@ -88,6 +100,18 @@ class KidsSyncOrchestrator {
       final mine = tombstones.where((t) => t.deviceId == _myKidId);
       if (mine.isNotEmpty) {
         onDisconnected?.call();
+      }
+    } catch (_) {
+      // Non-critical.
+    }
+  }
+
+  Future<void> _pullXpReset(WebDavSyncService service) async {
+    if (_myKidId.isEmpty || onXpResetReceived == null) return;
+    try {
+      final resetAt = await service.pullXpReset(_myKidId);
+      if (resetAt != null) {
+        onXpResetReceived!(resetAt);
       }
     } catch (_) {
       // Non-critical.
@@ -132,8 +156,9 @@ class KidsSyncOrchestrator {
           .firstOrNull;
 
       if (existing == null) {
-        // New from parent → insert
+        // New from parent → insert and notify
         await _repo.upsertTask(remoteTask);
+        onNewTaskReceived?.call(remoteTask.title);
       } else if (remoteTask.updatedAt.isAfter(existing.updatedAt)) {
         // Remote newer → update (LWW merge)
         await _repo.upsertTask(remoteTask);
