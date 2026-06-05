@@ -100,9 +100,8 @@ class _NotesScreenState extends State<NotesScreen>
             ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => _openEditor(
-              initialIsShared: _tabController.index == 1,
-            ),
+            onPressed: () =>
+                _openEditor(initialIsShared: _tabController.index == 1),
           ),
         ],
         bottom: TabBar(
@@ -129,7 +128,8 @@ class _NotesScreenState extends State<NotesScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEditor(initialIsShared: _tabController.index == 1),
+        onPressed: () =>
+            _openEditor(initialIsShared: _tabController.index == 1),
         tooltip: 'Nieuwe notitie',
         child: const Icon(Icons.add),
       ),
@@ -207,9 +207,9 @@ class _NotesTabBody extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   isShared ? 'Geen gedeelde notities' : 'Geen privé notities',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: scheme.onSurface,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
                 ),
                 const SizedBox(height: 8),
                 Text(

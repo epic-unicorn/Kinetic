@@ -12,7 +12,10 @@ void main() {
       try {
         final notificationService = KidsNotificationService();
         await tester.pumpWidget(
-          KineticKidsApp(appDb: appDb, notificationService: notificationService),
+          KineticKidsApp(
+            appDb: appDb,
+            notificationService: notificationService,
+          ),
         );
         expect(find.byType(MaterialApp), findsOneWidget);
       } finally {
@@ -25,7 +28,10 @@ void main() {
       try {
         final notificationService = KidsNotificationService();
         await tester.pumpWidget(
-          KineticKidsApp(appDb: appDb, notificationService: notificationService),
+          KineticKidsApp(
+            appDb: appDb,
+            notificationService: notificationService,
+          ),
         );
 
         final materialApp =

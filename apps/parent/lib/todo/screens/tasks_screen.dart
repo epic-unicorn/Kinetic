@@ -179,8 +179,7 @@ class _TasksScreenState extends State<TasksScreen>
                 ),
               ),
             ),
-            if (widget.enrolledKidsCount > 0)
-              const Tab(text: 'Kinderen'),
+            if (widget.enrolledKidsCount > 0) const Tab(text: 'Kinderen'),
           ],
         ),
       ),
@@ -984,20 +983,23 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
       username: widget.syncConfig.username,
       password: widget.syncConfig.password,
     );
-    final service = WebDavSyncService(client: client, config: widget.syncConfig);
+    final service = WebDavSyncService(
+      client: client,
+      config: widget.syncConfig,
+    );
     try {
       await service.pushXpReset(kid.id, DateTime.now().toUtc());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('XP gereset voor ${kid.name}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('XP gereset voor ${kid.name}')));
         _reload();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fout bij resetten: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Fout bij resetten: $e')));
       }
     } finally {
       client.dispose();
@@ -1107,10 +1109,11 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                       const Spacer(),
                       Text(
                         '${data.xpPerKid[entry.key] ?? 0} XP',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       if (entry.key != 'Iedereen') ...[
                         const SizedBox(width: 8),
@@ -1167,9 +1170,7 @@ class _KidsTaskTile extends StatelessWidget {
       subtitleParts.add('${due.toLocal().day}/${due.toLocal().month}');
     }
     if (completedAt != null) {
-      subtitleParts.add(
-        'Gedaan op ${completedAt.day}/${completedAt.month}',
-      );
+      subtitleParts.add('Gedaan op ${completedAt.day}/${completedAt.month}');
     }
 
     return ListTile(

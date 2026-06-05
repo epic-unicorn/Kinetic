@@ -307,10 +307,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     children: [
                       const Icon(Icons.child_care, size: 20),
                       const SizedBox(width: 12),
-                      Text(
-                        kid.name,
-                        style: Theme.of(ctx).textTheme.bodyLarge,
-                      ),
+                      Text(kid.name, style: Theme.of(ctx).textTheme.bodyLarge),
                     ],
                   ),
                 ),
