@@ -10,4 +10,4 @@ enum TaskPriority {
 enum TaskCategory { household, health, admin, school, finance, other }
 
 /// Proposal status in the partner inbox.
-enum ProposalStatus { pending, accepted, snoozed, dismissed, rejected }
+enum ProposalStatus { pending, accepted, dismissed, rejected }

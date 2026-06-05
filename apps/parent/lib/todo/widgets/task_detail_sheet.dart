@@ -55,6 +55,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   String? _customCategory;
 
   bool _saving = false;
+  List<EnrolledKid> _enrolledKids = [];
 
   @override
   void initState() {
@@ -71,6 +72,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     _recurrenceRule = t?.recurrenceRule;
     _listId = t?.listId ?? widget.initialListId;
     _customCategory = t?.customCategory;
+    _loadEnrolledKids();
+  }
+
+  Future<void> _loadEnrolledKids() async {
+    if (widget.configRepo == null) return;
+    try {
+      final kids = await widget.configRepo!.loadEnrolledKids();
+      if (mounted) setState(() => _enrolledKids = kids);
+    } catch (_) {}
   }
 
   @override
@@ -210,7 +220,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                   title: const Text('Opdracht aangemaakt \u2713'),
                   enabled: false,
                 )
-              else ...[
+              else if (_enrolledKids.isNotEmpty) ...[
                 ListTile(
                   leading: const Icon(Icons.bolt),
                   title: const Text('Stuur naar kinderen'),
@@ -269,49 +279,55 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     final task = widget.task;
     if (task == null) return;
 
-    // If a configRepo is available, load enrolled kids to offer a picker.
+    // Use pre-loaded enrolled kids (already filtered to connected kids).
+    final kids = _enrolledKids;
+    if (kids.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Geen verbonden kinderen gevonden')),
+        );
+      }
+      return;
+    }
+
     EnrolledKid? selectedKid;
-    if (widget.configRepo != null) {
-      final kids = await widget.configRepo!.loadEnrolledKids();
-      if (!mounted) return;
-      if (kids.length > 1) {
-        // Show kid picker dialog.
-        selectedKid = await showDialog<EnrolledKid>(
-          context: context,
-          builder: (ctx) => SimpleDialog(
-            title: const Text('Stuur naar welk kind?'),
-            children: [
-              for (final kid in kids)
-                SimpleDialogOption(
-                  onPressed: () => Navigator.pop(ctx, kid),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.child_care, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          kid.name,
-                          style: Theme.of(ctx).textTheme.bodyLarge,
-                        ),
-                      ],
-                    ),
+    if (kids.length > 1) {
+      // Show kid picker dialog.
+      selectedKid = await showDialog<EnrolledKid>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: const Text('Stuur naar welk kind?'),
+          children: [
+            for (final kid in kids)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, kid),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.child_care, size: 20),
+                      const SizedBox(width: 12),
+                      Text(
+                        kid.name,
+                        style: Theme.of(ctx).textTheme.bodyLarge,
+                      ),
+                    ],
                   ),
                 ),
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, null),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
-                  child: Text('Annuleren'),
-                ),
               ),
-            ],
-          ),
-        );
-        if (selectedKid == null || !mounted) return;
-      } else if (kids.length == 1) {
-        selectedKid = kids.first;
-      }
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text('Annuleren'),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (selectedKid == null || !mounted) return;
+    } else {
+      selectedKid = kids.first;
     }
 
     final confirmed = await showDialog<bool>(
@@ -369,7 +385,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (confirmed != true || !mounted) return;
     await widget.repo.sendToKids(
       task.id,
-      targetKidId: selectedKid?.id,
+      targetKidId: selectedKid.id,
       xpReward: int.tryParse(_xpCtrl.text.trim()) ?? 10,
     );
     if (mounted) Navigator.pop(context);

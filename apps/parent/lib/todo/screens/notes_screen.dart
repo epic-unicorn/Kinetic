@@ -30,7 +30,40 @@ class NotesScreen extends StatefulWidget {
   State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
+class _NotesScreenState extends State<NotesScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openEditor({bool initialIsShared = false}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await Navigator.of(context).push<PersonalNote?>(
+      MaterialPageRoute(
+        builder: (_) => NoteEditorScreen(
+          repo: widget.repo,
+          hasFamilyKey: widget.hasFamilyKey?.value ?? false,
+          initialIsShared: initialIsShared,
+        ),
+      ),
+    );
+    if (context.mounted && result != null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Notitie opgeslagen')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,127 +100,141 @@ class _NotesScreenState extends State<NotesScreen> {
             ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () async {
-              final result = await Navigator.of(context).push<PersonalNote?>(
-                MaterialPageRoute(
-                  builder: (_) => NoteEditorScreen(
-                    repo: widget.repo,
-                    hasFamilyKey: widget.hasFamilyKey?.value ?? false,
-                  ),
-                ),
-              );
-              if (context.mounted && result != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notitie opgeslagen')),
-                );
-              }
-            },
+            onPressed: () => _openEditor(
+              initialIsShared: _tabController.index == 1,
+            ),
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Privé'),
+            Tab(text: 'Gedeeld'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _NotesTabBody(
+            repo: widget.repo,
+            settingsRepo: widget.settingsRepo,
+            isShared: false,
+          ),
+          _NotesTabBody(
+            repo: widget.repo,
+            settingsRepo: widget.settingsRepo,
+            isShared: true,
           ),
         ],
       ),
-      body: StreamBuilder<List<PersonalNote>>(
-        stream: widget.repo.watchAll(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Fout bij laden notities',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final notes = snapshot.data ?? [];
-
-          if (notes.isEmpty) {
-            final scheme = Theme.of(context).colorScheme;
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.note_outlined,
-                    size: 56,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Geen notities',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Maak je eerste notitie aan',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ValueListenableBuilder<bool>(
-            valueListenable: widget.hasFamilyKey ?? ValueNotifier(false),
-            builder: (context, paired, _) {
-              return _NoteGroupedList(
-                notes: notes,
-                repo: widget.repo,
-                settingsRepo: widget.settingsRepo,
-                showSharedBadge: paired,
-              );
-            },
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final messenger = ScaffoldMessenger.of(context);
-          final result = await Navigator.of(context).push<PersonalNote?>(
-            MaterialPageRoute(
-              builder: (_) => NoteEditorScreen(
-                repo: widget.repo,
-                hasFamilyKey: widget.hasFamilyKey?.value ?? false,
-              ),
-            ),
-          );
-          if (mounted && result != null) {
-            messenger.showSnackBar(
-              const SnackBar(content: Text('Notitie opgeslagen')),
-            );
-          }
-        },
+        onPressed: () => _openEditor(initialIsShared: _tabController.index == 1),
+        tooltip: 'Nieuwe notitie',
         child: const Icon(Icons.add),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// Single-tab body: filtered note list or empty state
+// ---------------------------------------------------------------------------
+
+class _NotesTabBody extends StatelessWidget {
+  final NoteRepository repo;
+  final SettingsRepository? settingsRepo;
+  final bool isShared;
+
+  const _NotesTabBody({
+    required this.repo,
+    this.settingsRepo,
+    required this.isShared,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<PersonalNote>>(
+      stream: repo.watchAll(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Fout bij laden notities',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    snapshot.error.toString(),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final notes = (snapshot.data ?? [])
+            .where((n) => n.isShared == isShared)
+            .toList();
+
+        if (notes.isEmpty) {
+          final scheme = Theme.of(context).colorScheme;
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isShared ? Icons.people_outline : Icons.note_outlined,
+                  size: 56,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isShared ? 'Geen gedeelde notities' : 'Geen privé notities',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isShared
+                      ? 'Notities gedeeld met je partner verschijnen hier'
+                      : 'Je privé notities verschijnen hier',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return _NoteGroupedList(
+          notes: notes,
+          repo: repo,
+          settingsRepo: settingsRepo,
+          showSharedBadge: false,
+        );
+      },
+    );
+  }
+}
 // ---------------------------------------------------------------------------
 // Grouped + draggable notes list
 // ---------------------------------------------------------------------------

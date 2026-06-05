@@ -9,12 +9,14 @@ class NoteEditorScreen extends StatefulWidget {
   final NoteRepository repo;
   final PersonalNote? note;
   final bool hasFamilyKey;
+  final bool initialIsShared;
 
   const NoteEditorScreen({
     super.key,
     required this.repo,
     this.note,
     this.hasFamilyKey = false,
+    this.initialIsShared = false,
   });
 
   @override
@@ -35,7 +37,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final note = widget.note;
     _titleCtrl = TextEditingController(text: note?.title ?? '');
     _bodyCtrl = TextEditingController(text: note?.body ?? '');
-    _isShared = note?.isShared ?? false;
+    _isShared = note?.isShared ?? widget.initialIsShared;
     _remindAt = note?.remindAt;
     _category = note?.category;
   }

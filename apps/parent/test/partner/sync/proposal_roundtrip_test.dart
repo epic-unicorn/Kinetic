@@ -342,12 +342,12 @@ void main() {
         await dbA.into(dbA.partnerProposals).insert(companion);
         await dbB.into(dbB.partnerProposals).insert(companion);
 
-        // A updates at T+1 → 'snoozed'.
+        // A updates at T+1 → 'dismissed'.
         await (dbA.update(
           dbA.partnerProposals,
         )..where((t) => t.id.equals('prop-lww'))).write(
           PartnerProposalsCompanion(
-            status: const Value('snoozed'),
+            status: const Value('dismissed'),
             syncState: const Value('dirty'),
             updatedAt: Value(baseTime.add(const Duration(seconds: 1))),
           ),

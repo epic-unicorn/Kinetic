@@ -111,19 +111,6 @@ class PartnerProposalRepository {
     );
   }
 
-  /// Snooze a proposal (change status to snoozed, will resurface later).
-  Future<void> snooze(String proposalId) async {
-    await (_db.update(
-      _db.partnerProposals,
-    )..where((t) => t.id.equals(proposalId))).write(
-      PartnerProposalsCompanion(
-        status: const Value('snoozed'),
-        syncState: const Value('dirty'),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
-  }
-
   /// Dismiss a proposal (change status to dismissed, no action).
   Future<void> dismiss(String proposalId) async {
     await (_db.update(

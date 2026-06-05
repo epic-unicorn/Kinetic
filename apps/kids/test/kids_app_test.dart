@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kids/main.dart';
+import 'package:kids/notifications/kids_notification_service.dart';
 import 'package:kids/task/screens/kids_home_screen.dart';
 import 'helpers/test_database.dart';
 
@@ -9,7 +10,10 @@ void main() {
     testWidgets('app builds without error', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(KineticKidsApp(appDb: appDb));
+        final notificationService = KidsNotificationService();
+        await tester.pumpWidget(
+          KineticKidsApp(appDb: appDb, notificationService: notificationService),
+        );
         expect(find.byType(MaterialApp), findsOneWidget);
       } finally {
         await appDb.close();
@@ -19,7 +23,10 @@ void main() {
     testWidgets('uses Material 3 theme', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(KineticKidsApp(appDb: appDb));
+        final notificationService = KidsNotificationService();
+        await tester.pumpWidget(
+          KineticKidsApp(appDb: appDb, notificationService: notificationService),
+        );
 
         final materialApp =
             find.byType(MaterialApp).evaluate().first.widget as MaterialApp;

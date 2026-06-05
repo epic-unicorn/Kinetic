@@ -106,7 +106,7 @@ void main() {
     test('returns proposals with any status', () async {
       await _insertProposal(db, id: 'p1', status: 'pending');
       await _insertProposal(db, id: 'p2', status: 'accepted');
-      await _insertProposal(db, id: 'p3', status: 'snoozed');
+      await _insertProposal(db, id: 'p3', status: 'dismissed');
       await _insertProposal(db, id: 'p4', status: 'dismissed');
       await _insertProposal(db, id: 'p5', status: 'rejected');
 
@@ -148,26 +148,6 @@ void main() {
 
       final row = await _getRaw(db, 'p1');
       expect(row?.status, equals('accepted'));
-      expect(row?.syncState, equals('dirty'));
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // snooze
-  // --------------------------------------------------------------------------
-  group('PartnerProposalRepository.snooze', () {
-    test('sets status to snoozed and syncState to dirty', () async {
-      await _insertProposal(
-        db,
-        id: 'p1',
-        status: 'pending',
-        syncState: 'clean',
-      );
-
-      await repo.snooze('p1');
-
-      final row = await _getRaw(db, 'p1');
-      expect(row?.status, equals('snoozed'));
       expect(row?.syncState, equals('dirty'));
     });
   });

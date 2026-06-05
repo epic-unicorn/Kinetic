@@ -91,7 +91,7 @@ class PartnerProposalService {
         .map((rows) => rows.map(_rowToProposal).toList());
   }
 
-  /// Update proposal status (pending → accepted/snoozed/dismissed).
+  /// Update proposal status (pending → accepted/dismissed).
   Future<void> updateProposalStatus(String id, String newStatus) async {
     await (db.update(db.partnerProposals)..where((p) => p.id.equals(id))).write(
       PartnerProposalsCompanion(
@@ -121,11 +121,6 @@ class PartnerProposalService {
   /// Dismiss a proposal: update status to 'dismissed'.
   Future<void> dismissProposal(String proposalId) async {
     await updateProposalStatus(proposalId, 'dismissed');
-  }
-
-  /// Snooze a proposal: update status to 'snoozed'.
-  Future<void> snoozeProposal(String proposalId) async {
-    await updateProposalStatus(proposalId, 'snoozed');
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

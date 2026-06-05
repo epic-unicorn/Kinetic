@@ -349,8 +349,7 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                       ),
                       builder: (context, snapshot) {
                         final status = snapshot.data;
-                        if (status == ProposalStatus.pending ||
-                            status == ProposalStatus.snoozed) {
+                        if (status == ProposalStatus.pending) {
                           return const Padding(
                             padding: EdgeInsets.only(left: 6),
                             child: Icon(

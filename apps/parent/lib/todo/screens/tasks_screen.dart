@@ -586,8 +586,20 @@ class _VoorstlagenTab extends StatefulWidget {
 }
 
 class _VoorstlagenTabState extends State<_VoorstlagenTab> {
+  bool _syncing = false;
+
+  Future<void> _refresh() async {
+    if (_syncing) return;
+    setState(() => _syncing = true);
+    widget.onSyncRequested?.call();
+    // Show spinner briefly to confirm action was triggered.
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) setState(() => _syncing = false);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         if (widget.suggestionRepo != null)
@@ -598,6 +610,37 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
             myParentId: widget.myParentId,
             partnerPaired: widget.partnerPaired,
           ),
+        // Refresh header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 4, 0),
+          child: Row(
+            children: [
+              Text(
+                'Van partner',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const Spacer(),
+              _syncing
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.refresh, size: 20),
+                      onPressed: _refresh,
+                      tooltip: 'Vernieuw voorstellen',
+                      color: scheme.onSurfaceVariant,
+                    ),
+            ],
+          ),
+        ),
         Expanded(
           child: widget.proposalRepo != null
               ? _PartnerProposalsSection(
@@ -801,15 +844,6 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
     }
   }
 
-  Future<void> _snoozeProposal(String proposalId) async {
-    await widget.proposalRepository.snooze(proposalId);
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Voorstel uitgesteld')));
-    }
-  }
-
   Future<void> _dismissProposal(String proposalId) async {
     await widget.proposalRepository.dismiss(proposalId);
     widget.onSyncRequested?.call();
@@ -817,17 +851,6 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Voorstel afgewezen')));
-    }
-  }
-
-  Future<void> _rejectProposal(PartnerProposal proposal) async {
-    await widget.proposalRepository.reject(proposal.id, proposal.taskTitle);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gemeld als slecht voorstel — we leren hiervan'),
-        ),
-      );
     }
   }
 
