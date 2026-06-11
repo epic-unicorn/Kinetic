@@ -312,22 +312,7 @@ class WebDavSyncService {
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(proposalJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
 
-    try {
-      await client.put('$_proposalsPath/$id.json', blob);
-    } on WebDavException catch (e) {
-      // If directory doesn't exist, create it and retry.
-      if (e.message.contains('403') || e.message.contains('404')) {
-        try {
-          await client.mkcol(_proposalsPath);
-        } catch (_) {
-          // Directory may already exist, silently ignore.
-        }
-        // Retry the put after ensuring directory exists.
-        await client.put('$_proposalsPath/$id.json', blob);
-      } else {
-        rethrow;
-      }
-    }
+    await _putWithCollectionFallback('$_proposalsPath/$id.json', blob);
   }
 
   /// Deletes a proposal file from the server.
@@ -375,27 +360,36 @@ class WebDavSyncService {
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(metricsJson)));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
 
-    try {
-      await client.put('$_loadPath/$parentId.json', blob);
-    } on WebDavException catch (e) {
-      // If directory doesn't exist, create it and retry.
-      if (e.message.contains('403') || e.message.contains('404')) {
-        try {
-          await client.mkcol(_loadPath);
-        } catch (_) {
-          // Directory may already exist, silently ignore.
-        }
-        // Retry the put after ensuring directory exists.
-        await client.put('$_loadPath/$parentId.json', blob);
-      } else {
-        rethrow;
-      }
-    }
+    await _putWithCollectionFallback('$_loadPath/$parentId.json', blob);
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// HTTP status codes returned when PUT targets a file in a missing collection.
+  static const _missingCollectionStatuses = ['403', '404', '409'];
+
+  bool _isMissingCollectionError(WebDavException e) =>
+      _missingCollectionStatuses.any(e.message.contains);
+
+  /// PUTs [bytes] to [path], creating the parent collection on-demand if needed.
+  Future<void> _putWithCollectionFallback(String path, Uint8List bytes) async {
+    try {
+      await client.put(path, bytes);
+    } on WebDavException catch (e) {
+      if (!_isMissingCollectionError(e)) rethrow;
+      final lastSlash = path.lastIndexOf('/');
+      if (lastSlash <= 0) rethrow;
+      final collectionPath = path.substring(0, lastSlash);
+      try {
+        await client.mkcol(collectionPath);
+      } catch (_) {
+        // Directory may already exist, silently ignore.
+      }
+      await client.put(path, bytes);
+    }
+  }
 
   /// Returns PROPFIND entries whose href ends with `.json`.
   Future<List<WebDavEntry>> _listJsonFiles(String path) async {
@@ -424,18 +418,10 @@ class WebDavSyncService {
     final plain = Uint8List.fromList(utf8.encode(jsonEncode(info.toJson())));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
 
-    try {
-      await client.put('$_presencePath/${info.deviceId}.json', blob);
-    } on WebDavException catch (e) {
-      if (e.message.contains('403') || e.message.contains('404')) {
-        try {
-          await client.mkcol(_presencePath);
-        } catch (_) {}
-        await client.put('$_presencePath/${info.deviceId}.json', blob);
-      } else {
-        rethrow;
-      }
-    }
+    await _putWithCollectionFallback(
+      '$_presencePath/${info.deviceId}.json',
+      blob,
+    );
   }
 
   /// Pulls all presence entries from the shared presence folder.
@@ -475,18 +461,10 @@ class WebDavSyncService {
         Uint8List.fromList(utf8.encode(jsonEncode(tombstone.toJson())));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
 
-    try {
-      await client.put('$_disconnectPath/${tombstone.deviceId}.json', blob);
-    } on WebDavException catch (e) {
-      if (e.message.contains('403') || e.message.contains('404')) {
-        try {
-          await client.mkcol(_disconnectPath);
-        } catch (_) {}
-        await client.put('$_disconnectPath/${tombstone.deviceId}.json', blob);
-      } else {
-        rethrow;
-      }
-    }
+    await _putWithCollectionFallback(
+      '$_disconnectPath/${tombstone.deviceId}.json',
+      blob,
+    );
   }
 
   /// Pulls all disconnect tombstones from the shared disconnect folder.
@@ -535,16 +513,7 @@ class WebDavSyncService {
     });
     final plain = Uint8List.fromList(utf8.encode(json));
     final blob = await KineticEncryption.encrypt(plain, familyKey);
-    try {
-      await client.put('$_xpResetPath/$kidId.json', blob);
-    } on WebDavException catch (e) {
-      if (e.message.contains('403') || e.message.contains('404')) {
-        try { await client.mkcol(_xpResetPath); } catch (_) {}
-        await client.put('$_xpResetPath/$kidId.json', blob);
-      } else {
-        rethrow;
-      }
-    }
+    await _putWithCollectionFallback('$_xpResetPath/$kidId.json', blob);
   }
 
   /// Reads the XP-reset timestamp for [kidId], or null if none has been set.

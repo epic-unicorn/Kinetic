@@ -129,7 +129,7 @@ class WebDavClient {
   // ---------------------------------------------------------------------------
 
   /// Creates the collection at [path].  Succeeds silently if it already exists
-  /// (405 Method Not Allowed — collection exists on Nextcloud/Apache).
+  /// (405 Method Not Allowed on Nextcloud/Apache, 409 Conflict on some servers).
   Future<void> mkcol(String path) async {
     // WebDAV collections require trailing slashes
     final pathWithSlash = path.endsWith('/') ? path : '$path/';
@@ -138,7 +138,7 @@ class WebDavClient {
         ..headers.addAll(_authHeaders),
     );
     final statusCode = response.statusCode;
-    if (statusCode != 201 && statusCode != 405) {
+    if (statusCode != 201 && statusCode != 405 && statusCode != 409) {
       final body = await response.stream.bytesToString();
       throw WebDavException('MKCOL $path → $statusCode', body);
     }

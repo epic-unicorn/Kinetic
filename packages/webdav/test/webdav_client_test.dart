@@ -112,6 +112,20 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // MKCOL
+  // ---------------------------------------------------------------------------
+
+  test('MKCOL treats 409 as success when collection already exists', () async {
+    when(mockHttp.send(any)).thenAnswer((invocation) async {
+      final request = invocation.positionalArguments[0] as http.BaseRequest;
+      expect(request.method, 'MKCOL');
+      return http.StreamedResponse(Stream.value([]), 409);
+    });
+
+    await expectLater(client.mkcol('/kinetic/shared/xp-reset'), completes);
+  });
+
+  // ---------------------------------------------------------------------------
   // WebDavSyncService.mergeTasks
   // ---------------------------------------------------------------------------
 
