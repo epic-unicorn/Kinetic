@@ -14,7 +14,7 @@ class NotesScreen extends StatefulWidget {
   final NoteRepository repo;
   final SettingsRepository? settingsRepo;
   final ValueNotifier<SyncStatus>? syncStatus;
-  final ValueNotifier<bool>? hasFamilyKey;
+  final bool partnerPaired;
   final VoidCallback? onSyncRetry;
 
   const NotesScreen({
@@ -22,7 +22,7 @@ class NotesScreen extends StatefulWidget {
     required this.repo,
     this.settingsRepo,
     this.syncStatus,
-    this.hasFamilyKey,
+    this.partnerPaired = false,
     this.onSyncRetry,
   });
 
@@ -32,29 +32,48 @@ class NotesScreen extends StatefulWidget {
 
 class _NotesScreenState extends State<NotesScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
+
+  int get _tabCount => widget.partnerPaired ? 2 : 1;
+
+  bool get _onSharedTab => widget.partnerPaired && (_tabController?.index == 1);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    if (widget.partnerPaired) {
+      _tabController = TabController(length: 2, vsync: this);
+    }
+  }
+
+  @override
+  void didUpdateWidget(NotesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.partnerPaired != widget.partnerPaired) {
+      _tabController?.dispose();
+      _tabController = widget.partnerPaired
+          ? TabController(length: 2, vsync: this)
+          : null;
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
-  Future<void> _openEditor({bool initialIsShared = false}) async {
+  Future<void> _openEditor({PersonalNote? note, bool initialIsShared = false}) async {
     final messenger = ScaffoldMessenger.of(context);
-    final result = await Navigator.of(context).push<PersonalNote?>(
-      MaterialPageRoute(
-        builder: (_) => NoteEditorScreen(
-          repo: widget.repo,
-          hasFamilyKey: widget.hasFamilyKey?.value ?? false,
-          initialIsShared: initialIsShared,
-        ),
+    final result = await showModalBottomSheet<PersonalNote?>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => NoteEditorScreen(
+        repo: widget.repo,
+        note: note,
+        hasFamilyKey: widget.partnerPaired,
+        initialIsShared: note?.isShared ?? initialIsShared,
       ),
     );
     if (context.mounted && result != null) {
@@ -100,36 +119,45 @@ class _NotesScreenState extends State<NotesScreen>
             ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () =>
-                _openEditor(initialIsShared: _tabController.index == 1),
+            onPressed: () => _openEditor(initialIsShared: _onSharedTab),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Privé'),
-            Tab(text: 'Gedeeld'),
-          ],
-        ),
+        bottom: widget.partnerPaired && _tabController != null
+            ? TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Privé'),
+                  Tab(text: 'Gedeeld'),
+                ],
+              )
+            : null,
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _NotesTabBody(
-            repo: widget.repo,
-            settingsRepo: widget.settingsRepo,
-            isShared: false,
-          ),
-          _NotesTabBody(
-            repo: widget.repo,
-            settingsRepo: widget.settingsRepo,
-            isShared: true,
-          ),
-        ],
-      ),
+      body: widget.partnerPaired && _tabController != null
+          ? TabBarView(
+              controller: _tabController,
+              children: [
+                _NotesTabBody(
+                  repo: widget.repo,
+                  settingsRepo: widget.settingsRepo,
+                  isShared: false,
+                  onEditNote: (note) => _openEditor(note: note),
+                ),
+                _NotesTabBody(
+                  repo: widget.repo,
+                  settingsRepo: widget.settingsRepo,
+                  isShared: true,
+                  onEditNote: (note) => _openEditor(note: note),
+                ),
+              ],
+            )
+          : _NotesTabBody(
+              repo: widget.repo,
+              settingsRepo: widget.settingsRepo,
+              isShared: false,
+              onEditNote: (note) => _openEditor(note: note),
+            ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            _openEditor(initialIsShared: _tabController.index == 1),
+        onPressed: () => _openEditor(initialIsShared: _onSharedTab),
         tooltip: 'Nieuwe notitie',
         child: const Icon(Icons.add),
       ),
@@ -145,11 +173,13 @@ class _NotesTabBody extends StatelessWidget {
   final NoteRepository repo;
   final SettingsRepository? settingsRepo;
   final bool isShared;
+  final void Function(PersonalNote note) onEditNote;
 
   const _NotesTabBody({
     required this.repo,
     this.settingsRepo,
     required this.isShared,
+    required this.onEditNote,
   });
 
   @override
@@ -230,6 +260,7 @@ class _NotesTabBody extends StatelessWidget {
           repo: repo,
           settingsRepo: settingsRepo,
           showSharedBadge: false,
+          onEditNote: onEditNote,
         );
       },
     );
@@ -256,12 +287,14 @@ class _NoteGroupedList extends StatefulWidget {
   final NoteRepository repo;
   final SettingsRepository? settingsRepo;
   final bool showSharedBadge;
+  final void Function(PersonalNote note) onEditNote;
 
   const _NoteGroupedList({
     required this.notes,
     required this.repo,
     this.settingsRepo,
     required this.showSharedBadge,
+    required this.onEditNote,
   });
 
   @override
@@ -352,6 +385,7 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
                 note: noteItem.note,
                 repo: widget.repo,
                 showSharedBadge: widget.showSharedBadge,
+                onTap: () => widget.onEditNote(noteItem.note),
               ),
             ),
             ReorderableDragStartListener(
@@ -468,66 +502,61 @@ class _NoteTile extends StatelessWidget {
   final PersonalNote note;
   final NoteRepository repo;
   final bool showSharedBadge;
+  final VoidCallback onTap;
 
   const _NoteTile({
     required this.note,
     required this.repo,
+    required this.onTap,
     this.showSharedBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final preview = note.body.length > 100
-        ? '${note.body.substring(0, 100)}\u2026'
-        : note.body;
+    final tt = Theme.of(context).textTheme;
+    final preview = note.body.trim();
     final reminderPassed = note.remindAt != null && isOverdue(note.remindAt!);
-    final reminderColor = reminderPassed ? Colors.redAccent : kColorGold;
+    final reminderColor = reminderPassed ? Colors.redAccent : null;
+    final metaColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        title: Text(
-          note.title,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
+    return InkWell(
+      onTap: onTap,
+      onLongPress: () => _pickCategory(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (preview.isNotEmpty)
-              Text(
-                preview,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            if (note.remindAt != null ||
+            Text(note.title, style: tt.bodyLarge),
+            if (preview.isNotEmpty ||
+                note.remindAt != null ||
                 (note.isShared && showSharedBadge)) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Row(
                 children: [
                   if (note.remindAt != null) ...[
-                    Icon(Icons.alarm, size: 14, color: reminderColor),
-                    const SizedBox(width: 4),
                     Text(
-                      formatDueDate(note.remindAt!),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelSmall?.copyWith(color: reminderColor),
+                      formatDueDate(note.remindAt!, allDay: false),
+                      style: tt.labelSmall?.copyWith(color: reminderColor ?? metaColor),
                     ),
-                    const SizedBox(width: 12),
                   ],
+                  if (note.remindAt != null && preview.isNotEmpty)
+                    Text(' · ', style: TextStyle(color: metaColor)),
+                  if (preview.isNotEmpty)
+                    Expanded(
+                      child: Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.labelSmall?.copyWith(color: metaColor),
+                      ),
+                    ),
                   if (note.isShared && showSharedBadge) ...[
-                    Icon(Icons.people_outline, size: 14, color: kColorTeal),
-                    const SizedBox(width: 4),
+                    if (note.remindAt != null || preview.isNotEmpty)
+                      Text(' · ', style: TextStyle(color: metaColor)),
                     Text(
                       'Gedeeld',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelSmall?.copyWith(color: kColorTeal),
+                      style: tt.labelSmall?.copyWith(color: kColorTeal),
                     ),
                   ],
                 ],
@@ -535,23 +564,6 @@ class _NoteTile extends StatelessWidget {
             ],
           ],
         ),
-        onTap: () async {
-          final result = await Navigator.of(context).push<PersonalNote?>(
-            MaterialPageRoute(
-              builder: (_) => NoteEditorScreen(
-                repo: repo,
-                note: note,
-                hasFamilyKey: showSharedBadge,
-              ),
-            ),
-          );
-          if (context.mounted && result != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Notitie opgeslagen')));
-          }
-        },
-        onLongPress: () => _pickCategory(context),
       ),
     );
   }

@@ -16,6 +16,7 @@ class AiSuggestion {
   final SuggestionReason reason;
   final SuggestionStatus status;
   final DateTime? snoozeUntil;
+  final String? explanation;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,9 +30,14 @@ class AiSuggestion {
     required this.reason,
     required this.status,
     this.snoozeUntil,
+    this.explanation,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool get isPartnerTargeted =>
+      reason == SuggestionReason.partnerComplement ||
+      reason == SuggestionReason.loadBalance;
 
   static AiSuggestion create({
     required String title,
@@ -40,6 +46,7 @@ class AiSuggestion {
     String category = 'other',
     DateTime? suggestedDueDate,
     required SuggestionReason reason,
+    String? explanation,
   }) {
     final now = DateTime.now().toUtc();
     return AiSuggestion(
@@ -51,6 +58,7 @@ class AiSuggestion {
       suggestedDueDate: suggestedDueDate,
       reason: reason,
       status: SuggestionStatus.pending,
+      explanation: explanation,
       createdAt: now,
       updatedAt: now,
     );
@@ -71,6 +79,7 @@ class AiSuggestion {
       reason: reason,
       status: status ?? this.status,
       snoozeUntil: snoozeUntil ?? this.snoozeUntil,
+      explanation: explanation,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

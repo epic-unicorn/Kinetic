@@ -119,6 +119,17 @@ void main() {
       expect(await repo.countPending(), 0);
     });
 
+    test('watchPendingCount emits pending suggestion count', () async {
+      expect(await repo.watchPendingCount().first, 0);
+      await repo.upsertSuggestion(
+        AiSuggestion.create(title: 'Taak A', reason: SuggestionReason.habit),
+      );
+      await repo.upsertSuggestion(
+        AiSuggestion.create(title: 'Taak B', reason: SuggestionReason.seasonal),
+      );
+      expect(await repo.watchPendingCount().first, 2);
+    });
+
     // -------------------------------------------------------------------------
     // snooze
     // -------------------------------------------------------------------------

@@ -320,9 +320,9 @@ void main() {
             myParentId: 'parent-1',
           ).runIfDue();
 
-          final proposals = await db.select(db.partnerProposals).get();
-          expect(proposals, hasLength(1));
-          expect(proposals.first.fromParentId, 'parent-1');
+          final suggestions = await suggestionRepo.watchPendingPartner().first;
+          expect(suggestions, hasLength(1));
+          expect(suggestions.first.reason, SuggestionReason.loadBalance);
         },
       );
 
@@ -352,8 +352,8 @@ void main() {
             myParentId: 'parent-1',
           ).runIfDue();
 
-          final proposals = await db.select(db.partnerProposals).get();
-          expect(proposals, isEmpty);
+          final suggestions = await suggestionRepo.watchPendingPartner().first;
+          expect(suggestions, isEmpty);
         },
       );
 
@@ -390,8 +390,8 @@ void main() {
           myParentId: 'parent-1',
         ).runIfDue();
 
-        final proposals = await db.select(db.partnerProposals).get();
-        expect(proposals, isEmpty);
+        final suggestions = await suggestionRepo.watchPendingPartner().first;
+        expect(suggestions, isEmpty);
       });
     });
 

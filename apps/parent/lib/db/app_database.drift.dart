@@ -542,9 +542,6 @@ class $PersonalTasksTable extends PersonalTasks
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES personal_lists (id)',
-    ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -2472,9 +2469,6 @@ class $PersonalSubtasksTable extends PersonalSubtasks
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES personal_tasks (id)',
-    ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -4469,6 +4463,17 @@ class $AiSuggestionsTable extends AiSuggestions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _explanationMeta = const VerificationMeta(
+    'explanation',
+  );
+  @override
+  late final GeneratedColumn<String> explanation = GeneratedColumn<String>(
+    'explanation',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4502,6 +4507,7 @@ class $AiSuggestionsTable extends AiSuggestions
     reason,
     status,
     snoozeUntil,
+    explanation,
     createdAt,
     updatedAt,
   ];
@@ -4580,6 +4586,15 @@ class $AiSuggestionsTable extends AiSuggestions
         ),
       );
     }
+    if (data.containsKey('explanation')) {
+      context.handle(
+        _explanationMeta,
+        explanation.isAcceptableOrUnknown(
+          data['explanation']!,
+          _explanationMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4641,6 +4656,10 @@ class $AiSuggestionsTable extends AiSuggestions
         DriftSqlType.dateTime,
         data['${effectivePrefix}snooze_until'],
       ),
+      explanation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}explanation'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4668,6 +4687,9 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
   final String reason;
   final String status;
   final DateTime? snoozeUntil;
+
+  /// Human-readable explanation of why this suggestion was generated.
+  final String? explanation;
   final DateTime createdAt;
   final DateTime updatedAt;
   const AiSuggestionRow({
@@ -4680,6 +4702,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
     required this.reason,
     required this.status,
     this.snoozeUntil,
+    this.explanation,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -4700,6 +4723,9 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || snoozeUntil != null) {
       map['snooze_until'] = Variable<DateTime>(snoozeUntil);
+    }
+    if (!nullToAbsent || explanation != null) {
+      map['explanation'] = Variable<String>(explanation);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -4723,6 +4749,9 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
       snoozeUntil: snoozeUntil == null && nullToAbsent
           ? const Value.absent()
           : Value(snoozeUntil),
+      explanation: explanation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(explanation),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -4745,6 +4774,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
       reason: serializer.fromJson<String>(json['reason']),
       status: serializer.fromJson<String>(json['status']),
       snoozeUntil: serializer.fromJson<DateTime?>(json['snoozeUntil']),
+      explanation: serializer.fromJson<String?>(json['explanation']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -4762,6 +4792,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
       'reason': serializer.toJson<String>(reason),
       'status': serializer.toJson<String>(status),
       'snoozeUntil': serializer.toJson<DateTime?>(snoozeUntil),
+      'explanation': serializer.toJson<String?>(explanation),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -4777,6 +4808,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
     String? reason,
     String? status,
     Value<DateTime?> snoozeUntil = const Value.absent(),
+    Value<String?> explanation = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => AiSuggestionRow(
@@ -4791,6 +4823,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
     reason: reason ?? this.reason,
     status: status ?? this.status,
     snoozeUntil: snoozeUntil.present ? snoozeUntil.value : this.snoozeUntil,
+    explanation: explanation.present ? explanation.value : this.explanation,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -4809,6 +4842,9 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
       snoozeUntil: data.snoozeUntil.present
           ? data.snoozeUntil.value
           : this.snoozeUntil,
+      explanation: data.explanation.present
+          ? data.explanation.value
+          : this.explanation,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4826,6 +4862,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
           ..write('reason: $reason, ')
           ..write('status: $status, ')
           ..write('snoozeUntil: $snoozeUntil, ')
+          ..write('explanation: $explanation, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4843,6 +4880,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
     reason,
     status,
     snoozeUntil,
+    explanation,
     createdAt,
     updatedAt,
   );
@@ -4859,6 +4897,7 @@ class AiSuggestionRow extends DataClass implements Insertable<AiSuggestionRow> {
           other.reason == this.reason &&
           other.status == this.status &&
           other.snoozeUntil == this.snoozeUntil &&
+          other.explanation == this.explanation &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4873,6 +4912,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
   final Value<String> reason;
   final Value<String> status;
   final Value<DateTime?> snoozeUntil;
+  final Value<String?> explanation;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -4886,6 +4926,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
     this.reason = const Value.absent(),
     this.status = const Value.absent(),
     this.snoozeUntil = const Value.absent(),
+    this.explanation = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -4900,6 +4941,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
     required String reason,
     this.status = const Value.absent(),
     this.snoozeUntil = const Value.absent(),
+    this.explanation = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -4918,6 +4960,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
     Expression<String>? reason,
     Expression<String>? status,
     Expression<DateTime>? snoozeUntil,
+    Expression<String>? explanation,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -4932,6 +4975,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
       if (reason != null) 'reason': reason,
       if (status != null) 'status': status,
       if (snoozeUntil != null) 'snooze_until': snoozeUntil,
+      if (explanation != null) 'explanation': explanation,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -4948,6 +4992,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
     Value<String>? reason,
     Value<String>? status,
     Value<DateTime?>? snoozeUntil,
+    Value<String?>? explanation,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -4962,6 +5007,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
       reason: reason ?? this.reason,
       status: status ?? this.status,
       snoozeUntil: snoozeUntil ?? this.snoozeUntil,
+      explanation: explanation ?? this.explanation,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -4998,6 +5044,9 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
     if (snoozeUntil.present) {
       map['snooze_until'] = Variable<DateTime>(snoozeUntil.value);
     }
+    if (explanation.present) {
+      map['explanation'] = Variable<String>(explanation.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -5022,6 +5071,7 @@ class AiSuggestionsCompanion extends UpdateCompanion<AiSuggestionRow> {
           ..write('reason: $reason, ')
           ..write('status: $status, ')
           ..write('snoozeUntil: $snoozeUntil, ')
+          ..write('explanation: $explanation, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -5086,37 +5136,6 @@ typedef $$PersonalListsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$PersonalListsTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow> {
-  $$PersonalListsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static MultiTypedResultKey<$PersonalTasksTable, List<PersonalTaskRow>>
-  _personalTasksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.personalTasks,
-    aliasName: $_aliasNameGenerator(
-      db.personalLists.id,
-      db.personalTasks.listId,
-    ),
-  );
-
-  $$PersonalTasksTableProcessedTableManager get personalTasksRefs {
-    final manager = $$PersonalTasksTableTableManager(
-      $_db,
-      $_db.personalTasks,
-    ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_personalTasksRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
 class $$PersonalListsTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalListsTable> {
   $$PersonalListsTableFilterComposer({
@@ -5165,31 +5184,6 @@ class $$PersonalListsTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> personalTasksRefs(
-    Expression<bool> Function($$PersonalTasksTableFilterComposer f) f,
-  ) {
-    final $$PersonalTasksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.personalTasks,
-      getReferencedColumn: (t) => t.listId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalTasksTableFilterComposer(
-            $db: $db,
-            $table: $db.personalTasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$PersonalListsTableOrderingComposer
@@ -5280,31 +5274,6 @@ class $$PersonalListsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  Expression<T> personalTasksRefs<T extends Object>(
-    Expression<T> Function($$PersonalTasksTableAnnotationComposer a) f,
-  ) {
-    final $$PersonalTasksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.personalTasks,
-      getReferencedColumn: (t) => t.listId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalTasksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.personalTasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$PersonalListsTableTableManager
@@ -5318,9 +5287,12 @@ class $$PersonalListsTableTableManager
           $$PersonalListsTableAnnotationComposer,
           $$PersonalListsTableCreateCompanionBuilder,
           $$PersonalListsTableUpdateCompanionBuilder,
-          (PersonalListRow, $$PersonalListsTableReferences),
+          (
+            PersonalListRow,
+            BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow>,
+          ),
           PersonalListRow,
-          PrefetchHooks Function({bool personalTasksRefs})
+          PrefetchHooks Function()
         > {
   $$PersonalListsTableTableManager(_$AppDatabase db, $PersonalListsTable table)
     : super(
@@ -5378,45 +5350,9 @@ class $$PersonalListsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PersonalListsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({personalTasksRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (personalTasksRefs) db.personalTasks,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (personalTasksRefs)
-                    await $_getPrefetchedData<
-                      PersonalListRow,
-                      $PersonalListsTable,
-                      PersonalTaskRow
-                    >(
-                      currentTable: table,
-                      referencedTable: $$PersonalListsTableReferences
-                          ._personalTasksRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$PersonalListsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).personalTasksRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.listId == item.id),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -5431,9 +5367,12 @@ typedef $$PersonalListsTableProcessedTableManager =
       $$PersonalListsTableAnnotationComposer,
       $$PersonalListsTableCreateCompanionBuilder,
       $$PersonalListsTableUpdateCompanionBuilder,
-      (PersonalListRow, $$PersonalListsTableReferences),
+      (
+        PersonalListRow,
+        BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow>,
+      ),
       PersonalListRow,
-      PrefetchHooks Function({bool personalTasksRefs})
+      PrefetchHooks Function()
     >;
 typedef $$PersonalTasksTableCreateCompanionBuilder =
     PersonalTasksCompanion Function({
@@ -5490,58 +5429,6 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$PersonalTasksTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow> {
-  $$PersonalTasksTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $PersonalListsTable _listIdTable(_$AppDatabase db) =>
-      db.personalLists.createAlias(
-        $_aliasNameGenerator(db.personalTasks.listId, db.personalLists.id),
-      );
-
-  $$PersonalListsTableProcessedTableManager? get listId {
-    final $_column = $_itemColumn<String>('list_id');
-    if ($_column == null) return null;
-    final manager = $$PersonalListsTableTableManager(
-      $_db,
-      $_db.personalLists,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_listIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static MultiTypedResultKey<$PersonalSubtasksTable, List<PersonalSubtaskRow>>
-  _personalSubtasksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.personalSubtasks,
-    aliasName: $_aliasNameGenerator(
-      db.personalTasks.id,
-      db.personalSubtasks.taskId,
-    ),
-  );
-
-  $$PersonalSubtasksTableProcessedTableManager get personalSubtasksRefs {
-    final manager = $$PersonalSubtasksTableTableManager(
-      $_db,
-      $_db.personalSubtasks,
-    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _personalSubtasksRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
 class $$PersonalTasksTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalTasksTable> {
   $$PersonalTasksTableFilterComposer({
@@ -5553,6 +5440,11 @@ class $$PersonalTasksTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listId => $composableBuilder(
+    column: $table.listId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5660,54 +5552,6 @@ class $$PersonalTasksTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$PersonalListsTableFilterComposer get listId {
-    final $$PersonalListsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.listId,
-      referencedTable: $db.personalLists,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalListsTableFilterComposer(
-            $db: $db,
-            $table: $db.personalLists,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<bool> personalSubtasksRefs(
-    Expression<bool> Function($$PersonalSubtasksTableFilterComposer f) f,
-  ) {
-    final $$PersonalSubtasksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.personalSubtasks,
-      getReferencedColumn: (t) => t.taskId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalSubtasksTableFilterComposer(
-            $db: $db,
-            $table: $db.personalSubtasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$PersonalTasksTableOrderingComposer
@@ -5721,6 +5565,11 @@ class $$PersonalTasksTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listId => $composableBuilder(
+    column: $table.listId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5828,29 +5677,6 @@ class $$PersonalTasksTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$PersonalListsTableOrderingComposer get listId {
-    final $$PersonalListsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.listId,
-      referencedTable: $db.personalLists,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalListsTableOrderingComposer(
-            $db: $db,
-            $table: $db.personalLists,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PersonalTasksTableAnnotationComposer
@@ -5864,6 +5690,9 @@ class $$PersonalTasksTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get listId =>
+      $composableBuilder(column: $table.listId, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -5941,54 +5770,6 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  $$PersonalListsTableAnnotationComposer get listId {
-    final $$PersonalListsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.listId,
-      referencedTable: $db.personalLists,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalListsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.personalLists,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  Expression<T> personalSubtasksRefs<T extends Object>(
-    Expression<T> Function($$PersonalSubtasksTableAnnotationComposer a) f,
-  ) {
-    final $$PersonalSubtasksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.personalSubtasks,
-      getReferencedColumn: (t) => t.taskId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalSubtasksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.personalSubtasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$PersonalTasksTableTableManager
@@ -6002,9 +5783,12 @@ class $$PersonalTasksTableTableManager
           $$PersonalTasksTableAnnotationComposer,
           $$PersonalTasksTableCreateCompanionBuilder,
           $$PersonalTasksTableUpdateCompanionBuilder,
-          (PersonalTaskRow, $$PersonalTasksTableReferences),
+          (
+            PersonalTaskRow,
+            BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow>,
+          ),
           PersonalTaskRow,
-          PrefetchHooks Function({bool listId, bool personalSubtasksRefs})
+          PrefetchHooks Function()
         > {
   $$PersonalTasksTableTableManager(_$AppDatabase db, $PersonalTasksTable table)
     : super(
@@ -6122,81 +5906,9 @@ class $$PersonalTasksTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PersonalTasksTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback:
-              ({listId = false, personalSubtasksRefs = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (personalSubtasksRefs) db.personalSubtasks,
-                  ],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (listId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.listId,
-                                    referencedTable:
-                                        $$PersonalTasksTableReferences
-                                            ._listIdTable(db),
-                                    referencedColumn:
-                                        $$PersonalTasksTableReferences
-                                            ._listIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (personalSubtasksRefs)
-                        await $_getPrefetchedData<
-                          PersonalTaskRow,
-                          $PersonalTasksTable,
-                          PersonalSubtaskRow
-                        >(
-                          currentTable: table,
-                          referencedTable: $$PersonalTasksTableReferences
-                              ._personalSubtasksRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$PersonalTasksTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).personalSubtasksRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.taskId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -6211,9 +5923,12 @@ typedef $$PersonalTasksTableProcessedTableManager =
       $$PersonalTasksTableAnnotationComposer,
       $$PersonalTasksTableCreateCompanionBuilder,
       $$PersonalTasksTableUpdateCompanionBuilder,
-      (PersonalTaskRow, $$PersonalTasksTableReferences),
+      (
+        PersonalTaskRow,
+        BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow>,
+      ),
       PersonalTaskRow,
-      PrefetchHooks Function({bool listId, bool personalSubtasksRefs})
+      PrefetchHooks Function()
     >;
 typedef $$PersonalNotesTableCreateCompanionBuilder =
     PersonalNotesCompanion Function({
@@ -6550,39 +6265,6 @@ typedef $$PersonalSubtasksTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$PersonalSubtasksTableReferences
-    extends
-        BaseReferences<
-          _$AppDatabase,
-          $PersonalSubtasksTable,
-          PersonalSubtaskRow
-        > {
-  $$PersonalSubtasksTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $PersonalTasksTable _taskIdTable(_$AppDatabase db) =>
-      db.personalTasks.createAlias(
-        $_aliasNameGenerator(db.personalSubtasks.taskId, db.personalTasks.id),
-      );
-
-  $$PersonalTasksTableProcessedTableManager get taskId {
-    final $_column = $_itemColumn<String>('task_id')!;
-
-    final manager = $$PersonalTasksTableTableManager(
-      $_db,
-      $_db.personalTasks,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
 class $$PersonalSubtasksTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalSubtasksTable> {
   $$PersonalSubtasksTableFilterComposer({
@@ -6594,6 +6276,11 @@ class $$PersonalSubtasksTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6611,29 +6298,6 @@ class $$PersonalSubtasksTableFilterComposer
     column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$PersonalTasksTableFilterComposer get taskId {
-    final $$PersonalTasksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.personalTasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalTasksTableFilterComposer(
-            $db: $db,
-            $table: $db.personalTasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PersonalSubtasksTableOrderingComposer
@@ -6647,6 +6311,11 @@ class $$PersonalSubtasksTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6664,29 +6333,6 @@ class $$PersonalSubtasksTableOrderingComposer
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$PersonalTasksTableOrderingComposer get taskId {
-    final $$PersonalTasksTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.personalTasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalTasksTableOrderingComposer(
-            $db: $db,
-            $table: $db.personalTasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PersonalSubtasksTableAnnotationComposer
@@ -6701,6 +6347,9 @@ class $$PersonalSubtasksTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
@@ -6711,29 +6360,6 @@ class $$PersonalSubtasksTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
-
-  $$PersonalTasksTableAnnotationComposer get taskId {
-    final $$PersonalTasksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.personalTasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PersonalTasksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.personalTasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$PersonalSubtasksTableTableManager
@@ -6747,9 +6373,16 @@ class $$PersonalSubtasksTableTableManager
           $$PersonalSubtasksTableAnnotationComposer,
           $$PersonalSubtasksTableCreateCompanionBuilder,
           $$PersonalSubtasksTableUpdateCompanionBuilder,
-          (PersonalSubtaskRow, $$PersonalSubtasksTableReferences),
+          (
+            PersonalSubtaskRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PersonalSubtasksTable,
+              PersonalSubtaskRow
+            >,
+          ),
           PersonalSubtaskRow,
-          PrefetchHooks Function({bool taskId})
+          PrefetchHooks Function()
         > {
   $$PersonalSubtasksTableTableManager(
     _$AppDatabase db,
@@ -6797,56 +6430,9 @@ class $$PersonalSubtasksTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PersonalSubtasksTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({taskId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (taskId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.taskId,
-                                referencedTable:
-                                    $$PersonalSubtasksTableReferences
-                                        ._taskIdTable(db),
-                                referencedColumn:
-                                    $$PersonalSubtasksTableReferences
-                                        ._taskIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -6861,9 +6447,16 @@ typedef $$PersonalSubtasksTableProcessedTableManager =
       $$PersonalSubtasksTableAnnotationComposer,
       $$PersonalSubtasksTableCreateCompanionBuilder,
       $$PersonalSubtasksTableUpdateCompanionBuilder,
-      (PersonalSubtaskRow, $$PersonalSubtasksTableReferences),
+      (
+        PersonalSubtaskRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PersonalSubtasksTable,
+          PersonalSubtaskRow
+        >,
+      ),
       PersonalSubtaskRow,
-      PrefetchHooks Function({bool taskId})
+      PrefetchHooks Function()
     >;
 typedef $$PartnerProposalsTableCreateCompanionBuilder =
     PartnerProposalsCompanion Function({
@@ -7670,6 +7263,7 @@ typedef $$AiSuggestionsTableCreateCompanionBuilder =
       required String reason,
       Value<String> status,
       Value<DateTime?> snoozeUntil,
+      Value<String?> explanation,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -7685,6 +7279,7 @@ typedef $$AiSuggestionsTableUpdateCompanionBuilder =
       Value<String> reason,
       Value<String> status,
       Value<DateTime?> snoozeUntil,
+      Value<String?> explanation,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -7741,6 +7336,11 @@ class $$AiSuggestionsTableFilterComposer
 
   ColumnFilters<DateTime> get snoozeUntil => $composableBuilder(
     column: $table.snoozeUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get explanation => $composableBuilder(
+    column: $table.explanation,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7809,6 +7409,11 @@ class $$AiSuggestionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get explanation => $composableBuilder(
+    column: $table.explanation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -7860,6 +7465,11 @@ class $$AiSuggestionsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get explanation => $composableBuilder(
+    column: $table.explanation,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -7907,6 +7517,7 @@ class $$AiSuggestionsTableTableManager
                 Value<String> reason = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime?> snoozeUntil = const Value.absent(),
+                Value<String?> explanation = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7920,6 +7531,7 @@ class $$AiSuggestionsTableTableManager
                 reason: reason,
                 status: status,
                 snoozeUntil: snoozeUntil,
+                explanation: explanation,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -7935,6 +7547,7 @@ class $$AiSuggestionsTableTableManager
                 required String reason,
                 Value<String> status = const Value.absent(),
                 Value<DateTime?> snoozeUntil = const Value.absent(),
+                Value<String?> explanation = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -7948,6 +7561,7 @@ class $$AiSuggestionsTableTableManager
                 reason: reason,
                 status: status,
                 snoozeUntil: snoozeUntil,
+                explanation: explanation,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

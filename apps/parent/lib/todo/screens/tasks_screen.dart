@@ -10,6 +10,7 @@ import '../../settings/models/enrolled_kid.dart';
 import '../../settings/settings_repository.dart';
 import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_header.dart';
+import '../../todo/models/ai_suggestion.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
 import '../../todo/services/ai_suggestion_repository.dart';
@@ -37,6 +38,7 @@ class TasksScreen extends StatefulWidget {
   final int enrolledKidsCount;
   final ValueNotifier<int>? syncDoneCount;
   final SyncConfig? syncConfig;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const TasksScreen({
     super.key,
@@ -53,6 +55,7 @@ class TasksScreen extends StatefulWidget {
     this.enrolledKidsCount = 0,
     this.syncDoneCount,
     this.syncConfig,
+    this.pullPresence,
   });
 
   @override
@@ -63,20 +66,51 @@ class _TasksScreenState extends State<TasksScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   int _pendingVoorstlagenCount = 0;
-  StreamSubscription<int>? _pendingCountSub;
+  int _partnerProposalCount = 0;
+  int _aiSuggestionCount = 0;
+  StreamSubscription<int>? _partnerCountSub;
+  StreamSubscription<int>? _suggestionCountSub;
   final _kidsKey = GlobalKey<_KidsTasksTabState>();
 
   int get _tabCount => 2 + (widget.enrolledKidsCount > 0 ? 1 : 0);
+
+  void _updateBadgeCount() {
+    if (mounted) {
+      setState(
+        () => _pendingVoorstlagenCount =
+            _partnerProposalCount + _aiSuggestionCount,
+      );
+    }
+  }
+
+  void _subscribeBadgeCounts() {
+    _partnerCountSub?.cancel();
+    _suggestionCountSub?.cancel();
+    _partnerProposalCount = 0;
+    _aiSuggestionCount = 0;
+
+    _partnerCountSub = widget.proposalRepo
+        ?.watchPendingCount(myParentId: widget.myParentId)
+        .listen((count) {
+          _partnerProposalCount = count;
+          _updateBadgeCount();
+        });
+
+    _suggestionCountSub = widget.suggestionRepo?.watchPendingCount().listen((
+      count,
+    ) {
+      _aiSuggestionCount = count;
+      _updateBadgeCount();
+    });
+
+    _updateBadgeCount();
+  }
 
   @override
   void initState() {
     super.initState();
     _rebuildTabController();
-    _pendingCountSub = widget.proposalRepo
-        ?.watchPendingCount(myParentId: widget.myParentId)
-        .listen((count) {
-          if (mounted) setState(() => _pendingVoorstlagenCount = count);
-        });
+    _subscribeBadgeCounts();
     widget.syncDoneCount?.addListener(_onSyncDone);
   }
 
@@ -91,6 +125,11 @@ class _TasksScreenState extends State<TasksScreen>
     if (old.syncDoneCount != widget.syncDoneCount) {
       old.syncDoneCount?.removeListener(_onSyncDone);
       widget.syncDoneCount?.addListener(_onSyncDone);
+    }
+    if (old.proposalRepo != widget.proposalRepo ||
+        old.suggestionRepo != widget.suggestionRepo ||
+        old.myParentId != widget.myParentId) {
+      _subscribeBadgeCounts();
     }
   }
 
@@ -114,7 +153,8 @@ class _TasksScreenState extends State<TasksScreen>
 
   @override
   void dispose() {
-    _pendingCountSub?.cancel();
+    _partnerCountSub?.cancel();
+    _suggestionCountSub?.cancel();
     widget.syncDoneCount?.removeListener(_onSyncDone);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
@@ -160,7 +200,9 @@ class _TasksScreenState extends State<TasksScreen>
               builder: (_) => TaskDetailSheet(
                 repo: widget.repo,
                 hasFamilyKey: widget.hasFamilyKey,
+                partnerPaired: widget.partnerPaired,
                 configRepo: widget.configRepo,
+                pullPresence: widget.pullPresence,
               ),
             ),
           ),
@@ -189,10 +231,13 @@ class _TasksScreenState extends State<TasksScreen>
           _OpenTasksTab(
             repo: widget.repo,
             hasFamilyKey: widget.hasFamilyKey,
+            partnerPaired: widget.partnerPaired,
             settingsRepo: widget.settingsRepo,
             proposalRepo: widget.proposalRepo,
+            suggestionRepo: widget.suggestionRepo,
             myParentId: widget.myParentId,
             configRepo: widget.configRepo,
+            pullPresence: widget.pullPresence,
           ),
           _VoorstlagenTab(
             suggestionRepo: widget.suggestionRepo,
@@ -273,18 +318,24 @@ class _TaskItem extends _ListItem {
 class _OpenTasksTab extends StatefulWidget {
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final SettingsRepository? settingsRepo;
   final PartnerProposalRepository? proposalRepo;
+  final AiSuggestionRepository? suggestionRepo;
   final String? myParentId;
   final WebDavConfigRepository? configRepo;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const _OpenTasksTab({
     required this.repo,
     this.hasFamilyKey = false,
+    this.partnerPaired = false,
     this.settingsRepo,
     this.proposalRepo,
+    this.suggestionRepo,
     this.myParentId,
     this.configRepo,
+    this.pullPresence,
   });
 
   @override
@@ -327,6 +378,23 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (widget.suggestionRepo != null)
+          SuggestionBanner(
+            suggestionRepo: widget.suggestionRepo!,
+            todoRepo: widget.repo,
+            proposalRepo: widget.proposalRepo,
+            myParentId: widget.myParentId,
+            partnerPaired: widget.partnerPaired,
+            selfOnly: true,
+          ),
+        Expanded(child: _buildTaskList(context)),
+      ],
+    );
+  }
+
+  Widget _buildTaskList(BuildContext context) {
     return StreamBuilder<List<PersonalTask>>(
       stream: widget.repo.watchOpenTasks(),
       builder: (ctx, snap) {
@@ -397,10 +465,12 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
               task: taskItem.task,
               repo: widget.repo,
               hasFamilyKey: widget.hasFamilyKey,
+              partnerPaired: widget.partnerPaired,
               dividerColor: dividerColor,
               proposalRepo: widget.proposalRepo,
               myParentId: widget.myParentId,
               configRepo: widget.configRepo,
+              pullPresence: widget.pullPresence,
             );
           },
           onReorder: (oldIndex, newIndex) {
@@ -511,10 +581,12 @@ class _DraggableTaskRow extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final Color dividerColor;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
   final WebDavConfigRepository? configRepo;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const _DraggableTaskRow({
     super.key,
@@ -522,10 +594,12 @@ class _DraggableTaskRow extends StatelessWidget {
     required this.task,
     required this.repo,
     required this.hasFamilyKey,
+    required this.partnerPaired,
     required this.dividerColor,
     this.proposalRepo,
     this.myParentId,
     this.configRepo,
+    this.pullPresence,
   });
 
   @override
@@ -538,9 +612,11 @@ class _DraggableTaskRow extends StatelessWidget {
             task: task,
             repo: repo,
             hasFamilyKey: hasFamilyKey,
+            partnerPaired: partnerPaired,
             proposalRepo: proposalRepo,
             myParentId: myParentId,
             configRepo: configRepo,
+            pullPresence: pullPresence,
           ),
         ),
         ReorderableDragStartListener(
@@ -601,55 +677,301 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        if (widget.suggestionRepo != null)
-          SuggestionBanner(
-            suggestionRepo: widget.suggestionRepo!,
-            todoRepo: widget.todoRepo,
-            proposalRepo: widget.proposalRepo,
-            myParentId: widget.myParentId,
-            partnerPaired: widget.partnerPaired,
-          ),
-        // Refresh header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 4, 0),
-          child: Row(
+        Expanded(
+          child: widget.suggestionRepo != null
+              ? ListView(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  children: [
+                    _SuggestionSection(
+                      title: 'Voor jou',
+                      stream: widget.suggestionRepo!.watchPendingSelf(),
+                      todoRepo: widget.todoRepo,
+                      suggestionRepo: widget.suggestionRepo!,
+                      partnerPaired: widget.partnerPaired,
+                      proposalRepo: widget.proposalRepo,
+                      myParentId: widget.myParentId,
+                    ),
+                    if (widget.partnerPaired && widget.proposalRepo != null)
+                      _SuggestionSection(
+                        title: 'Voor partner',
+                        stream: widget.suggestionRepo!.watchPendingPartner(),
+                        todoRepo: widget.todoRepo,
+                        suggestionRepo: widget.suggestionRepo!,
+                        partnerPaired: widget.partnerPaired,
+                        proposalRepo: widget.proposalRepo,
+                        myParentId: widget.myParentId,
+                        partnerOnly: true,
+                      ),
+                    if (widget.partnerPaired && widget.proposalRepo != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 4, 0),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Van partner',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                    letterSpacing: 1.1,
+                                  ),
+                            ),
+                            const Spacer(),
+                            _syncing
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12),
+                                    child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                : IconButton(
+                                    icon: const Icon(Icons.refresh, size: 20),
+                                    onPressed: _refresh,
+                                    tooltip: 'Vernieuw voorstellen',
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                          ],
+                        ),
+                      ),
+                      _PartnerProposalsSection(
+                        proposalRepository: widget.proposalRepo!,
+                        myParentId: widget.myParentId,
+                        onSyncRequested: widget.onSyncRequested,
+                        shrinkWrap: true,
+                      ),
+                    ],
+                    if (!widget.partnerPaired)
+                      StreamBuilder<List<AiSuggestion>>(
+                        stream: widget.suggestionRepo!.watchPendingSelf(),
+                        builder: (context, snapshot) {
+                          if ((snapshot.data ?? []).isNotEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: _EmptyVoorstellen(
+                              partnerPaired: widget.partnerPaired,
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                )
+              : widget.proposalRepo != null
+              ? Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 4, 0),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Van partner',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                  letterSpacing: 1.1,
+                                ),
+                          ),
+                          const Spacer(),
+                          _syncing
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : IconButton(
+                                  icon: const Icon(Icons.refresh, size: 20),
+                                  onPressed: _refresh,
+                                  tooltip: 'Vernieuw voorstellen',
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _PartnerProposalsSection(
+                        proposalRepository: widget.proposalRepo!,
+                        myParentId: widget.myParentId,
+                        onSyncRequested: widget.onSyncRequested,
+                      ),
+                    ),
+                  ],
+                )
+              : _EmptyVoorstellen(partnerPaired: widget.partnerPaired),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestionSection extends StatelessWidget {
+  final String title;
+  final Stream<List<AiSuggestion>> stream;
+  final TodoRepository todoRepo;
+  final AiSuggestionRepository suggestionRepo;
+  final bool partnerPaired;
+  final PartnerProposalRepository? proposalRepo;
+  final String? myParentId;
+  final bool partnerOnly;
+
+  const _SuggestionSection({
+    required this.title,
+    required this.stream,
+    required this.todoRepo,
+    required this.suggestionRepo,
+    this.partnerPaired = false,
+    this.proposalRepo,
+    this.myParentId,
+    this.partnerOnly = false,
+  });
+
+  String _reasonLabel(SuggestionReason r) => switch (r) {
+    SuggestionReason.habit => 'Gewoonte',
+    SuggestionReason.partnerComplement => 'Partner-aanvulling',
+    SuggestionReason.seasonal => 'Seizoensgebonden',
+    SuggestionReason.loadBalance => 'Taakverdeling',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<AiSuggestion>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final suggestions = snapshot.data ?? [];
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+
+        final scheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Van partner',
+                title,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   letterSpacing: 1.1,
                 ),
               ),
-              const Spacer(),
-              _syncing
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.refresh, size: 20),
-                      onPressed: _refresh,
-                      tooltip: 'Vernieuw voorstellen',
-                      color: scheme.onSurfaceVariant,
+              const SizedBox(height: 8),
+              for (final suggestion in suggestions)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  color: scheme.secondaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                suggestion.title,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Chip(
+                              label: Text(
+                                _reasonLabel(suggestion.reason),
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                        if (suggestion.explanation != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            suggestion.explanation!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: scheme.onSecondaryContainer
+                                      .withValues(alpha: 0.85),
+                                ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            if (!partnerOnly)
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  await todoRepo.createTask(
+                                    title: suggestion.title,
+                                    notes: suggestion.notes,
+                                    priority: TaskPriority.values[suggestion
+                                        .priority],
+                                    dueDate: suggestion.suggestedDueDate,
+                                  );
+                                  await suggestionRepo.accept(suggestion.id);
+                                },
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('Toevoegen'),
+                                style: FilledButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
+                            if (partnerPaired && proposalRepo != null)
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  await proposalRepo!.createManualProposal(
+                                    myParentId: myParentId!,
+                                    taskTitle: suggestion.title,
+                                    taskNotes: suggestion.notes,
+                                    taskPriority: TaskPriority
+                                        .values[suggestion.priority],
+                                    taskDueDate: suggestion.suggestedDueDate,
+                                    autoGenerated:
+                                        suggestion.isPartnerTargeted,
+                                  );
+                                  await suggestionRepo.accept(suggestion.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Voorstel naar partner gestuurd',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.person_outline, size: 16),
+                                label: const Text('Naar partner'),
+                                style: OutlinedButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  suggestionRepo.dismiss(suggestion.id),
+                              icon: const Icon(Icons.close, size: 16),
+                              label: const Text('Sluiten'),
+                              style: OutlinedButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
+                  ),
+                ),
             ],
           ),
-        ),
-        Expanded(
-          child: widget.proposalRepo != null
-              ? _PartnerProposalsSection(
-                  proposalRepository: widget.proposalRepo!,
-                  myParentId: widget.myParentId,
-                  onSyncRequested: widget.onSyncRequested,
-                )
-              : _EmptyVoorstellen(),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -659,11 +981,13 @@ class _PartnerProposalsSection extends StatefulWidget {
   final PartnerProposalRepository proposalRepository;
   final String? myParentId;
   final VoidCallback? onSyncRequested;
+  final bool shrinkWrap;
 
   const _PartnerProposalsSection({
     required this.proposalRepository,
     this.myParentId,
     this.onSyncRequested,
+    this.shrinkWrap = false,
   });
 
   @override
@@ -728,6 +1052,10 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
           );
         }
         return ListView.builder(
+          shrinkWrap: widget.shrinkWrap,
+          physics: widget.shrinkWrap
+              ? const NeverScrollableScrollPhysics()
+              : null,
           itemCount: proposals.length,
           padding: const EdgeInsets.all(16),
           itemBuilder: (context, index) =>
@@ -765,6 +1093,18 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (proposal.autoGenerated)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Chip(
+                            label: Text(
+                              'Via suggestie',
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
                       if (proposal.taskNotes != null &&
                           proposal.taskNotes!.isNotEmpty)
                         Padding(
@@ -1322,11 +1662,16 @@ class _CompletedBottomSheet extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EmptyVoorstellen extends StatelessWidget {
-  const _EmptyVoorstellen();
+  final bool partnerPaired;
+
+  const _EmptyVoorstellen({this.partnerPaired = false});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final subtitle = partnerPaired
+        ? 'Hier verschijnen suggesties van de slimme\nplanner en voorstellen van je partner'
+        : 'Hier verschijnen suggesties van de slimme\nplanner op basis van je gewoonten';
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1345,7 +1690,7 @@ class _EmptyVoorstellen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hier verschijnen suggesties van de slimme\nplanner en voorstellen van je partner',
+            subtitle,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,

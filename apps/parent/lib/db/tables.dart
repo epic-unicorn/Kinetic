@@ -221,6 +221,9 @@ class AiSuggestions extends Table {
 
   DateTimeColumn get snoozeUntil => dateTime().nullable()();
 
+  /// Human-readable explanation of why this suggestion was generated.
+  TextColumn get explanation => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

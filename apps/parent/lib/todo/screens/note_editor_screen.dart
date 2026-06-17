@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
 import '../services/note_repository.dart';
 import '../widgets/category_sheet.dart';
+import '../widgets/detail_meta_row.dart';
 
-/// Screen for creating or editing a note.
+/// Bottom sheet for creating or editing a note. Mirrors [TaskDetailSheet] layout.
 class NoteEditorScreen extends StatefulWidget {
   final NoteRepository repo;
   final PersonalNote? note;
@@ -63,7 +65,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       late final PersonalNote savedNote;
 
       if (note != null) {
-        // Update existing
         final updatedNote = note.copyWith(
           title: _titleCtrl.text.trim(),
           body: _bodyCtrl.text,
@@ -76,7 +77,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         await widget.repo.update(updatedNote);
         savedNote = updatedNote;
       } else {
-        // Create new
         savedNote = await widget.repo.insert(
           title: _titleCtrl.text.trim(),
           body: _bodyCtrl.text,
@@ -86,9 +86,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         );
       }
 
-      if (mounted) {
-        Navigator.of(context).pop(savedNote);
-      }
+      if (mounted) Navigator.pop(context, savedNote);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -96,9 +94,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         ).showSnackBar(SnackBar(content: Text('Fout bij opslaan: $e')));
       }
     } finally {
-      if (mounted) {
-        setState(() => _saving = false);
-      }
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -106,7 +102,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final categories = await widget.repo.watchNoteCategories().first;
     if (!mounted) return;
     final result = await showCategoryPicker(
-      // ignore: use_build_context_synchronously
       context: context,
       existingCategories: categories,
       currentCategory: _category,
@@ -149,7 +144,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     });
   }
 
-  /// Returns current time + 1 hour, rounded to the next full hour.
   TimeOfDay _defaultReminderTime() {
     final target = DateTime.now().add(const Duration(hours: 1));
     return TimeOfDay(hour: target.hour, minute: 0);
@@ -176,7 +170,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     if (confirmed != true || !mounted) return;
     try {
       await widget.repo.delete(widget.note!.id);
-      if (mounted) Navigator.of(context).pop(null);
+      if (mounted) Navigator.pop(context, null);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -186,129 +180,157 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
   }
 
+  String _formatDateOnly(DateTime dt) {
+    const months = [
+      'jan',
+      'feb',
+      'mrt',
+      'apr',
+      'mei',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'okt',
+      'nov',
+      'dec',
+    ];
+    return '${dt.day} ${months[dt.month - 1]}';
+  }
+
+  String _formatTimeOnly(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.note != null;
+    final tt = Theme.of(context).textTheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Notitie bewerken' : 'Nieuwe notitie'),
-        centerTitle: false,
-        actions: [
-          if (isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Verwijderen',
-              onPressed: _confirmDelete,
-            ),
-        ],
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            TextField(
-              controller: _titleCtrl,
-              decoration: InputDecoration(
-                labelText: 'Titel',
-                prefixIcon: const Icon(Icons.note_outlined),
-                hintText: 'Bijv. Boodschappenlijst',
-                hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withAlpha(80),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Body
-            TextField(
-              controller: _bodyCtrl,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _titleCtrl,
+              autofocus: widget.note == null,
+              style: tt.titleLarge,
               decoration: InputDecoration(
-                labelText: 'Inhoud',
-                prefixIcon: const Icon(Icons.description_outlined),
-                hintText: 'Notitie inhoud (markdown ondersteund)',
-                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                hintText: 'Titel',
+                hintStyle: tt.titleLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                alignLabelWithHint: true,
+                border: InputBorder.none,
               ),
-              minLines: 8,
+              textCapitalization: TextCapitalization.sentences,
+              onSubmitted: (_) => _save(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _bodyCtrl,
+              style: tt.bodyMedium,
+              decoration: InputDecoration(
+                hintText: 'Inhoud',
+                hintStyle: tt.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                border: InputBorder.none,
+              ),
+              textCapitalization: TextCapitalization.sentences,
+              minLines: 3,
               maxLines: null,
             ),
-            const SizedBox(height: 20),
-
-            // Reminder
-            ListTile(
-              leading: const Icon(Icons.alarm_outlined),
-              title: const Text('Herinnering'),
-              subtitle: Text(
-                _remindAt != null
-                    ? '${_remindAt!.day}/${_remindAt!.month} ${_remindAt!.hour.toString().padLeft(2, '0')}:${_remindAt!.minute.toString().padLeft(2, '0')}'
-                    : 'Geen herinnering',
-              ),
-              trailing: _remindAt != null
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => setState(() => _remindAt = null),
-                    )
-                  : null,
-              onTap: _pickReminder,
-            ),
-            const SizedBox(height: 4),
-
-            // Category
-            ListTile(
-              leading: const Icon(Icons.label_outline),
-              title: Text(_category ?? 'Categorie toevoegen'),
-              trailing: _category != null
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => setState(() => _category = null),
-                    )
-                  : null,
-              onTap: _pickCategory,
-            ),
-            const SizedBox(height: 12),
-
-            // Is Shared toggle
-            SwitchListTile(
-              title: const Text('Gedeeld met partner'),
-              subtitle: Text(
-                widget.hasFamilyKey
-                    ? 'Versleuteld met gezinssleutel'
-                    : 'Koppel eerst met je partner',
-              ),
-              value: _isShared,
-              onChanged: widget.hasFamilyKey
-                  ? (v) => setState(() => _isShared = v)
-                  : null,
-              secondary: const Icon(Icons.lock_outlined),
-            ),
-            const SizedBox(height: 28),
-
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: FilledButton.icon(
-                onPressed: _saving ? null : _save,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(_saving ? 'Opslaan…' : 'Opslaan'),
+          ),
+          const Divider(height: 16),
+          DetailMetaRow(
+            icon: Icons.alarm_outlined,
+            label: 'Herinnering',
+            active: _remindAt != null,
+            onTap: _pickReminder,
+            titleWidget: _remindAt != null
+                ? Text(
+                    '${_formatDateOnly(_remindAt!.toLocal())} · '
+                    '${_formatTimeOnly(_remindAt!.toLocal())}',
+                    style: tt.bodyMedium?.copyWith(color: kColorTeal),
+                  )
+                : null,
+            trailing: _remindAt != null
+                ? IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => setState(() => _remindAt = null),
+                  )
+                : null,
+          ),
+          DetailMetaRow(
+            icon: Icons.label_outline,
+            label: _category ?? 'Categorie toevoegen',
+            active: _category != null,
+            onTap: _pickCategory,
+            trailing: _category != null
+                ? IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => setState(() => _category = null),
+                  )
+                : null,
+          ),
+          if (widget.hasFamilyKey)
+            DetailMetaRow(
+              icon: Icons.people_outline,
+              label: 'Gedeeld met partner',
+              active: _isShared,
+              onTap: () => setState(() => _isShared = !_isShared),
+              trailing: Switch(
+                value: _isShared,
+                onChanged: (v) => setState(() => _isShared = v),
               ),
             ),
-          ],
-        ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Row(
+              children: [
+                if (widget.note != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    color: Theme.of(context).colorScheme.error,
+                    tooltip: 'Verwijderen',
+                    onPressed: _saving ? null : _confirmDelete,
+                  ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuleren'),
+                ),
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _saving ? null : _save,
+                  child: Text(widget.note == null ? 'Toevoegen' : 'Opslaan'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

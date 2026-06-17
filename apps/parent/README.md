@@ -6,9 +6,9 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. "Stuur naar partner" and "Stuur naar kinderen" action buttons to delegate tasks. A **suggestion banner** appears above the task list with AI-generated task suggestions (see [AI Suggestion Engine](#ai-suggestion-engine)). |
-| **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: Incoming task proposals (accept/snooze/dismiss). **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
-| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. Reminder uses separate date and time pickers; time defaults to current time + 1 hour rounded to the full hour. |
+| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. **Smart reminder chips** propose contextual times based on title and history. **Doorsturen** sends tasks to partner or individual kids with connection-aware gating. A **suggestion banner** on the Privé tab shows AI-generated self suggestions. |
+| **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: structured sections for self suggestions, partner suggestions, and incoming partner proposals. **Kinderen** tab: Overview of tasks assigned to each enrolled child. |
+| **Notities** | Markdown notes, personal or shared, synced to WebDAV when configured. Editor uses the same bottom-sheet layout and typography as tasks (`titleLarge` title, `bodyMedium` content, metadata rows). Reminder uses separate date and time pickers. |
 | **Instellingen** | WebDAV config, connection test, theme selector. **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR) with status. **Back-up & Herstel**: Combined backup/restore (personalKey + encrypted DB as single .kbak2 file). Restoring a backup automatically reschedules all notifications. |
 
 ## Family Setup
@@ -63,6 +63,7 @@ All secrets are stored at runtime via secure storage — no `--dart-define` flag
 ```
 lib/
 ├── db/            — Drift schema (PersonalTasks with targetKidId column, PersonalNotes, PartnerProposals, AiSuggestions)
+├── family/        — FamilyConnectionService (presence-based send gating)
 ├── notifications/ — local notification scheduling
 ├── partner/       — proposals, family screen, services
 ├── secure/        — secure storage wrappers
@@ -77,26 +78,37 @@ lib/
 
 A fully **offline, heuristic-based** engine that surfaces task suggestions in the **Taken** screen. No API calls or external models are used.
 
+See also: [docs/SMART_FEATURES.md](docs/SMART_FEATURES.md) for reminder chips, send gating, and suggestion UI details.
+
 ### How it works
 
-The engine runs at most once per 24 hours (throttled via `AppSettings.lastSuggestionRunAt`). On each run it executes four detectors:
+The engine runs at most once per 24 hours (throttled via `AppSettings.lastSuggestionRunAt`). On each run it executes four detectors. **Partner-targeted detectors create suggestions — they do not auto-send proposals.**
 
 | Detector | Trigger | Action |
 |---|---|---|
 | **Habit** | You've completed the same non-recurring task ≥ 2 times and the median interval has been exceeded by ≥ 80% | Suggests re-doing the task (→ you) |
-| **Partner complement** | You accepted a partner proposal whose title contains a keyword (e.g. "vakantie", "sport") | Sends the logical follow-up task to your partner automatically |
+| **Partner complement** | You accepted a partner proposal whose title contains a keyword (e.g. "vakantie", "sport") | Suggests a logical follow-up (→ partner, via banner) |
 | **Seasonal** | A task was completed in the same calendar month in a prior year | Suggests re-doing it this year (→ you) |
-| **Load balance** | You have ≥ 3 open non-private tasks in the same category | Proposes the oldest/most overdue one to your partner |
+| **Load balance** | You have ≥ 3 open non-private tasks in the same category | Suggests delegating the oldest one (→ partner, via banner) |
 
-### Suggestion banner
+Each suggestion stores an `explanation` field with a human-readable reason.
 
-The `SuggestionBanner` widget appears at the top of the open-tasks list when pending suggestions exist. Each card shows:
-- Title and reason chip (habit / seizoen / partner / balans)
-- **Toevoegen** — accepts the suggestion and creates a task in your list
-- **→ Partner** (only when partner is paired) — sends it as a proposal instead
-- **Sluiten** — dismisses the suggestion; long-press to snooze for 7 days
+### Suggestion UI
+
+- **Privé tab**: `SuggestionBanner` shows the first pending self suggestion (habit / seasonal)
+- **Voorstellen tab**: three sections — **Voor jou**, **Voor partner**, **Van partner** (inbox)
+- Actions per card: **Toevoegen**, **Naar partner** (when paired), **Sluiten**; long-press to snooze 7 days
+- Proposals created from partner suggestions are marked `autoGenerated` with a "Via suggestie" badge
 
 Suggestions are stored in the local `AiSuggestions` table and never synced to WebDAV.
+
+## Smart Reminder Chips
+
+`ReminderProposalEngine` proposes contextual reminder chips when the Herinnering row has no date set. Signals include habit time-of-day, habit interval, title keywords, category defaults, and time-of-day fallbacks. The best chip is marked with ✨; long-press shows why it was suggested.
+
+## Connection-Aware Send
+
+`FamilyConnectionService` evaluates partner/kid connectivity from WebDAV presence (7-day connected / 14-day offline thresholds). The send sheet lists each family member individually with status. The send button is disabled when nobody is connected.
 
 ### WebDAV layout
 

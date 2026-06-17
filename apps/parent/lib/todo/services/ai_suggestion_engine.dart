@@ -18,11 +18,11 @@ class AiSuggestionEngine {
   final TodoRepository _todoRepo;
   final PartnerProposalRepository? _proposalRepo;
 
-  /// The current user's parent-id (used for auto partner proposals).
+  /// The current user's parent-id (used for partner complement detection).
   final String? myParentId;
 
   static const _maxPendingSelf = 3;
-  static const _maxAutoPartnerPerDay = 2;
+  static const _maxPendingPartner = 3;
 
   AiSuggestionEngine({
     required AppDatabase db,
@@ -73,9 +73,8 @@ class AiSuggestionEngine {
     List<PersonalTask> completed,
     Set<String> openTitlesNorm,
   ) async {
-    if (await _suggestionRepo.countPending() >= _maxPendingSelf) return;
+    if (await _suggestionRepo.countPendingSelf() >= _maxPendingSelf) return;
 
-    // Group completed non-recurring tasks by normalized title.
     final groups = <String, List<DateTime>>{};
     for (final task in completed) {
       if (task.recurrenceRule != null) continue;
@@ -85,7 +84,7 @@ class AiSuggestionEngine {
     }
 
     for (final entry in groups.entries) {
-      if (await _suggestionRepo.countPending() >= _maxPendingSelf) break;
+      if (await _suggestionRepo.countPendingSelf() >= _maxPendingSelf) break;
       final times = entry.value..sort();
       if (times.length < 2) continue;
 
@@ -108,13 +107,16 @@ class AiSuggestionEngine {
             .add(Duration(days: medianInterval.round()))
             .toLocal(),
         reason: SuggestionReason.habit,
+        explanation:
+            'Je deed "${original.title}" gemiddeld elke $medianInterval dagen. '
+            'Laatste keer: $daysSince dagen geleden.',
       );
       await _suggestionRepo.upsertSuggestion(suggested);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Detector 2 — Partner complement (→ partner, auto)
+  // Detector 2 — Partner complement (→ partner suggestion)
   // ---------------------------------------------------------------------------
 
   static const _complementMap = <String, String>{
@@ -131,30 +133,26 @@ class AiSuggestionEngine {
   Future<void> _runPartnerComplementDetector() async {
     final proposalRepo = _proposalRepo;
     if (proposalRepo == null) return;
-    final parentId = myParentId;
-    if (parentId == null) return;
 
     final accepted = await proposalRepo.watchAccepted().first;
-    int sent = 0;
+    int created = 0;
 
     for (final proposal in accepted) {
-      if (sent >= _maxAutoPartnerPerDay) break;
+      if (created >= _maxPendingPartner) break;
       final titleNorm = _normalize(proposal.taskTitle);
 
       for (final kv in _complementMap.entries) {
         if (!titleNorm.contains(kv.key)) continue;
         final complement = kv.value;
-        final alreadySent = await proposalRepo.hasRecentOutgoing(
-          complement,
-          parentId,
+        if (await _suggestionRepo.hasPendingWithTitle(complement)) break;
+        final suggested = AiSuggestion.create(
+          title: complement,
+          reason: SuggestionReason.partnerComplement,
+          explanation:
+              'Partner accepteerde "${proposal.taskTitle}" — logische vervolgstap.',
         );
-        if (alreadySent) break;
-        await proposalRepo.createManualProposal(
-          myParentId: parentId,
-          taskTitle: complement,
-          taskPriority: TaskPriority.none,
-        );
-        sent++;
+        await _suggestionRepo.upsertSuggestion(suggested);
+        created++;
         break;
       }
     }
@@ -168,12 +166,11 @@ class AiSuggestionEngine {
     List<PersonalTask> completed,
     Set<String> openTitlesNorm,
   ) async {
-    if (await _suggestionRepo.countPending() >= _maxPendingSelf) return;
+    if (await _suggestionRepo.countPendingSelf() >= _maxPendingSelf) return;
 
     final currentMonth = DateTime.now().month;
     final currentYear = DateTime.now().year;
 
-    // Map normalized title → set of (year, month) combos where it was completed.
     final history = <String, List<DateTime>>{};
     for (final task in completed) {
       if (task.completedAt == null) continue;
@@ -182,7 +179,7 @@ class AiSuggestionEngine {
     }
 
     for (final entry in history.entries) {
-      if (await _suggestionRepo.countPending() >= _maxPendingSelf) break;
+      if (await _suggestionRepo.countPendingSelf() >= _maxPendingSelf) break;
       if (openTitlesNorm.contains(entry.key)) continue;
 
       final priorYearMatch = entry.value.any(
@@ -193,60 +190,62 @@ class AiSuggestionEngine {
       final original = completed.firstWhere(
         (t) => _normalize(t.title) == entry.key,
       );
+      final monthName = _monthName(currentMonth);
       final suggested = AiSuggestion.create(
         title: original.title,
         notes: original.notes,
         priority: original.priority.index,
         category: original.category.name,
         reason: SuggestionReason.seasonal,
+        explanation:
+            'Je voltooide "${original.title}" in $monthName vorig jaar.',
       );
       await _suggestionRepo.upsertSuggestion(suggested);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Detector 4 — Load balance (→ partner, auto)
+  // Detector 4 — Load balance (→ partner suggestion)
   // ---------------------------------------------------------------------------
 
   Future<void> _runLoadBalanceDetector(List<PersonalTask> openTasks) async {
-    final proposalRepo = _proposalRepo;
-    if (proposalRepo == null) return;
-    final parentId = myParentId;
-    if (parentId == null) return;
+    if (await _suggestionRepo.countPendingPartner() >= _maxPendingPartner) {
+      return;
+    }
 
-    final byCategory = <String, List<dynamic>>{};
+    final byCategory = <String, List<PersonalTask>>{};
     for (final task in openTasks) {
       if (task.isPrivate) continue;
       final cat = task.category.name;
       byCategory.putIfAbsent(cat, () => []).add(task);
     }
 
-    int sent = 0;
+    int created = 0;
     for (final entry in byCategory.entries) {
-      if (sent >= _maxAutoPartnerPerDay) break;
+      if (created >= _maxPendingPartner) break;
       if (entry.value.length < 3) continue;
 
-      // Pick the most overdue / oldest candidate.
-      final candidates = List<dynamic>.from(entry.value)
+      final candidates = List<PersonalTask>.from(entry.value)
         ..sort(
           (a, b) =>
               (a.dueDate ?? a.createdAt).compareTo(b.dueDate ?? b.createdAt),
         );
       final candidate = candidates.first;
-      final alreadySent = await proposalRepo.hasRecentOutgoing(
-        candidate.title,
-        parentId,
-      );
-      if (alreadySent) continue;
+      if (await _suggestionRepo.hasPendingWithTitle(candidate.title)) continue;
 
-      await proposalRepo.createManualProposal(
-        myParentId: parentId,
-        taskTitle: candidate.title,
-        taskNotes: candidate.notes,
-        taskPriority: candidate.priority,
-        taskDueDate: candidate.dueDate,
+      final suggested = AiSuggestion.create(
+        title: candidate.title,
+        notes: candidate.notes,
+        priority: candidate.priority.index,
+        category: candidate.category.name,
+        suggestedDueDate: candidate.dueDate,
+        reason: SuggestionReason.loadBalance,
+        explanation:
+            'Je hebt ${entry.value.length} open taken in categorie '
+            '${_categoryLabel(entry.key)}. Deze is het langst open.',
       );
-      sent++;
+      await _suggestionRepo.upsertSuggestion(suggested);
+      created++;
     }
   }
 
@@ -302,4 +301,28 @@ class AiSuggestionEngine {
     final mid = gaps.length ~/ 2;
     return gaps.length.isOdd ? gaps[mid] : ((gaps[mid - 1] + gaps[mid]) ~/ 2);
   }
+
+  String _monthName(int month) => const [
+    'januari',
+    'februari',
+    'maart',
+    'april',
+    'mei',
+    'juni',
+    'juli',
+    'augustus',
+    'september',
+    'oktober',
+    'november',
+    'december',
+  ][month - 1];
+
+  String _categoryLabel(String category) => switch (category) {
+    'household' => 'Huishouden',
+    'health' => 'Gezondheid',
+    'admin' => 'Administratie',
+    'school' => 'School',
+    'finance' => 'Financiën',
+    _ => 'Overig',
+  };
 }

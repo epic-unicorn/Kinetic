@@ -29,6 +29,7 @@ class AiSuggestionRepository {
         orElse: () => SuggestionStatus.pending,
       ),
       snoozeUntil: row.snoozeUntil,
+      explanation: row.explanation,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -45,6 +46,7 @@ class AiSuggestionRepository {
       reason: s.reason.name,
       status: Value(s.status.name),
       snoozeUntil: Value(s.snoozeUntil),
+      explanation: Value(s.explanation),
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     );
@@ -69,6 +71,32 @@ class AiSuggestionRepository {
         .map((rows) => rows.map(_rowToModel).toList());
   }
 
+  /// Pending suggestions targeted at the user (habit / seasonal).
+  Stream<List<AiSuggestion>> watchPendingSelf() {
+    return watchPending().map(
+      (all) => all
+          .where(
+            (s) =>
+                s.reason == SuggestionReason.habit ||
+                s.reason == SuggestionReason.seasonal,
+          )
+          .toList(),
+    );
+  }
+
+  /// Pending suggestions the user may forward to their partner.
+  Stream<List<AiSuggestion>> watchPendingPartner() {
+    return watchPending().map(
+      (all) => all
+          .where(
+            (s) =>
+                s.reason == SuggestionReason.partnerComplement ||
+                s.reason == SuggestionReason.loadBalance,
+          )
+          .toList(),
+    );
+  }
+
   /// Returns how many pending non-snoozed suggestions exist right now.
   Future<int> countPending() async {
     final now = DateTime.now().toUtc();
@@ -81,6 +109,19 @@ class AiSuggestionRepository {
             ))
             .get();
     return rows.length;
+  }
+
+  /// Watch pending suggestion count (drives the Voorstellen tab badge).
+  Stream<int> watchPendingCount() => watchPending().map((list) => list.length);
+
+  Future<int> countPendingSelf() async {
+    final all = await watchPendingSelf().first;
+    return all.length;
+  }
+
+  Future<int> countPendingPartner() async {
+    final all = await watchPendingPartner().first;
+    return all.length;
   }
 
   /// Returns true if a pending/snoozed suggestion with [title] already exists.

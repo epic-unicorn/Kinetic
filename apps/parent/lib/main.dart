@@ -310,13 +310,14 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                     enrolledKidsCount: kidsCount,
                     syncDoneCount: _syncDoneCount,
                     syncConfig: _syncOrchestrator?.config,
+                    pullPresence: _syncOrchestrator?.pullPresence,
                   ),
                   NotesScreen(
                     repo: _noteRepository,
                     settingsRepo: widget.settingsRepo,
                     onSyncRetry: _triggerSync,
                     syncStatus: hasWebDav ? syncStatus : null,
-                    hasFamilyKey: ValueNotifier(paired || kidsCount > 0),
+                    partnerPaired: paired,
                   ),
                   SettingsScreen(
                     db: widget.db,

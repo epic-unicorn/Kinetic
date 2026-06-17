@@ -1,13 +1,19 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
+
+import '../../family/family_connection_service.dart';
 import '../../partner/services/partner_proposal_repository.dart';
 import '../../settings/models/enrolled_kid.dart';
 import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
+import '../../todo/services/reminder_proposal_engine.dart';
 import '../../todo/services/todo_repository.dart';
 import 'category_sheet.dart';
+import 'detail_meta_row.dart';
 
 // ---------------------------------------------------------------------------
 // TaskDetailSheet
@@ -24,7 +30,9 @@ class TaskDetailSheet extends StatefulWidget {
   final String? initialListId;
   final String? initialTitle;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final WebDavConfigRepository? configRepo;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const TaskDetailSheet({
     super.key,
@@ -35,7 +43,9 @@ class TaskDetailSheet extends StatefulWidget {
     this.initialListId,
     this.initialTitle,
     this.hasFamilyKey = false,
+    this.partnerPaired = false,
     this.configRepo,
+    this.pullPresence,
   });
 
   @override
@@ -56,6 +66,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
 
   bool _saving = false;
   List<EnrolledKid> _enrolledKids = [];
+  List<ReminderChipProposal> _reminderChips = [];
+  List<PersonalTask> _completedTasks = [];
+  FamilyMemberStatus? _partnerStatus;
+  List<FamilyMemberStatus> _kidStatuses = [];
+  Timer? _chipDebounce;
+  final _reminderEngine = ReminderProposalEngine();
 
   @override
   void initState() {
@@ -72,19 +88,78 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     _recurrenceRule = t?.recurrenceRule;
     _listId = t?.listId ?? widget.initialListId;
     _customCategory = t?.customCategory;
+    _titleCtrl.addListener(_onTitleChanged);
     _loadEnrolledKids();
+    _loadCompletedTasks();
+    _loadFamilyConnections();
+    _refreshReminderChips();
+  }
+
+  void _onTitleChanged() {
+    _chipDebounce?.cancel();
+    _chipDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _refreshReminderChips();
+    });
+  }
+
+  Future<void> _loadCompletedTasks() async {
+    try {
+      final tasks = await widget.repo.watchCompletedTasks().first;
+      if (mounted) {
+        setState(() => _completedTasks = tasks);
+        _refreshReminderChips();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadFamilyConnections() async {
+    if (widget.configRepo == null) return;
+    try {
+      final presence = widget.pullPresence != null
+          ? await widget.pullPresence!()
+          : <PresenceInfo>[];
+      final partnerPaired = await widget.configRepo!.isPartnerPaired();
+      if (!mounted) return;
+      final allowWithoutPresence = widget.pullPresence == null;
+      setState(() {
+        _partnerStatus = FamilyConnectionService.partnerStatus(
+          partnerPaired: partnerPaired,
+          presenceList: presence,
+          allowWithoutPresence: allowWithoutPresence,
+        );
+        _kidStatuses = FamilyConnectionService.kidStatuses(
+          enrolledKids: _enrolledKids,
+          presenceList: presence,
+          allowWithoutPresence: allowWithoutPresence,
+        );
+      });
+    } catch (_) {}
+  }
+
+  void _refreshReminderChips() {
+    final chips = _reminderEngine.propose(
+      title: _titleCtrl.text,
+      category: widget.task?.category,
+      completedTasks: _completedTasks,
+    );
+    setState(() => _reminderChips = chips);
   }
 
   Future<void> _loadEnrolledKids() async {
     if (widget.configRepo == null) return;
     try {
       final kids = await widget.configRepo!.loadEnrolledKids();
-      if (mounted) setState(() => _enrolledKids = kids);
+      if (mounted) {
+        setState(() => _enrolledKids = kids);
+        await _loadFamilyConnections();
+      }
     } catch (_) {}
   }
 
   @override
   void dispose() {
+    _chipDebounce?.cancel();
+    _titleCtrl.removeListener(_onTitleChanged);
     _titleCtrl.dispose();
     _notesCtrl.dispose();
     _xpCtrl.dispose();
@@ -168,70 +243,137 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (mounted) Navigator.pop(context);
   }
 
+  bool get _canSend =>
+      FamilyConnectionService.canSend(
+        partner: _partnerStatus,
+        kids: _kidStatuses,
+      );
+
   void _showSendDialog(BuildContext context) {
     final task = widget.task;
     if (task == null) return;
+
+    if (!_canSend) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Geen verbonden partner of kinderen'),
+        ),
+      );
+      return;
+    }
+
+    FamilyMemberStatus? selectedPartner;
+    FamilyMemberStatus? selectedKid;
+
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withAlpha(80),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 4,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                   child: Text(
                     'Taak doorsturen',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-              ),
-              if (widget.proposalRepo != null)
-                ListTile(
-                  leading: const Icon(Icons.people_outline),
-                  title: const Text('Stuur naar partner'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _sendToPartner(context);
-                  },
-                ),
-              if (task.kidsTaskId != null)
-                ListTile(
-                  leading: Icon(Icons.bolt, color: kColorTeal),
-                  title: const Text('Opdracht aangemaakt \u2713'),
-                  enabled: false,
-                )
-              else if (_enrolledKids.isNotEmpty) ...[
-                ListTile(
-                  leading: const Icon(Icons.bolt),
-                  title: const Text('Stuur naar kinderen'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _sendToKids(context);
-                  },
-                ),
+                if (task.kidsTaskId != null)
+                  const ListTile(
+                    leading: Icon(Icons.bolt, color: kColorTeal),
+                    title: Text('Opdracht aangemaakt \u2713'),
+                    enabled: false,
+                  )
+                else ...[
+                  if (_partnerStatus != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: Text(
+                        'Partner',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.people_outline,
+                        color: _partnerStatus!.isConnected
+                            ? null
+                            : Theme.of(context).disabledColor,
+                      ),
+                      title: Text(_partnerStatus!.name),
+                      subtitle: Text(_partnerStatus!.statusLabel),
+                      enabled: _partnerStatus!.isConnected,
+                      selected: selectedPartner != null,
+                      onTap: _partnerStatus!.isConnected
+                          ? () => setSheetState(() {
+                              selectedPartner = _partnerStatus;
+                              selectedKid = null;
+                            })
+                          : null,
+                    ),
+                  ],
+                  if (_kidStatuses.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: Text(
+                        'Kinderen',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                    for (final kid in _kidStatuses)
+                      ListTile(
+                        leading: Icon(
+                          Icons.child_care,
+                          color: kid.isConnected
+                              ? null
+                              : Theme.of(context).disabledColor,
+                        ),
+                        title: Text(kid.name),
+                        subtitle: Text(kid.statusLabel),
+                        enabled: kid.isConnected,
+                        selected: selectedKid?.id == kid.id,
+                        onTap: kid.isConnected
+                            ? () => setSheetState(() {
+                                selectedKid = kid;
+                                selectedPartner = null;
+                              })
+                            : null,
+                      ),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Annuleren'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed:
+                              (selectedPartner != null || selectedKid != null)
+                              ? () {
+                                  Navigator.pop(ctx);
+                                  if (selectedPartner != null) {
+                                    _sendToPartner(context);
+                                  } else if (selectedKid != null) {
+                                    _sendToKids(context, selectedKid!);
+                                  }
+                                }
+                              : null,
+                          child: const Text('Sturen'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
         ),
       ),
@@ -241,6 +383,31 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   Future<void> _sendToPartner(BuildContext context) async {
     final task = widget.task;
     if (task == null || widget.proposalRepo == null) return;
+    if (_partnerStatus?.isConnected != true) return;
+
+    if (_partnerStatus!.isStale && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Verbinding verouderd'),
+          content: Text(
+            'Je partner is voor het laatst gezien ${_partnerStatus!.statusLabel.toLowerCase()}. '
+            'Toch sturen?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuleren'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Toch sturen'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -275,70 +442,58 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (mounted) Navigator.pop(context);
   }
 
-  Future<void> _sendToKids(BuildContext context) async {
+  Future<void> _sendToKids(
+    BuildContext context,
+    FamilyMemberStatus selectedKid,
+  ) async {
     final task = widget.task;
     if (task == null) return;
+    if (!selectedKid.isConnected) return;
 
-    // Use pre-loaded enrolled kids (already filtered to connected kids).
-    final kids = _enrolledKids;
-    if (kids.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Geen verbonden kinderen gevonden')),
-        );
-      }
-      return;
-    }
-
-    EnrolledKid? selectedKid;
-    if (kids.length > 1) {
-      // Show kid picker dialog.
-      selectedKid = await showDialog<EnrolledKid>(
+    if (selectedKid.isStale && mounted) {
+      final proceed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => SimpleDialog(
-          title: const Text('Stuur naar welk kind?'),
-          children: [
-            for (final kid in kids)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, kid),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.child_care, size: 20),
-                      const SizedBox(width: 12),
-                      Text(kid.name, style: Theme.of(ctx).textTheme.bodyLarge),
-                    ],
-                  ),
-                ),
-              ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, null),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: Text('Annuleren'),
-              ),
+        builder: (ctx) => AlertDialog(
+          title: const Text('Verbinding verouderd'),
+          content: Text(
+            '${selectedKid.name} is voor het laatst gezien '
+            '${selectedKid.statusLabel.toLowerCase()}. Toch sturen?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuleren'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Toch sturen'),
             ),
           ],
         ),
       );
-      if (selectedKid == null || !mounted) return;
-    } else {
-      selectedKid = kids.first;
+      if (proceed != true || !mounted) return;
     }
+
+    final enrolledKid = _enrolledKids.firstWhere(
+      (k) => k.id == selectedKid.id,
+      orElse: () => EnrolledKid(
+        id: selectedKid.id,
+        name: selectedKid.name,
+        enrolledAt: DateTime.now(),
+      ),
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Stuur naar kinderen?'),
+        title: Text('Stuur naar ${enrolledKid.name}?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              selectedKid != null
-                  ? '"${task.title}" wordt als opdracht naar ${selectedKid.name} gestuurd. De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.'
-                  : '"${task.title}" wordt als opdracht naar de kinderen gestuurd. De taak verdwijnt uit jouw lijst zodra een kind hem afrondt.',
+              '"${task.title}" wordt als opdracht naar ${enrolledKid.name} gestuurd. '
+              'De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.',
             ),
             const SizedBox(height: 16),
             Row(
@@ -382,7 +537,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (confirmed != true || !mounted) return;
     await widget.repo.sendToKids(
       task.id,
-      targetKidId: selectedKid.id,
+      targetKidId: enrolledKid.id,
       xpReward: int.tryParse(_xpCtrl.text.trim()) ?? 10,
     );
     if (mounted) Navigator.pop(context);
@@ -456,7 +611,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
 
           // ── Metadata rows ────────────────────────────────────────────────
           // Herinnering row — combined date + time
-          _MetaRow(
+          DetailMetaRow(
             icon: Icons.alarm_outlined,
             label: 'Herinnering',
             active: _dueDate != null,
@@ -541,7 +696,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               }
             },
           ),
-          // Preset chips — only when no reminder is set
+          // Smart reminder chips — only when no reminder is set
           if (_dueDate == null)
             ListTile(
               dense: true,
@@ -551,42 +706,27 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  ActionChip(
-                    label: const Text('1 uur'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () =>
-                        _applyReminderPreset(const Duration(hours: 1)),
-                  ),
-                  ActionChip(
-                    label: const Text('Vanavond 20:00'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      final now = DateTime.now();
-                      _applyReminderAt(
-                        DateTime(now.year, now.month, now.day, 20, 0),
-                      );
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('Morgen 09:00'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      final t = DateTime.now().add(const Duration(days: 1));
-                      _applyReminderAt(DateTime(t.year, t.month, t.day, 9, 0));
-                    },
-                  ),
-                  ActionChip(
-                    label: const Text('Morgen 20:00'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      final t = DateTime.now().add(const Duration(days: 1));
-                      _applyReminderAt(DateTime(t.year, t.month, t.day, 20, 0));
-                    },
-                  ),
+                  for (var i = 0; i < _reminderChips.length; i++)
+                    Tooltip(
+                      message: _reminderChips[i].explanation ?? '',
+                      child: ActionChip(
+                        avatar: i == 0
+                            ? Icon(
+                                Icons.auto_awesome,
+                                size: 14,
+                                color: i == 0 ? kColorTeal : null,
+                              )
+                            : null,
+                        label: Text(_reminderChips[i].label),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () =>
+                            _applyReminderAt(_reminderChips[i].at),
+                      ),
+                    ),
                 ],
               ),
             ),
-          _MetaRow(
+          DetailMetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
                 ? 'Prioriteit'
@@ -602,7 +742,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 : null,
             onTap: () => _pickPriority(context),
           ),
-          _MetaRow(
+          DetailMetaRow(
             icon: Icons.label_outline,
             label: _customCategory ?? 'Categorie toevoegen',
             active: _customCategory != null,
@@ -615,7 +755,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 : null,
           ),
           if (_dueDate != null)
-            _MetaRow(
+            DetailMetaRow(
               icon: Icons.repeat,
               label: _recurrenceRule ?? 'Herhalen',
               active: _recurrenceRule != null,
@@ -639,8 +779,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 if (widget.hasFamilyKey && widget.task != null)
                   IconButton(
                     icon: const Icon(Icons.send_outlined),
-                    tooltip: 'Doorsturen',
-                    onPressed: _saving ? null : () => _showSendDialog(context),
+                    tooltip: _canSend
+                        ? 'Doorsturen'
+                        : 'Geen verbonden partner of kinderen',
+                    onPressed: _saving || !_canSend
+                        ? null
+                        : () => _showSendDialog(context),
                   ),
                 const Spacer(),
                 TextButton(
@@ -878,82 +1022,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// MetaRow — a tappable information/action row in the detail sheet.
-// ---------------------------------------------------------------------------
-
-class _MetaRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final Color? color;
-  final VoidCallback? onTap;
-  final Widget? trailing;
-  final Widget? titleWidget;
-  final bool leadingCheckbox;
-  final bool checked;
-  final ValueChanged<bool>? onCheckChanged;
-
-  const _MetaRow({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-    this.color,
-    this.trailing,
-    this.titleWidget,
-    this.leadingCheckbox = false,
-    this.checked = false,
-    this.onCheckChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveColor = active
-        ? (color ?? kColorTeal)
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-
-    if (leadingCheckbox) {
-      return ListTile(
-        dense: true,
-        leading: GestureDetector(
-          onTap: () => onCheckChanged?.call(!checked),
-          child: Icon(
-            checked ? Icons.check_box : Icons.check_box_outline_blank,
-            size: 20,
-            color: effectiveColor,
-          ),
-        ),
-        title:
-            titleWidget ??
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
-            ),
-        trailing: trailing,
-        onTap: checked ? onTap : () => onCheckChanged?.call(true),
-      );
-    }
-
-    return ListTile(
-      dense: true,
-      leading: Icon(icon, size: 20, color: effectiveColor),
-      title:
-          titleWidget ??
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: effectiveColor),
-          ),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

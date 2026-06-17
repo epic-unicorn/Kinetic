@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../../partner/services/partner_proposal_repository.dart';
 import '../../sync/webdav_config_repository.dart';
@@ -43,18 +44,22 @@ class TaskTile extends StatelessWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
   final WebDavConfigRepository? configRepo;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const TaskTile({
     super.key,
     required this.task,
     required this.repo,
     this.hasFamilyKey = false,
+    this.partnerPaired = false,
     this.proposalRepo,
     this.myParentId,
     this.configRepo,
+    this.pullPresence,
   });
 
   @override
@@ -84,9 +89,11 @@ class TaskTile extends StatelessWidget {
         task: task,
         repo: repo,
         hasFamilyKey: hasFamilyKey,
+        partnerPaired: partnerPaired,
         proposalRepo: proposalRepo,
         myParentId: myParentId,
         configRepo: configRepo,
+        pullPresence: pullPresence,
       ),
     );
   }
@@ -96,17 +103,21 @@ class _TaskTileContent extends StatefulWidget {
   final PersonalTask task;
   final TodoRepository repo;
   final bool hasFamilyKey;
+  final bool partnerPaired;
   final PartnerProposalRepository? proposalRepo;
   final String? myParentId;
   final WebDavConfigRepository? configRepo;
+  final Future<List<PresenceInfo>> Function()? pullPresence;
 
   const _TaskTileContent({
     required this.task,
     required this.repo,
     this.hasFamilyKey = false,
+    this.partnerPaired = false,
     this.proposalRepo,
     this.myParentId,
     this.configRepo,
+    this.pullPresence,
   });
 
   @override
@@ -397,9 +408,11 @@ class _TaskTileContentState extends State<_TaskTileContent> {
         task: widget.task,
         repo: widget.repo,
         hasFamilyKey: widget.hasFamilyKey,
+        partnerPaired: widget.partnerPaired,
         proposalRepo: widget.proposalRepo,
         myParentId: widget.myParentId,
         configRepo: widget.configRepo,
+        pullPresence: widget.pullPresence,
       ),
     );
   }

@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.withExecutor(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -75,6 +75,9 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE app_settings ADD COLUMN last_partner_suggestion_run_at INTEGER',
         );
         await m.createTable(aiSuggestions);
+      }
+      if (from < 12) {
+        await m.addColumn(aiSuggestions, aiSuggestions.explanation);
       }
     },
   );
