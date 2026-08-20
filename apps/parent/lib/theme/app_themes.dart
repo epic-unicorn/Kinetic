@@ -115,81 +115,83 @@ String _month(int m) => const [
 // Theme definitions
 // ---------------------------------------------------------------------------
 
-enum AppTheme { light, dark }
+enum AppTheme { light, sand, dusk, night }
 
 extension AppThemeLabel on AppTheme {
   String get label => switch (this) {
     AppTheme.light => 'Licht',
-    AppTheme.dark => 'Donker',
+    AppTheme.sand => 'Zand',
+    AppTheme.dusk => 'Schemer',
+    AppTheme.night => 'Nacht',
   };
+
+  String get description => switch (this) {
+    AppTheme.light => 'Helder blauw',
+    AppTheme.sand => 'Warm papier',
+    AppTheme.dusk => 'Blauw-grijs donker',
+    AppTheme.night => 'OLED zwart',
+  };
+}
+
+/// Maps a persisted theme name to [AppTheme], including the pre-0.3 `dark` id.
+AppTheme appThemeFromName(String? name) {
+  if (name == 'dark') return AppTheme.dusk;
+  return AppTheme.values.firstWhere(
+    (t) => t.name == name,
+    orElse: () => AppTheme.light,
+  );
 }
 
 ThemeData buildTheme(AppTheme theme) {
   return switch (theme) {
-    AppTheme.light => _buildLightTheme(),
-    AppTheme.dark => _buildDarkTheme(),
+    AppTheme.light => _themeFromScheme(
+      ColorScheme.fromSeed(
+        seedColor: kColorKineticBlue,
+        brightness: Brightness.light,
+      ),
+    ),
+    AppTheme.sand => _themeFromScheme(
+      ColorScheme.fromSeed(
+        seedColor: const Color(0xFFC4783A),
+        brightness: Brightness.light,
+        surface: const Color(0xFFF7F1E6),
+        surfaceContainerLow: const Color(0xFFF1E9DA),
+        surfaceContainerHigh: const Color(0xFFE8DCC8),
+      ),
+      scaffold: const Color(0xFFF7F1E6),
+    ),
+    AppTheme.dusk => _themeFromScheme(
+      ColorScheme.fromSeed(
+        seedColor: kColorKineticBlue,
+        brightness: Brightness.dark,
+        surface: const Color(0xFF1E2030),
+        surfaceContainerLow: const Color(0xFF252839),
+        surfaceContainerHigh: const Color(0xFF2C3050),
+      ),
+      scaffold: const Color(0xFF1E2030),
+    ),
+    AppTheme.night => _themeFromScheme(
+      ColorScheme.fromSeed(
+        seedColor: kColorKineticBlue,
+        brightness: Brightness.dark,
+        surface: const Color(0xFF0A0A0A),
+        surfaceContainerLow: const Color(0xFF141414),
+        surfaceContainerHigh: const Color(0xFF1C1C1C),
+      ),
+      scaffold: Colors.black,
+    ),
   };
 }
 
-ThemeData _buildLightTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: kColorKineticBlue,
-    brightness: Brightness.light,
-  );
-
+ThemeData _themeFromScheme(ColorScheme colorScheme, {Color? scaffold}) {
+  final background = scaffold ?? colorScheme.surface;
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
-    brightness: Brightness.light,
-    scaffoldBackgroundColor: colorScheme.surface,
+    brightness: colorScheme.brightness,
+    scaffoldBackgroundColor: background,
     appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
-      elevation: 0,
-      centerTitle: false,
-    ),
-    cardTheme: CardThemeData(
-      color: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    listTileTheme: ListTileThemeData(
-      tileColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: colorScheme.primaryContainer,
-      foregroundColor: colorScheme.onPrimaryContainer,
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    ),
-    textTheme: _buildTextTheme(colorScheme.onSurface),
-    tabBarTheme: TabBarThemeData(
-      labelColor: colorScheme.primary,
-      unselectedLabelColor: colorScheme.onSurfaceVariant,
-      indicator: UnderlineTabIndicator(
-        borderSide: BorderSide(color: colorScheme.primary, width: 3),
-      ),
-    ),
-  );
-}
-
-ThemeData _buildDarkTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: kColorKineticBlue,
-    brightness: Brightness.dark,
-    surface: const Color(0xFF1E2030),
-    surfaceContainerLow: const Color(0xFF252839),
-    surfaceContainerHigh: const Color(0xFF2C3050),
-  );
-
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: colorScheme,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: const Color(0xFF1E2030),
-    appBarTheme: AppBarTheme(
-      backgroundColor: const Color(0xFF1E2030),
+      backgroundColor: background,
       foregroundColor: colorScheme.onSurface,
       elevation: 0,
       centerTitle: false,

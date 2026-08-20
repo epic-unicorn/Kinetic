@@ -5,13 +5,18 @@ import 'package:parent/theme/app_themes.dart';
 void main() {
   group('AppTheme enum', () {
     test('all theme variants are defined', () {
+      expect(AppTheme.values, hasLength(4));
       expect(AppTheme.light, isNotNull);
-      expect(AppTheme.dark, isNotNull);
+      expect(AppTheme.sand, isNotNull);
+      expect(AppTheme.dusk, isNotNull);
+      expect(AppTheme.night, isNotNull);
     });
 
     test('theme labels are user-friendly', () {
       expect(AppTheme.light.label, equals('Licht'));
-      expect(AppTheme.dark.label, equals('Donker'));
+      expect(AppTheme.sand.label, equals('Zand'));
+      expect(AppTheme.dusk.label, equals('Schemer'));
+      expect(AppTheme.night.label, equals('Nacht'));
     });
 
     test('all themes have different labels', () {
@@ -30,12 +35,21 @@ void main() {
       expect(theme.brightness, equals(Brightness.light));
     });
 
-    test('returns valid ThemeData for dark theme', () {
-      final theme = buildTheme(AppTheme.dark);
+    test('returns valid ThemeData for dusk theme', () {
+      final theme = buildTheme(AppTheme.dusk);
 
       expect(theme, isNotNull);
       expect(theme.useMaterial3, isTrue);
       expect(theme.brightness, equals(Brightness.dark));
+    });
+
+    test('sand is light and night is dark', () {
+      expect(buildTheme(AppTheme.sand).brightness, Brightness.light);
+      expect(buildTheme(AppTheme.night).brightness, Brightness.dark);
+      expect(
+        buildTheme(AppTheme.night).scaffoldBackgroundColor,
+        equals(Colors.black),
+      );
     });
 
     test('all themes have Material 3 enabled', () {
@@ -61,11 +75,17 @@ void main() {
       }
     });
 
-    test('light and dark themes have opposite brightness', () {
+    test('light and dusk themes have opposite brightness', () {
       final lightTheme = buildTheme(AppTheme.light);
-      final darkTheme = buildTheme(AppTheme.dark);
+      final darkTheme = buildTheme(AppTheme.dusk);
 
       expect(lightTheme.brightness, isNot(equals(darkTheme.brightness)));
+    });
+
+    test('appThemeFromName maps legacy dark to dusk', () {
+      expect(appThemeFromName('dark'), AppTheme.dusk);
+      expect(appThemeFromName('sand'), AppTheme.sand);
+      expect(appThemeFromName('unknown'), AppTheme.light);
     });
   });
 

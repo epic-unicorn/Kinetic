@@ -192,25 +192,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Thema kiezen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final theme in AppTheme.values)
-              RadioListTile<AppTheme>(
-                title: Text(theme.label),
-                value: theme,
-                groupValue: themeNotifier.value,
-                onChanged: (newTheme) async {
-                  if (newTheme != null) {
-                    themeNotifier.value = newTheme;
-                    await widget.settingsRepo.saveTheme(newTheme);
-                    if (context.mounted) {
-                      Navigator.pop(dialogContext);
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final theme in AppTheme.values)
+                RadioListTile<AppTheme>(
+                  title: Text(theme.label),
+                  subtitle: Text(theme.description),
+                  value: theme,
+                  groupValue: themeNotifier.value,
+                  onChanged: (newTheme) async {
+                    if (newTheme != null) {
+                      themeNotifier.value = newTheme;
+                      await widget.settingsRepo.saveTheme(newTheme);
+                      if (context.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
                     }
-                  }
-                },
-              ),
-          ],
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );

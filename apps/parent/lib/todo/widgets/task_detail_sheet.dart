@@ -10,10 +10,12 @@ import '../../sync/webdav_config_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/models/enums.dart';
 import '../../todo/models/personal_task.dart';
+import '../../todo/reminder_time.dart';
 import '../../todo/services/reminder_proposal_engine.dart';
 import '../../todo/services/todo_repository.dart';
 import 'category_sheet.dart';
 import 'detail_meta_row.dart';
+import 'hour_first_time_picker.dart';
 
 // ---------------------------------------------------------------------------
 // TaskDetailSheet
@@ -243,11 +245,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     if (mounted) Navigator.pop(context);
   }
 
-  bool get _canSend =>
-      FamilyConnectionService.canSend(
-        partner: _partnerStatus,
-        kids: _kidStatuses,
-      );
+  bool get _canSend => FamilyConnectionService.canSend(
+    partner: _partnerStatus,
+    kids: _kidStatuses,
+  );
 
   void _showSendDialog(BuildContext context) {
     final task = widget.task;
@@ -255,9 +256,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
 
     if (!_canSend) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Geen verbonden partner of kinderen'),
-        ),
+        const SnackBar(content: Text('Geen verbonden partner of kinderen')),
       );
       return;
     }
@@ -719,8 +718,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                             : null,
                         label: Text(_reminderChips[i].label),
                         visualDensity: VisualDensity.compact,
-                        onPressed: () =>
-                            _applyReminderAt(_reminderChips[i].at),
+                        onPressed: () => _applyReminderAt(_reminderChips[i].at),
                       ),
                     ),
                 ],
@@ -805,15 +803,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   }
 
   void _setDefaultReminder() {
-    final now = DateTime.now();
     setState(() {
-      _dueDate = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        now.hour,
-        now.minute,
-      ).toUtc();
+      _dueDate = suggestedReminderAt(DateTime.now()).toUtc();
       _isAllDay = false;
     });
   }
@@ -845,16 +836,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     });
   }
 
+  TimeOfDay _initialPickerTime() {
+    if (_dueDate != null && !_isAllDay) {
+      final current = _dueDate!.toLocal();
+      return TimeOfDay(hour: current.hour, minute: current.minute);
+    }
+    return TimeOfDay.fromDateTime(suggestedReminderAt(DateTime.now()));
+  }
+
   Future<void> _pickTimeOnly() async {
-    final current = _dueDate?.toLocal() ?? DateTime.now();
-    final picked = await showTimePicker(
+    final picked = await showHourFirstTimePicker(
       context: context,
-      initialEntryMode: TimePickerEntryMode.input,
-      initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
+      initialTime: _initialPickerTime(),
     );
     if (picked == null || !mounted) return;
     final d = _dueDate?.toLocal() ?? DateTime.now();
@@ -892,17 +885,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       lastDate: DateTime(2099),
     );
     if (pickedDate == null || !mounted) return;
-    final current = _dueDate?.toLocal() ?? DateTime.now();
-    final pickedTime = await showTimePicker(
+    final pickedTime = await showHourFirstTimePicker(
       context: context,
-      initialEntryMode: TimePickerEntryMode.input,
-      initialTime: _isAllDay
-          ? TimeOfDay.now()
-          : TimeOfDay(hour: current.hour, minute: current.minute),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
+      initialTime: _initialPickerTime(),
     );
     if (pickedTime == null || !mounted) return;
     setState(() {

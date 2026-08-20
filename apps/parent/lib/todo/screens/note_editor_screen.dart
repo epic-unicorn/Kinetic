@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
+import '../reminder_time.dart';
 import '../services/note_repository.dart';
 import '../widgets/category_sheet.dart';
 import '../widgets/detail_meta_row.dart';
+import '../widgets/hour_first_time_picker.dart';
 
 /// Bottom sheet for creating or editing a note. Mirrors [TaskDetailSheet] layout.
 class NoteEditorScreen extends StatefulWidget {
@@ -121,15 +123,11 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     );
     if (date == null || !mounted) return;
 
-    final time = await showTimePicker(
+    final time = await showHourFirstTimePicker(
       context: context,
       initialTime: _remindAt != null
           ? TimeOfDay.fromDateTime(_remindAt!)
-          : _defaultReminderTime(),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
+          : TimeOfDay.fromDateTime(suggestedReminderAt(DateTime.now())),
     );
     if (time == null || !mounted) return;
 
@@ -142,11 +140,6 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         time.minute,
       );
     });
-  }
-
-  TimeOfDay _defaultReminderTime() {
-    final target = DateTime.now().add(const Duration(hours: 1));
-    return TimeOfDay(hour: target.hour, minute: 0);
   }
 
   Future<void> _confirmDelete() async {

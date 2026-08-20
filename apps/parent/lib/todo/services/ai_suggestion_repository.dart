@@ -74,26 +74,14 @@ class AiSuggestionRepository {
   /// Pending suggestions targeted at the user (habit / seasonal).
   Stream<List<AiSuggestion>> watchPendingSelf() {
     return watchPending().map(
-      (all) => all
-          .where(
-            (s) =>
-                s.reason == SuggestionReason.habit ||
-                s.reason == SuggestionReason.seasonal,
-          )
-          .toList(),
+      (all) => all.where((s) => s.reason.isSelfTargeted).toList(),
     );
   }
 
   /// Pending suggestions the user may forward to their partner.
   Stream<List<AiSuggestion>> watchPendingPartner() {
     return watchPending().map(
-      (all) => all
-          .where(
-            (s) =>
-                s.reason == SuggestionReason.partnerComplement ||
-                s.reason == SuggestionReason.loadBalance,
-          )
-          .toList(),
+      (all) => all.where((s) => s.reason.isPartnerTargeted).toList(),
     );
   }
 
@@ -132,6 +120,19 @@ class AiSuggestionRepository {
               (t) => t.status.equals('pending') | t.status.equals('snoozed'),
             ))
             .get();
+    return rows.any((r) => r.title.trim().toLowerCase() == normalized);
+  }
+
+  /// True if any suggestion with [title] was created within [within].
+  Future<bool> hasRecentWithTitle(
+    String title, {
+    Duration within = const Duration(days: 14),
+  }) async {
+    final normalized = title.trim().toLowerCase();
+    final cutoff = DateTime.now().toUtc().subtract(within);
+    final rows = await (_db.select(
+      _db.aiSuggestions,
+    )..where((t) => t.createdAt.isBiggerOrEqualValue(cutoff))).get();
     return rows.any((r) => r.title.trim().toLowerCase() == normalized);
   }
 

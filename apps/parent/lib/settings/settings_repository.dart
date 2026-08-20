@@ -28,11 +28,7 @@ class SettingsRepository {
       return AppTheme.light;
     }
 
-    final themeStr = rows.first.theme;
-    return AppTheme.values.firstWhere(
-      (t) => t.name == themeStr,
-      orElse: () => AppTheme.light,
-    );
+    return appThemeFromName(rows.first.theme);
   }
 
   /// Save theme preference to database.
@@ -57,10 +53,7 @@ class SettingsRepository {
         await loadTheme(); // Initialize if missing
         return AppTheme.light;
       }
-      return AppTheme.values.firstWhere(
-        (t) => t.name == row.theme,
-        orElse: () => AppTheme.light,
-      );
+      return appThemeFromName(row.theme);
     });
   }
 

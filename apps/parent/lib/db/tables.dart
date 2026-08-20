@@ -237,7 +237,8 @@ class AppSettings extends Table {
   TextColumn get key =>
       text().withDefault(const Constant('default')).unique()();
 
-  // Theme preference: 'light', 'dark', 'custom'
+  // Theme preference: 'light' | 'sand' | 'dusk' | 'night'
+  // Legacy stored value 'dark' is mapped to dusk at read time.
   TextColumn get theme => text().withDefault(const Constant('dark'))();
 
   // JSON-encoded ordered list of task category labels (nullable = no saved order)
