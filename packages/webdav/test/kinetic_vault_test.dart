@@ -191,8 +191,8 @@ void main() {
       mockHttp = MockClient();
       client = WebDavClient(
         baseUrl: 'https://dav.example.com',
-        username: 'alice',
-        password: 's3cret',
+        username: 'test-user',
+        password: 'test-password', // ggignore: mocked HTTP, not a real login
         httpClient: mockHttp,
       );
     });
