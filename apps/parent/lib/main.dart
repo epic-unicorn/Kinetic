@@ -19,6 +19,7 @@ import 'todo/services/ai_suggestion_engine.dart';
 import 'todo/services/ai_suggestion_repository.dart';
 import 'todo/services/note_repository.dart';
 import 'todo/services/todo_repository.dart';
+import 'vault/vault_gate.dart';
 
 // Global theme notifier — allows theme changes from anywhere in the app
 final themeNotifier = ValueNotifier<AppTheme>(AppTheme.light);
@@ -56,7 +57,12 @@ class KineticParentApp extends StatelessWidget {
           title: 'Kinetic Link',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(theme),
-          home: _RootShell(db: db, settingsRepo: settingsRepo),
+          home: VaultGate(
+            db: db,
+            settingsRepo: settingsRepo,
+            readyBuilder: (context) =>
+                _RootShell(db: db, settingsRepo: settingsRepo),
+          ),
         );
       },
     );

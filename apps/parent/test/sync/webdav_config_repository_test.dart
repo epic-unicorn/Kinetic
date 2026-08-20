@@ -26,64 +26,45 @@ void main() {
       expect(config.personalKeyBytes.length, equals(32));
       expect(config.familyKeyBytes, isNull);
     });
+  });
 
-    test('SyncConfig supports encryption key management', () {
-      final personalKey = Uint8List.fromList(List.filled(32, 42));
-      final familyKey = Uint8List.fromList(List.filled(32, 99));
-
-      final config = SyncConfig(
-        serverUrl: 'https://example.com',
-        username: 'user',
-        password: 'pass',
-        parentId: '',
-        personalKeyBytes: personalKey,
-        familyKeyBytes: familyKey,
-      );
-
-      expect(config.personalKeyBytes, equals(personalKey));
-      expect(config.familyKeyBytes, equals(familyKey));
+  group('requirePersonalKey', () {
+    test('throws when no vault key is stored', () async {
+      final repo = WebDavConfigRepository(InMemoryKeyValueStore());
+      expect(repo.requirePersonalKey, throwsA(isA<StateError>()));
     });
 
-    test('SyncConfig family key is optional', () {
-      final config = SyncConfig(
-        serverUrl: 'https://example.com',
-        username: 'user',
-        password: 'pass',
-        parentId: '',
-        personalKeyBytes: Uint8List.fromList(List.filled(32, 0)),
-        familyKeyBytes: null,
-      );
-
-      expect(config.familyKeyBytes, isNull);
-    });
-
-    test('Encryption keys are 32 bytes for AES-256', () {
-      final config = SyncConfig(
-        serverUrl: 'https://example.com',
-        username: 'user',
-        password: 'pass',
-        parentId: '',
-        personalKeyBytes: Uint8List.fromList(List.filled(32, 0)),
-        familyKeyBytes: Uint8List.fromList(List.filled(32, 1)),
-      );
-
-      expect(config.personalKeyBytes.length, equals(32));
-      expect(config.familyKeyBytes!.length, equals(32));
+    test('returns the stored key', () async {
+      final store = InMemoryKeyValueStore();
+      final repo = WebDavConfigRepository(store);
+      final key = Uint8List.fromList(List.filled(32, 7));
+      await repo.savePersonalKey(key);
+      expect(await repo.requirePersonalKey(), key);
     });
   });
 
-  group('ensurePersonalKey', () {
-    test('generates 32-byte key via KineticEncryption', () {
-      // ensurePersonalKey generates a key using KineticEncryption.generatePersonalKey
-      // Verify the generator produces valid 32-byte keys
-      final key = KineticEncryption.generatePersonalKey();
-      expect(key.length, equals(32));
+  group('family vault', () {
+    test('saveFamilyKey stores entropy and clearFamilyKey removes it', () async {
+      final store = InMemoryKeyValueStore();
+      final repo = WebDavConfigRepository(store);
+      final key = Uint8List.fromList(List.filled(32, 3));
+      final entropy = Uint8List.fromList(List.filled(16, 9));
+      await repo.saveFamilyKey(key, entropy: entropy);
+      expect(await repo.loadFamilyKey(), key);
+      expect(await repo.loadFamilyEntropy(), entropy);
+      await repo.clearFamilyKey();
+      expect(await repo.loadFamilyKey(), isNull);
+      expect(await repo.loadFamilyEntropy(), isNull);
     });
 
-    test('generated keys are unique across calls', () {
-      final key1 = KineticEncryption.generatePersonalKey();
-      final key2 = KineticEncryption.generatePersonalKey();
-      expect(key1, isNot(equals(key2)));
+    test('personal entropy round-trips and clear removes it', () async {
+      final store = InMemoryKeyValueStore();
+      final repo = WebDavConfigRepository(store);
+      final entropy = Uint8List.fromList(List.filled(16, 4));
+      await repo.savePersonalEntropy(entropy);
+      expect(await repo.loadPersonalEntropy(), entropy);
+      await repo.clearPersonalEntropy();
+      expect(await repo.loadPersonalEntropy(), isNull);
     });
   });
 }

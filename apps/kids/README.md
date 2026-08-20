@@ -2,13 +2,15 @@
 
 Child-facing Flutter app. Children see tasks assigned by a parent via the parent's unique QR enrollment code, mark them done, and earn XP.
 
+Parent-app themes, reminder picker, notes list, and the suggestion engine do **not** apply here. Enrollment uses a family-key QR **without** the WebDAV password; the parent types that password once on the kids device.
+
 ## Setup
 
 1. Parent generates enrollment QR in Settings → Familie → Kinderen → "Kinderenapp koppelen"
 2. Parent shows QR to child
-3. Child opens Kinetic Kids app → scans QR
+3. Child opens Kinetic Kids app → scans QR → types the WebDAV password
 4. Kid device is enrolled with:
-   - WebDAV credentials (server, username, password)
+   - WebDAV credentials (server, username, password typed on device)
    - Family key (for decryption)
    - Kid UUID (stored in secure storage as `kinetic_kid_id`)
 5. Tasks are synced from `/kinetic/shared/tasks/` and filtered by this UUID

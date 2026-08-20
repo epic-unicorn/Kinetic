@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -5,115 +7,111 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 
-// ---------------------------------------------------------------------------
-// FamilyKeyShareScreen
-//
-// Generates a family key in memory and displays it as a QR code.
-// The key is NOT saved to storage until Parent A taps "Koppeling opslaan"
-// after their partner has scanned the code.  If the user backs out without
-// confirming, the ephemeral key is discarded.
-//
-// Returns `true` via Navigator when the key was saved so the caller can
-// reload the config.
-// ---------------------------------------------------------------------------
-
+/// Shows a family-pairing QR that carries 16-byte BIP-39 entropy (no password).
 class FamilyKeyShareScreen extends StatefulWidget {
-  final SyncConfig config;
-  final WebDavConfigRepository configRepo;
-
   const FamilyKeyShareScreen({
     super.key,
     required this.config,
     required this.configRepo,
+    this.entropy,
   });
+
+  final SyncConfig config;
+  final WebDavConfigRepository configRepo;
+  final Uint8List? entropy;
 
   @override
   State<FamilyKeyShareScreen> createState() => _FamilyKeyShareScreenState();
 }
 
 class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
-  late SyncConfig _config;
-  bool _saving = false;
-  bool _keySaved = false;
+  Uint8List? _entropy;
+  String? _fingerprint;
+  bool _confirmed = false;
 
   @override
   void initState() {
     super.initState();
-    _config = widget.config;
-    if (_config.familyKeyBytes == null) {
-      // Generate in memory only — not persisted until user confirms.
-      final newKey = KineticEncryption.generateFamilyKey();
-      _config = _config.withFamilyKey(newKey);
-    }
+    _entropy = widget.entropy;
+    _load();
   }
 
-  Future<void> _confirmAndSave() async {
-    setState(() => _saving = true);
-    // Only persist the key when it was freshly generated — if a key already
-    // existed we just need to mark that the partner has scanned it.
-    if (widget.config.familyKeyBytes == null) {
-      await widget.configRepo.saveFamilyKey(_config.familyKeyBytes!);
+  Future<void> _load() async {
+    final entropy = _entropy ?? await widget.configRepo.loadFamilyEntropy();
+    final key = widget.config.familyKeyBytes;
+    String? fingerprint;
+    if (key != null) {
+      fingerprint = await KineticVault.fingerprint(key);
     }
     if (!mounted) return;
     setState(() {
-      _saving = false;
-      _keySaved = true;
+      _entropy = entropy;
+      _fingerprint = fingerprint;
     });
   }
 
-  String get _qrPayload => KineticEncryption.exportFamilyKeyQrPayload(
-    _config.familyKeyBytes!,
-    _config.serverUrl,
-    _config.username,
-  );
+  String? get _qrPayload {
+    final entropy = _entropy;
+    if (entropy != null) {
+      return KineticVault.exportFamilyEntropyQrPayload(
+        entropy: entropy,
+        serverUrl: widget.config.serverUrl,
+        username: widget.config.username,
+      );
+    }
+    final key = widget.config.familyKeyBytes;
+    if (key == null) return null;
+    return KineticEncryption.exportFamilyKeyQrPayload(
+      key,
+      widget.config.serverUrl,
+      widget.config.username,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    // Whether this key was freshly generated (vs already existed from storage)
-    final isNewKey = widget.config.familyKeyBytes == null;
+    final qr = _qrPayload;
 
-    return PopScope(
-      onPopInvokedWithResult: (didPop, _) {
-        // Result is passed via the BackButton below; nothing to do here.
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Familiesleutel delen'),
-          centerTitle: false,
-          leading: BackButton(
-            onPressed: () => Navigator.of(context).pop(_keySaved),
-          ),
-          actions: [
-            if (_config.familyKeyBytes != null)
-              IconButton(
-                icon: const Icon(Icons.text_snippet_outlined),
-                tooltip: 'Exporteer als tekst',
-                onPressed: () => _showTextExport(context),
-              ),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Familiesleutel delen'),
+        centerTitle: false,
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).pop(_confirmed),
         ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  'Laat je partner deze QR-code scannen',
-                  style: tt.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Open Instellingen → Familiesleutel scannen op het '
-                  'apparaat van je partner en scan de code hieronder.',
-                  style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-
-                // QR code
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text(
+                _entropy == null
+                    ? 'Laat je partner deze QR-code scannen. Deze familiesleutel '
+                        'is van vóór de herstelzin en heeft geen 12 woorden.'
+                    : 'Laat je partner deze QR-code scannen, of de 12 woorden typen.',
+                style: tt.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'De code bevat geen WebDAV-wachtwoord. Controleer samen de vingerafdruk.',
+                style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              if (qr == null)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Geen herstelzin-gegevens op dit apparaat. '
+                    'Maak een nieuwe familiesleutel.',
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -128,7 +126,7 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                     ],
                   ),
                   child: QrImageView(
-                    data: _qrPayload,
+                    data: qr,
                     version: QrVersions.auto,
                     size: 260,
                     eyeStyle: const QrEyeStyle(
@@ -141,10 +139,8 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 32),
-
-                // Server info badge
+              const SizedBox(height: 20),
+              if (_fingerprint != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -154,120 +150,36 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                     color: scheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cloud_outlined, size: 18, color: kColorTeal),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _config.serverUrl,
-                          style: tt.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Vingerafdruk  $_fingerprint',
+                    style: tt.titleSmall?.copyWith(
+                      fontFamily: 'monospace',
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
-
-                const Spacer(),
-
-                // Confirm button — shown until the user confirms the partner
-                // has scanned (regardless of whether the key is new or existing).
-                if (!_keySaved) ...[
-                  FilledButton.icon(
-                    onPressed: _saving ? null : _confirmAndSave,
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check),
-                    label: Text(
-                      _saving ? 'Opslaan…' : 'Partner heeft gescand — opslaan',
+              const Spacer(),
+              if (!_confirmed)
+                FilledButton.icon(
+                  onPressed: () => setState(() => _confirmed = true),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Partner heeft gescand'),
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: kColorTeal, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Familiesleutel gedeeld',
+                      style: tt.bodySmall?.copyWith(color: kColorTeal),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Sla de sleutel op nadat je partner de QR-code heeft gescand.',
-                    style: tt.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ] else if (_keySaved)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: kColorTeal, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Familiesleutel opgeslagen',
-                        style: tt.bodySmall?.copyWith(color: kColorTeal),
-                      ),
-                    ],
-                  )
-                else
-                  Text(
-                    'Sta niemand anders toe de code te scannen. '
-                    'Iedereen met deze sleutel kan gedeelde data lezen.',
-                    style: tt.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showTextExport(BuildContext context) {
-    final familyKey = _config.familyKeyBytes;
-    if (familyKey == null) return;
-    final json = KineticEncryption.exportFamilyKeyJson(
-      familyKey,
-      _config.username,
-    );
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Familiesleutel (tekst)'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Gebruik dit alleen als noodoplossing. '
-                'Bewaar de sleutel veilig — '
-                'iedereen die hem heeft kan gedeelde data lezen.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                json,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Sluiten'),
-          ),
-        ],
       ),
     );
   }

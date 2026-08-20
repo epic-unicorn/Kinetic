@@ -1,6 +1,6 @@
 name: kinetic_webdav
 description: WebDAV sync, iCal serialization, and AES-256-GCM encryption for Kinetic Link.
-version: 0.2.2
+version: 0.3.0
 resolution: workspace
 
 environment:

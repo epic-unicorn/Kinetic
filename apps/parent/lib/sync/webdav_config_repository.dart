@@ -11,7 +11,9 @@ const _kServerUrl = 'kinetic_webdav_server_url';
 const _kUsername = 'kinetic_webdav_username';
 const _kPassword = 'kinetic_webdav_password';
 const _kPersonalKey = 'kinetic_webdav_personal_key';
+const _kPersonalEntropy = 'kinetic_webdav_personal_entropy';
 const _kFamilyKey = 'kinetic_webdav_family_key';
+const _kFamilyEntropy = 'kinetic_webdav_family_entropy';
 const _kParentId = 'kinetic_webdav_parent_id';
 const _kEnrolledKids = 'kinetic_enrolled_kids';
 const _kPartnerPaired = 'kinetic_partner_paired';
@@ -97,26 +99,28 @@ class WebDavConfigRepository {
     await _store.write(key: _kPassword, value: newPassword);
   }
 
-  /// Stores a new family key without touching any other config fields.
-  ///
-  /// Use this after importing a family key from a partner parent.
-  Future<void> saveFamilyKey(Uint8List familyKey) async {
+  /// Stores the family AES key and optional 16-byte BIP-39 entropy.
+  Future<void> saveFamilyKey(
+    Uint8List familyKey, {
+    Uint8List? entropy,
+  }) async {
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));
+    if (entropy != null) {
+      await _store.write(key: _kFamilyEntropy, value: base64.encode(entropy));
+    }
   }
 
-  /// Ensures a family key exists in secure storage, generating one if absent.
-  ///
-  /// Call this before generating a kids enrollment QR — the key is required
-  /// even when no partner is paired yet (the family key is shared later).
-  /// Returns the (possibly newly generated) key bytes.
-  Future<Uint8List> ensureFamilyKey() async {
+  Future<Uint8List?> loadFamilyEntropy() async {
+    final value = await _store.read(key: _kFamilyEntropy);
+    if (value == null) return null;
+    return Uint8List.fromList(base64.decode(value));
+  }
+
+  /// Returns the stored family key, or null if this device has none yet.
+  Future<Uint8List?> loadFamilyKey() async {
     final existing = await _store.read(key: _kFamilyKey);
-    if (existing != null) {
-      return Uint8List.fromList(base64.decode(existing));
-    }
-    final newKey = KineticEncryption.generateFamilyKey();
-    await _store.write(key: _kFamilyKey, value: base64.encode(newKey));
-    return newKey;
+    if (existing == null) return null;
+    return Uint8List.fromList(base64.decode(existing));
   }
 
   /// Stores a new personal key without touching any other config fields.
@@ -126,6 +130,21 @@ class WebDavConfigRepository {
     await _store.write(key: _kPersonalKey, value: base64.encode(personalKey));
   }
 
+  /// 16-byte BIP-39 entropy so the personal phrase can be shown again.
+  Future<void> savePersonalEntropy(Uint8List entropy) async {
+    await _store.write(key: _kPersonalEntropy, value: base64.encode(entropy));
+  }
+
+  Future<Uint8List?> loadPersonalEntropy() async {
+    final value = await _store.read(key: _kPersonalEntropy);
+    if (value == null) return null;
+    return Uint8List.fromList(base64.decode(value));
+  }
+
+  Future<void> clearPersonalEntropy() async {
+    await _store.delete(key: _kPersonalEntropy);
+  }
+
   /// Returns just the personal key bytes from secure storage, or null if not yet configured.
   Future<Uint8List?> loadPersonalKeyBytes() async {
     final base64str = await _store.read(key: _kPersonalKey);
@@ -133,18 +152,13 @@ class WebDavConfigRepository {
     return Uint8List.fromList(base64.decode(base64str));
   }
 
-  /// Returns the personal key, generating and persisting a new one if absent.
-  ///
-  /// This allows the backup/restore flow to work without requiring WebDAV to
-  /// be configured first.  The key is stored under the same secure-storage
-  /// slot used by the WebDAV config so it is automatically re-used when the
-  /// user later sets up WebDAV sync.
-  Future<Uint8List> ensurePersonalKey() async {
+  /// Returns the stored personal key, or throws if the vault is not unlocked.
+  Future<Uint8List> requirePersonalKey() async {
     final existing = await loadPersonalKeyBytes();
-    if (existing != null) return existing;
-    final newKey = KineticEncryption.generatePersonalKey();
-    await savePersonalKey(newKey);
-    return newKey;
+    if (existing == null) {
+      throw StateError('Geen kluis op dit apparaat');
+    }
+    return existing;
   }
 
   /// Removes the family key without touching any other config fields.
@@ -152,6 +166,7 @@ class WebDavConfigRepository {
   /// Call this when leaving the family pairing.
   Future<void> clearFamilyKey() async {
     await _store.delete(key: _kFamilyKey);
+    await _store.delete(key: _kFamilyEntropy);
     await _store.delete(key: _kPartnerPaired);
   }
 
@@ -228,7 +243,9 @@ class WebDavConfigRepository {
     await _store.delete(key: _kPassword);
     await _store.delete(key: _kParentId);
     await _store.delete(key: _kPersonalKey);
+    await _store.delete(key: _kPersonalEntropy);
     await _store.delete(key: _kFamilyKey);
+    await _store.delete(key: _kFamilyEntropy);
     await _store.delete(key: _kPartnerPaired);
   }
 }

@@ -55,11 +55,17 @@ void main() {
     expect(result, equals(bytes));
   });
 
-  test('GET throws WebDavException on non-200', () async {
+  test('GET throws WebDavException with statusCode 404', () async {
     when(mockHttp.get(any, headers: anyNamed('headers')))
         .thenAnswer((_) async => http.Response('Not Found', 404));
 
-    expect(() => client.get('/missing'), throwsA(isA<WebDavException>()));
+    try {
+      await client.get('/missing');
+      fail('expected WebDavException');
+    } on WebDavException catch (e) {
+      expect(e.statusCode, 404);
+      expect(e.isNotFound, isTrue);
+    }
   });
 
   // ---------------------------------------------------------------------------

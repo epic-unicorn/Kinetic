@@ -4,6 +4,8 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
+import '../vault/family_vault_sync.dart';
+import '../vault/screens/family_create_screen.dart';
 import 'kids_enrollment_qr_screen.dart';
 import 'models/enrolled_kid.dart';
 
@@ -14,7 +16,7 @@ import 'models/enrolled_kid.dart';
 // enrolled kids and allows removing them.
 //
 // Available as soon as WebDAV is configured — no partner pairing required.
-// Calling open() generates a family key silently if one doesn't exist yet.
+// Without a family vault the parent first writes down 12 words.
 // ---------------------------------------------------------------------------
 
 class KidsSettingsScreen extends StatefulWidget {
@@ -67,11 +69,22 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
   }
 
   Future<void> _enrollKid() async {
-    // Ensure a family key exists (generates silently if needed).
-    await widget.configRepo.ensureFamilyKey();
-    // Reload config so the QR screen has the (possibly new) key.
+    var familyKey = await widget.configRepo.loadFamilyKey();
+    if (familyKey == null) {
+      if (!mounted) return;
+      final created = await Navigator.of(context).push<FamilyCreateResult>(
+        MaterialPageRoute(builder: (_) => const FamilyCreateScreen()),
+      );
+      if (created == null) return;
+      await widget.configRepo.saveFamilyKey(
+        created.key,
+        entropy: created.entropy,
+      );
+      await FamilyVaultSync.pushIfPossible(widget.configRepo);
+      familyKey = created.key;
+    }
     final config = await widget.configRepo.load();
-    if (!mounted || config == null) return;
+    if (!mounted || config == null || config.familyKeyBytes == null) return;
     widget.onConfigSaved?.call();
 
     await Navigator.of(context).push(

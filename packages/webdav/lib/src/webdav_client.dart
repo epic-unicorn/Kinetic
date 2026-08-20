@@ -58,7 +58,10 @@ class WebDavClient {
     final body = await response.stream.bytesToString();
     if (response.statusCode != 207) {
       throw WebDavException(
-          'PROPFIND $collectionPath → ${response.statusCode}', body);
+        'PROPFIND $collectionPath → ${response.statusCode}',
+        body,
+        response.statusCode,
+      );
     }
     return _parsePropfind(body);
   }
@@ -75,7 +78,10 @@ class WebDavClient {
     );
     if (response.statusCode != 200) {
       throw WebDavException(
-          'GET $path → ${response.statusCode}', response.body);
+        'GET $path → ${response.statusCode}',
+        response.body,
+        response.statusCode,
+      );
     }
     return response.bodyBytes;
   }
@@ -101,7 +107,10 @@ class WebDavClient {
         response.statusCode != 201 &&
         response.statusCode != 204) {
       throw WebDavException(
-          'PUT $path → ${response.statusCode}', response.body);
+        'PUT $path → ${response.statusCode}',
+        response.body,
+        response.statusCode,
+      );
     }
   }
 
@@ -120,7 +129,10 @@ class WebDavClient {
         response.statusCode != 204 &&
         response.statusCode != 404) {
       throw WebDavException(
-          'DELETE $path → ${response.statusCode}', response.body);
+        'DELETE $path → ${response.statusCode}',
+        response.body,
+        response.statusCode,
+      );
     }
   }
 
@@ -140,7 +152,7 @@ class WebDavClient {
     final statusCode = response.statusCode;
     if (statusCode != 201 && statusCode != 405 && statusCode != 409) {
       final body = await response.stream.bytesToString();
-      throw WebDavException('MKCOL $path → $statusCode', body);
+      throw WebDavException('MKCOL $path → $statusCode', body, statusCode);
     }
   }
 
@@ -230,7 +242,10 @@ class WebDavEntry {
 class WebDavException implements Exception {
   final String message;
   final String? body;
-  const WebDavException(this.message, [this.body]);
+  final int? statusCode;
+  const WebDavException(this.message, [this.body, this.statusCode]);
+
+  bool get isNotFound => statusCode == 404;
 
   @override
   String toString() => body != null

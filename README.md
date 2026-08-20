@@ -21,15 +21,16 @@ Two Flutter apps share crypto and sync logic in `packages/webdav` (AES-256-GCM, 
 
 ## Features
 
-- **Personal tasks** — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence, and **smart reminder chips** that propose contextual times from title and history
-- **Partner coordination** — QR pairing, encrypted task proposals, accept/decline flow; partner-targeted AI suggestions require an explicit **Naar partner** action (nothing is auto-sent)
+- **Personal tasks** — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence, and **smart reminder chips** that propose contextual times from title and history. Enabling a reminder defaults to **one hour from now, rounded up to the next half hour**; the time dialog focuses the hour field so you can type immediately
+- **Partner coordination** — QR pairing, encrypted task proposals, accept/decline flow; partner-targeted suggestions require an explicit **Naar partner** action after a **Dit ziet je partner** preview (nothing is auto-sent)
 - **Kids tasks** — assign tasks per child with configurable XP; the kids app syncs assignments and awards XP on completion
-- **Notes** — markdown notes, personal or shared with partner; same bottom-sheet editor layout as tasks
-- **AI suggestions** — fully offline heuristic engine (habits, seasonal patterns, partner complement, load balance) with human-readable explanations
+- **Notes** — markdown notes, personal or shared with partner; list rows show title, reminder, and shared badge only (body is hidden). Same bottom-sheet editor layout as tasks
+- **AI suggestions** — fully offline heuristic engine (habits, calendar, stale open tasks, seasonal history, privacy-preserving partner hints) with human-readable explanations
+- **Themes** — Licht, Zand, Schemer, Nacht (OLED)
 - **Connection-aware send** — partner and kids listed individually with WebDAV presence status before forwarding
-- **Encryption** — personal key per parent device; family key via QR for proposals, shared notes, and kids tasks
+- **Encryption** — 12-word BIP-39 vault; derived AES-256-GCM key in device secure storage. Same phrase for WebDAV and `.kvault` backup
 - **WebDAV sync** — optional; bring your own server, no vendor backend
-- **Backup & restore** — encrypted `.kbak2` backup including personal key and database
+- **Backup & restore** — encrypted `.kvault` (no key in the file). Restore with the 12 words, from a file **or** from WebDAV
 
 ## Apps
 
@@ -72,28 +73,36 @@ CI builds and signs both APKs on every push to `main`, `develop`, or `feature/**
 
 ### Partner pairing
 
-1. **Instellingen → Familie → Partner** → share QR code
-2. Partner scans QR on their device
+1. **Instellingen → Familie → Partner** → share QR (12 family words + entropy QR)
+2. Partner scans **or** types the 12 words and confirms the fingerprint
 3. Proposals sync automatically via WebDAV
 
 ### Kids enrollment
 
-1. **Instellingen → Familie → Kinderen** → generate QR with family key + kid UUID
-2. Child device scans QR in the kids app
+1. **Instellingen → Familie → Kinderen** → generate QR with family key + kid UUID (no WebDAV password)
+2. Child device scans the QR and types the WebDAV password once
 3. Parent sends tasks targeted to that child's UUID
+
+Ship parent **and** kids 0.3.0 together: an old kids app would save an empty password from a new QR.
 
 The **Familie** screen shows **Voorstellen** and **Kinderen** tabs only when a partner is paired or kids are enrolled. Shared notes require partner pairing.
 
 ## AI Suggestion Engine
 
-A fully offline, heuristic-based engine surfaces task suggestions in the parent **Taken** screen. No API calls — runs entirely on-device, at most once per 24 hours.
+A fully offline, heuristic-based engine surfaces task suggestions in the parent **Taken** screen. No API calls — runs entirely on-device.
 
-| Detector | Trigger | Target |
-|---|---|---|
-| **Habit** | Non-recurring task completed ≥ 2× and median interval exceeded by ≥ 80% | You |
-| **Seasonal** | Task completed in the same calendar month in a prior year | You |
-| **Partner complement** | You accepted a partner proposal matching keywords (vakantie, sport, school, …) | Partner (via suggestion) |
-| **Load balance** | ≥ 3 open non-private tasks in the same category | Partner (via suggestion) |
+An empty run does **not** start the 24-hour throttle, so creating tasks can surface hints on the next open. After at least one suggestion is created, that path waits 24 hours.
+
+| Detector | Trigger | Target | What the partner sees |
+|---|---|---|---|
+| **Habit** | Same non-recurring title completed ≥ 2× and the median interval is overdue, **or** one completion of a strong keyword (e.g. boodschappen) after ≥ 14 days | You | — |
+| **Calendar** | Month-based prompts with no history required (belasting in March, schoolspullen in August, kerst in December) | You | — |
+| **Stale** | Open task older than 7 days with no due date or reminder | You (sets a reminder on the existing task) | — |
+| **Seasonal** | Task completed in the same calendar month in a prior year | You | — |
+| **Partner complement** | Keywords in **your** open tasks (including private) | Partner suggestion | A **generic** template only — never the private title or notes |
+| **Load balance** | ≥ 3 open tasks in the same category (private included; `other` needs ≥ 5) | Partner suggestion | A generic “kan jij iets in [categorie] oppakken?” line |
+
+Partner hints are capped at one per keyword-family per 14 days. **Naar partner** always shows **Dit ziet je partner** before anything is sent. Nothing is auto-sent.
 
 Suggestions appear in a banner on the **Privé** tab and in structured sections on **Voorstellen** (**Voor jou** / **Voor partner** / **Van partner**). See [`apps/parent/docs/SMART_FEATURES.md`](apps/parent/docs/SMART_FEATURES.md) for reminder chips and send-sheet details.
 
@@ -101,9 +110,21 @@ Suggestions appear in a banner on the **Privé** tab and in structured sections 
 
 | Key | Scope |
 |---|---|
-| **Personal key** | Unique per parent device; personal tasks & notes |
-| **Family key** | Shared via QR; proposals, shared notes, assigned kids tasks |
+| **Personal vault** | 12 English BIP-39 words → PBKDF2 seed → 32-byte AES-256-GCM key. Encrypts personal tasks, notes, `.kvault` backups, and `vault.meta`. 16-byte entropy may be stored on-device so Settings can show the words again behind the device lock. Paper remains the only off-device backup. |
+| **Family key** | 12 BIP-39 words → derived AES-256-GCM key. QR carries 16-byte entropy (no WebDAV password). Fingerprint in settings. Recovered via `family.key.enc` after a personal vault restore. A 0.2.x random family key is kept as-is (no words until you create a new family vault). |
 | **Kid UUID** | Per enrolled child device for task targeting |
+
+On first launch the parent app asks **Nieuwe kluis** or **Kluis herstellen**. Restore is either a `.kvault` file plus the 12 words (offline) **or** WebDAV login plus the same 12 words (no file). After reinstall, the same phrase unlocks the server copy via `/kinetic/{user}/vault.meta`.
+
+Export never includes the mnemonic, the raw key, or the WebDAV password. Settings can **verify** the phrase without showing the words, or **show** them after Face ID / fingerprint / PIN.
+
+### Upgrade from 0.2.x
+
+A random 32-byte AES key cannot be turned into a BIP-39 mnemonic. On first 0.3 launch the app detects a stored personal key without `kinetic_vault_ready` and asks for a **new** 12-word phrase. Local SQLite stays. Personal tasks/notes are marked dirty so the next WebDAV sync re-encrypts them; `vault.meta` is rewritten. Remote blobs that are never overwritten stay undecryptable (pull already skips MAC failures).
+
+The **family key is not rotated** (that would break partner and kids). Old random family keys keep working; they have no words until you explicitly create a new family vault and re-enroll.
+
+A one-time **Oude back-up (.kbak2)** path on the welcome screen restores the 0.2 file (plaintext key in JSON) and then uses the same rotate-to-mnemonic flow. New backups are `.kvault` only.
 
 ## Releases
 

@@ -5,6 +5,10 @@ import '../db/app_database.dart';
 import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
+import '../vault/family_vault_sync.dart';
+import '../vault/screens/family_create_screen.dart';
+import '../vault/screens/mnemonic_reveal_screen.dart';
+import '../vault/widgets/mnemonic_phrase_field.dart';
 import 'family_key_scan_screen.dart';
 import 'family_key_share_screen.dart';
 
@@ -37,6 +41,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   SyncConfig? _config;
   bool _partnerPaired = false;
   List<PresenceInfo> _presenceList = [];
+  String? _fingerprint;
 
   @override
   void initState() {
@@ -48,10 +53,15 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   Future<void> _loadConfig() async {
     final config = await widget.configRepo.load();
     final paired = await widget.configRepo.isPartnerPaired();
+    String? fingerprint;
+    if (config?.familyKeyBytes != null) {
+      fingerprint = await KineticVault.fingerprint(config!.familyKeyBytes!);
+    }
     if (mounted)
       setState(() {
         _config = config;
         _partnerPaired = paired;
+        _fingerprint = fingerprint;
       });
   }
 
@@ -64,18 +74,42 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
     } catch (_) {}
   }
 
+  Future<bool> _ensureFamilyVault() async {
+    final existing = await widget.configRepo.loadFamilyKey();
+    if (existing != null) return true;
+    if (!mounted) return false;
+    final created = await Navigator.of(context).push<FamilyCreateResult>(
+      MaterialPageRoute(builder: (_) => const FamilyCreateScreen()),
+    );
+    if (created == null) return false;
+    await widget.configRepo.saveFamilyKey(
+      created.key,
+      entropy: created.entropy,
+    );
+    await FamilyVaultSync.pushIfPossible(widget.configRepo);
+    await _loadConfig();
+    return true;
+  }
+
   Future<void> _exportFamilyKey() async {
     if (_config == null) return;
+    if (!await _ensureFamilyVault()) return;
+    if (!mounted) return;
+    final config = await widget.configRepo.load();
+    if (config == null || !mounted) return;
+    final entropy = await widget.configRepo.loadFamilyEntropy();
     final keyWasGenerated = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => FamilyKeyShareScreen(
-          config: _config!,
+          config: config,
           configRepo: widget.configRepo,
+          entropy: entropy,
         ),
       ),
     );
     if ((keyWasGenerated ?? false) && mounted) {
       await widget.configRepo.setPartnerPaired(true);
+      await FamilyVaultSync.pushIfPossible(widget.configRepo);
       await _loadConfig();
       widget.onConfigSaved?.call();
     }
@@ -93,49 +127,80 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
     );
     if (result == true && mounted) {
       await widget.configRepo.setPartnerPaired(true);
+      await FamilyVaultSync.pushIfPossible(widget.configRepo);
       await _loadConfig();
       widget.onConfigSaved?.call();
     }
   }
 
-  Future<void> _exportFamilyKeyBackup() async {
-    final familyKey = _config?.familyKeyBytes;
-    if (familyKey == null || !mounted) return;
-    final json = KineticEncryption.exportFamilyKeyJson(
-      familyKey,
-      _config!.username,
-    );
-    await showDialog<void>(
+  Future<void> _verifyFamilyPhrase() async {
+    final stored = await widget.configRepo.loadFamilyKey();
+    if (stored == null || !mounted) return;
+    final ctrl = TextEditingController();
+    final phrase = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Familiesleutel back-up'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Bewaar dit JSON-bestand veilig. '
-                'Iedereen met deze sleutel kan gedeelde data lezen.',
-                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                json,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ],
-          ),
+        title: const Text('Familiesleutel controleren'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Vul de 12 woorden in. We tonen ze niet; we controleren alleen of ze kloppen.',
+            ),
+            const SizedBox(height: 12),
+            MnemonicPhraseField(controller: ctrl),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Sluiten'),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: const Text('Controleren'),
           ),
         ],
       ),
+    );
+    ctrl.dispose();
+    if (phrase == null || !mounted) return;
+    try {
+      final derived = await KineticVault.deriveAesKey(phrase);
+      final ok = KineticVault.equalKeys(stored, derived);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'De familiesleutel klopt.'
+                : 'Deze herstelzin hoort niet bij deze familiesleutel.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Deze herstelzin hoort niet bij deze familiesleutel.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _revealFamilyPhrase() async {
+    await showMnemonicReveal(
+      context: context,
+      title: 'Familiesleutel',
+      loadWords: () async {
+        final entropy = await widget.configRepo.loadFamilyEntropy();
+        if (entropy == null) return null;
+        return KineticVault.mnemonicFromEntropy(entropy);
+      },
+      missingMessage:
+          'Deze familiesleutel is van voor de herstelzin (0.2) of kwam binnen '
+          'als ruwe sleutel. We kunnen de woorden niet tonen. Maak een nieuwe '
+          'familiesleutel en laat partner en kinderen opnieuw koppelen.',
     );
   }
 
@@ -197,7 +262,11 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
         children: [
           if (config != null) ...[
             const SizedBox(height: 8),
-            _PartnerStatusBanner(paired: paired, presenceList: partnerPresence),
+            _PartnerStatusBanner(
+              paired: paired,
+              presenceList: partnerPresence,
+              fingerprint: _fingerprint,
+            ),
             const SizedBox(height: 8),
             if (!paired) ...[
               ListTile(
@@ -213,7 +282,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                 leading: const Icon(Icons.qr_code_scanner, color: kColorTeal),
                 title: const Text('Familiesleutel scannen'),
                 subtitle: const Text(
-                  'Scan de QR-code op het apparaat van je partner.',
+                  'Scan de QR of typ de 12 woorden van je partner.',
                 ),
                 onTap: _importFamilyKey,
               ),
@@ -230,14 +299,25 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
               ),
               ListTile(
                 leading: const Icon(
-                  Icons.file_download_outlined,
-                  color: kColorGold,
+                  Icons.verified_user_outlined,
+                  color: kColorTeal,
                 ),
-                title: const Text('Familiesleutel back-up exporteren'),
+                title: const Text('Herstelzin controleren'),
                 subtitle: const Text(
-                  'Sla de sleutel op als JSON-bestand voor noodgevallen.',
+                  'Controleer of je de 12 woorden van de familiesleutel nog kent.',
                 ),
-                onTap: _exportFamilyKeyBackup,
+                onTap: _verifyFamilyPhrase,
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.visibility_outlined,
+                  color: kColorTeal,
+                ),
+                title: const Text('Familiesleutel tonen'),
+                subtitle: const Text(
+                  'Toon de 12 woorden op dit apparaat (schermvergrendeling).',
+                ),
+                onTap: _revealFamilyPhrase,
               ),
               ListTile(
                 leading: Icon(
@@ -264,10 +344,12 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
 class _PartnerStatusBanner extends StatelessWidget {
   final bool paired;
   final List<PresenceInfo> presenceList;
+  final String? fingerprint;
 
   const _PartnerStatusBanner({
     required this.paired,
     required this.presenceList,
+    this.fingerprint,
   });
 
   @override
@@ -338,11 +420,22 @@ class _PartnerStatusBanner extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       isStale
-                          ? 'Waarschuwing: partner voor het last gezien $lastSeenText'
-                          : 'Partner voor het last gezien $lastSeenText',
+                          ? 'Waarschuwing: partner voor het laatst gezien $lastSeenText'
+                          : 'Partner voor het laatst gezien $lastSeenText',
                       style: Theme.of(
                         context,
                       ).textTheme.labelSmall?.copyWith(color: statusColor),
+                    ),
+                  ],
+                  if (fingerprint != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Vingerafdruk $fingerprint',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontFamily: 'monospace',
+                        letterSpacing: 1.2,
+                        color: statusColor,
+                      ),
                     ),
                   ],
                 ],

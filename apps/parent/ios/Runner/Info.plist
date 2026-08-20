@@ -68,5 +68,7 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera is needed to scan the partner's QR code for family key sharing.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Kinetic gebruikt Face ID om je herstelzin op dit apparaat te tonen.</string>
 </dict>
 </plist>

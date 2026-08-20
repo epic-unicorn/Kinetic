@@ -168,5 +168,43 @@ void main() {
         expect(recovered, equals(plaintext));
       });
     });
+
+    group('kids enrollment QR', () {
+      test('v2 export omits password and import accepts empty pw', () {
+        final key = KineticEncryption.generateFamilyKey();
+        final payload = KineticEncryption.exportKidsEnrollmentQrPayload(
+          key,
+          'https://dav.example.com',
+          'alice',
+          kidId: 'kid-1',
+        );
+        expect(payload, isNot(contains('"pw"')));
+        expect(payload, contains('"v":2'));
+        final imported =
+            KineticEncryption.importKidsEnrollmentQrPayload(payload);
+        expect(imported.familyKey, key);
+        expect(imported.serverUrl, 'https://dav.example.com');
+        expect(imported.username, 'alice');
+        expect(imported.password, isEmpty);
+        expect(imported.kidId, 'kid-1');
+      });
+
+      test('v1 payload with password still imports', () {
+        final key = KineticEncryption.generateFamilyKey();
+        final payload = KineticEncryption.exportKidsEnrollmentQrPayload(
+          key,
+          'https://dav.example.com',
+          'alice',
+          password: 'secret',
+          kidId: 'kid-1',
+        );
+        expect(payload, contains('"v":1'));
+        expect(payload, contains('"pw"'));
+        final imported =
+            KineticEncryption.importKidsEnrollmentQrPayload(payload);
+        expect(imported.password, 'secret');
+        expect(imported.familyKey, key);
+      });
+    });
   });
 }

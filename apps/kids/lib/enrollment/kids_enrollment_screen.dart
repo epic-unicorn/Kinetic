@@ -82,47 +82,13 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
     })
     data,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Familie koppelen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'QR-code gevonden. Koppel dit apparaat aan de familie?',
-              style: Theme.of(ctx).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            _InfoRow(
-              icon: Icons.person_outline,
-              label: 'Account',
-              value: data.username,
-            ),
-            const SizedBox(height: 6),
-            _InfoRow(
-              icon: Icons.cloud_outlined,
-              label: 'Server',
-              value: data.serverUrl,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Koppelen'),
-          ),
-        ],
-      ),
+      builder: (ctx) => _EnrollmentConfirmDialog(data: data),
     );
 
-    if (confirmed != true || !mounted) {
+    if (password == null || !mounted) {
       await _scanner.start();
       setState(() => _processing = false);
       return;
@@ -131,7 +97,7 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
     await widget.configRepo.saveEnrollment(
       serverUrl: data.serverUrl,
       username: data.username,
-      password: data.password,
+      password: password,
       familyKey: data.familyKey,
       kidId: data.kidId,
     );
@@ -197,8 +163,8 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Open de Kinetic-app van je ouder, ga naar '
-                  'Instellingen → Familie → Kinderenapp koppelen '
-                  'en scan de QR-code.',
+                  'Instellingen → Familie → Kinderenapp koppelen, '
+                  'scan de QR-code en typ daarna het WebDAV-wachtwoord.',
                   style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
@@ -207,6 +173,116 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EnrollmentConfirmDialog extends StatefulWidget {
+  const _EnrollmentConfirmDialog({required this.data});
+
+  final ({
+    Uint8List familyKey,
+    String serverUrl,
+    String username,
+    String password,
+    String kidId,
+  })
+  data;
+
+  @override
+  State<_EnrollmentConfirmDialog> createState() =>
+      _EnrollmentConfirmDialogState();
+}
+
+class _EnrollmentConfirmDialogState extends State<_EnrollmentConfirmDialog> {
+  late final TextEditingController _passwordCtrl;
+  bool _obscure = true;
+
+  bool get _needsPassword => widget.data.password.isEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_needsPassword) {
+      final typed = _passwordCtrl.text;
+      if (typed.isEmpty) return;
+      Navigator.of(context).pop(typed);
+      return;
+    }
+    Navigator.of(context).pop(widget.data.password);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Familie koppelen'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'QR-code gevonden. Koppel dit apparaat aan de familie?',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          _InfoRow(
+            icon: Icons.person_outline,
+            label: 'Account',
+            value: widget.data.username,
+          ),
+          const SizedBox(height: 6),
+          _InfoRow(
+            icon: Icons.cloud_outlined,
+            label: 'Server',
+            value: widget.data.serverUrl,
+          ),
+          if (_needsPassword) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Typ het WebDAV-wachtwoord van je ouder. Dat staat niet in de QR-code.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _passwordCtrl,
+              obscureText: _obscure,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: 'WebDAV-wachtwoord',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscure ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Annuleren'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Koppelen'),
+        ),
+      ],
     );
   }
 }

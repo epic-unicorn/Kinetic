@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide Column;
@@ -14,6 +13,10 @@ import '../sync/webdav_config_repository.dart';
 import '../theme/app_header.dart';
 import '../theme/app_themes.dart';
 import '../main.dart';
+import '../vault/family_vault_sync.dart';
+import '../vault/screens/mnemonic_reveal_screen.dart';
+import '../vault/vault_repository.dart';
+import '../vault/widgets/mnemonic_phrase_field.dart';
 import 'kids_settings_screen.dart';
 import 'partner_settings_screen.dart';
 import 'settings_repository.dart';
@@ -163,12 +166,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
               ],
+              const _SectionHeader(label: 'Kluis'),
+              ListTile(
+                leading: Icon(Icons.verified_user_outlined, color: iconColor),
+                title: const Text('Herstelzin controleren'),
+                subtitle: const Text(
+                  'Controleer of je de 12 woorden nog kent. We tonen ze niet.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _verifyPhrase(),
+              ),
+              ListTile(
+                leading: Icon(Icons.visibility_outlined, color: iconColor),
+                title: const Text('Herstelzin tonen'),
+                subtitle: const Text(
+                  'Toon de 12 woorden op dit apparaat (schermvergrendeling).',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _revealPhrase(),
+              ),
               const _SectionHeader(label: 'Back-up & Herstel'),
               ListTile(
                 leading: Icon(Icons.backup_outlined, color: iconColor),
                 title: const Text('Back-up exporteren'),
                 subtitle: const Text(
-                  'Exporteer database en sleutel in één bestand',
+                  'Versleuteld .kvault-bestand. De herstelzin zit er niet in.',
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _exportFullBackup(),
@@ -176,7 +198,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: Icon(Icons.restore_outlined, color: iconColor),
                 title: const Text('Back-up importeren'),
-                subtitle: const Text('Herstel vanuit een back-upbestand'),
+                subtitle: const Text(
+                  'Herstel vanuit .kvault met je 12 woorden',
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _importFullBackup(),
               ),
@@ -224,10 +248,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _exportFullBackup() async {
-    // Ensure a personal key exists — generate one silently if WebDAV has
-    // never been configured.  The generated key is stored in secure storage
-    // and will be re-used automatically when the user later sets up WebDAV.
-    final key = await widget.configRepo.ensurePersonalKey();
+    final key = await widget.configRepo.loadPersonalKeyBytes();
+    if (key == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geen kluis op dit apparaat.')),
+      );
+      return;
+    }
 
     if (!mounted) return;
     showDialog<void>(
@@ -245,20 +273,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
-      final enrolledKids = await widget.configRepo.loadEnrolledKids();
-      final bytes = await FullBackupService.exportToBytes(
+      final bytes = await FullBackupService.exportVaultToBytes(
         widget.db,
         key,
         usernameHint: _config?.username ?? '',
-        webDavConfig: _config,
-        enrolledKids: enrolledKids,
-        partnerPaired: _partnerPaired,
         currentThemeName: themeNotifier.value.name,
       );
       final now = DateTime.now();
       final stamp =
           '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-      final fileName = 'kinetic_backup_$stamp.kbak2';
+      final fileName = 'kinetic_backup_$stamp.kvault';
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -288,7 +312,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Combined backup import
   // ---------------------------------------------------------------------------
 
+  Future<String?> _askPhrase({required String title, required String body}) async {
+    final ctrl = TextEditingController();
+    final phrase = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(body),
+            const SizedBox(height: 12),
+            MnemonicPhraseField(controller: ctrl),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: const Text('Doorgaan'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return phrase;
+  }
+
+  Future<void> _verifyPhrase() async {
+    final phrase = await _askPhrase(
+      title: 'Herstelzin controleren',
+      body: 'Vul je 12 woorden in. We tonen de zin niet; we controleren alleen of hij klopt.',
+    );
+    if (phrase == null || !mounted) return;
+    final vaultRepo = VaultRepository(
+      FlutterSecureKeyValueStore(),
+      widget.configRepo,
+    );
+    final ok = await vaultRepo.verifyPhrase(phrase);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'De herstelzin klopt.'
+              : 'Deze herstelzin hoort niet bij deze kluis.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _revealPhrase() async {
+    final vaultRepo = VaultRepository(
+      FlutterSecureKeyValueStore(),
+      widget.configRepo,
+    );
+    await showMnemonicReveal(
+      context: context,
+      title: 'Herstelzin',
+      loadWords: vaultRepo.loadPersonalMnemonic,
+      missingMessage:
+          'We kunnen de woorden op dit apparaat niet opnieuw tonen. '
+          'Gebruik je papieren kopie, of herstel de kluis met de 12 woorden.',
+    );
+  }
+
   Future<void> _importFullBackup() async {
+    final phrase = await _askPhrase(
+      title: 'Back-up importeren',
+      body:
+          'Vul de 12 woorden in van de kluis die in het .kvault-bestand zit. '
+          'Dit vervangt je huidige taken en notities.',
+    );
+    if (phrase == null || phrase.trim().isEmpty || !mounted) return;
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: false,
@@ -305,33 +405,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    if (!mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Back-up importeren?'),
-        content: const Text(
-          'Dit vervangt al je huidige taken, notities en persoonlijke sleutel '
-          'met de inhoud van het back-upbestand. Dit kan niet ongedaan worden gemaakt.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Importeren'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -347,13 +420,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
-      await FullBackupService.importFromBytes(
+      final key = await KineticVault.deriveAesKey(phrase);
+      await FullBackupService.importVaultFromBytes(
         widget.db,
-        widget.configRepo,
         fileBytes,
+        key,
         settingsRepo: widget.settingsRepo,
         onThemeRestored: (theme) => themeNotifier.value = theme,
       );
+      await VaultRepository(
+        FlutterSecureKeyValueStore(),
+        widget.configRepo,
+      ).unlockWithPhrase(phrase);
       if (mounted) {
         Navigator.of(context).pop();
         await _loadConfig();
@@ -506,7 +584,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Deze bestanden zijn versleuteld met je oude persoonlijke sleutel. '
+                  'Deze bestanden zijn versleuteld met een kluis. '
                   'Kies hoe je verder wilt gaan:',
                 ),
                 const SizedBox(height: 12),
@@ -517,8 +595,8 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '2. Back-up importeren — selecteer een .kbak2-bestand met je oude '
-                  'sleutel. De back-up wordt hersteld en gesynchroniseerd met de serverdata.',
+                  '2. Back-up importeren — selecteer een .kvault-bestand. '
+                  'De herstelzin van deze kluis ontsleutelt het bestand.',
                   style: TextStyle(fontSize: 13),
                 ),
               ],
@@ -578,10 +656,10 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         );
 
         try {
-          await FullBackupService.importFromBytes(
+          await FullBackupService.importVaultFromBytes(
             widget.db,
-            widget.configRepo,
             fileBytes,
+            personalKey,
             settingsRepo: widget.settingsRepo,
             onThemeRestored: (theme) => themeNotifier.value = theme,
           );
@@ -683,83 +761,6 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
     }
   }
 
-  /// Shows a dialog asking whether the user wants to import an existing
-  /// personal key from a .kbak2 backup file or generate a new one.
-  ///
-  /// Returns the chosen [Uint8List] key, or null if the user cancelled.
-  Future<Uint8List?> _showKeySetupDialog() async {
-    final choice = await showDialog<_KeySetupChoice>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Persoonlijke sleutel'),
-        content: const Text(
-          'Heb je al eerder taken of notities opgeslagen via WebDAV?\n\n'
-          'Importeer dan je back-upbestand (.kbak2) zodat die bestanden '
-          'ontsleuteld kunnen worden.\n\n'
-          'Nieuwe installatie? Kies dan "Nieuwe sleutel".',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.cancel),
-            child: const Text('Annuleren'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.importBackup),
-            child: const Text('Backup importeren'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, _KeySetupChoice.newKey),
-            child: const Text('Nieuwe sleutel'),
-          ),
-        ],
-      ),
-    );
-
-    if (choice == null || choice == _KeySetupChoice.cancel) return null;
-    if (choice == _KeySetupChoice.newKey) {
-      return KineticEncryption.generatePersonalKey();
-    }
-
-    // Import personal key from a .kbak2 backup file.
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: false,
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return null;
-    final bytes = result.files.first.bytes;
-    if (bytes == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kon het bestand niet lezen.')),
-        );
-      }
-      return null;
-    }
-    try {
-      final map = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
-      final keyBase64 = map['personalKey'] as String?;
-      if (keyBase64 == null) {
-        throw const FormatException(
-          'Geen persoonlijke sleutel gevonden in dit bestand.',
-        );
-      }
-      final keyBytes = base64.decode(keyBase64);
-      if (keyBytes.length != 32) {
-        throw const FormatException('Ongeldige sleutellengte.');
-      }
-      return Uint8List.fromList(keyBytes);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Ongeldig back-upbestand: $e')));
-      }
-      return null;
-    }
-  }
-
   Future<void> _save() async {
     if (_testResult != 'ok') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -782,25 +783,22 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           _existing!.username == username &&
           _existing!.serverUrl == serverUrl;
 
-      // Only generate keys the first time; preserve existing keys on an edit.
       final Uint8List personalKey;
-      if (isSameAccount) {
-        // Reuse existing personal key. Never overwrite the family key here —
-        // it is set exclusively via the QR exchange flow.
-        personalKey = _existing!.personalKeyBytes;
-      } else {
-        // New account — ask whether the user wants to import an existing key
-        // or generate a fresh one. This prevents data loss when the user
-        // already has encrypted items on the WebDAV server.
-        if (!mounted) return;
-        final importedKey = await _showKeySetupDialog();
-        // If the dialog was dismissed (null) the user cancelled the setup.
-        if (importedKey == null) {
-          setState(() => _saving = false);
-          return;
+      final existingKey = await widget.configRepo.loadPersonalKeyBytes();
+      if (existingKey == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Maak eerst een kluis voordat je WebDAV koppelt.',
+              ),
+            ),
+          );
         }
-        personalKey = importedKey;
+        setState(() => _saving = false);
+        return;
       }
+      personalKey = existingKey;
 
       // Reuse existing parentId, or generate a stable UUID for a new account.
       final String parentId = (isSameAccount && _existing!.parentId.isNotEmpty)
@@ -820,6 +818,44 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       );
       try {
         await WebDavEnrollment.setupDirectories(client, username);
+        final meta = await KineticVaultRemote.ensureMeta(
+          client: client,
+          username: username,
+          key: personalKey,
+        );
+        if (meta == VaultMetaStatus.wrongPhrase) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Op deze server staat al een kluis die niet bij jouw herstelzin past.',
+                ),
+              ),
+            );
+          }
+          setState(() => _saving = false);
+          return;
+        }
+        final localFamily = await widget.configRepo.loadFamilyKey();
+        if (localFamily == null) {
+          await FamilyVaultSync.pullIfPresent(
+            client: client,
+            username: username,
+            personalKey: personalKey,
+            configRepo: widget.configRepo,
+          );
+        } else {
+          final entropy = await widget.configRepo.loadFamilyEntropy();
+          if (entropy != null) {
+            await KineticVaultRemote.pushFamilyRecovery(
+              client: client,
+              username: username,
+              personalKey: personalKey,
+              familyKey: localFamily,
+              entropy: entropy,
+            );
+          }
+        }
       } finally {
         client.dispose();
       }
@@ -1049,7 +1085,5 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-
-enum _KeySetupChoice { newKey, importBackup, cancel }
 
 enum _MigrationChoice { clean, importBackup }
