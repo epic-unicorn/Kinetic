@@ -43,7 +43,7 @@ dependencies:
   drift_flutter: ^0.2.4
 
   # UUID generation for domain models
-  uuid: ^4.5.1
+  uuid: ^4.6.0
 
   # UI
   cupertino_icons: ^1.0.8
