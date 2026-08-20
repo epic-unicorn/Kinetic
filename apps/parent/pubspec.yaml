@@ -50,7 +50,7 @@ dependencies:
   # Local push notifications for task reminders
   flutter_local_notifications: ^18.0.1
   flutter_timezone: 5.0.2
-  timezone: ^0.9.4
+  timezone: ^0.10.1
 
   # Markdown rendering for note previews
   flutter_markdown: ^0.7.0
