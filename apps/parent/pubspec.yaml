@@ -78,7 +78,7 @@ dev_dependencies:
 
   # Drift code generation
   drift_dev: ^2.26.1
-  build_runner: ^2.4.14
+  build_runner: ^2.15.1
   
   # Mockito for unit testing
   mockito: ^5.4.4
