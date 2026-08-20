@@ -8,12 +8,24 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Load key.properties for signing configuration
+// Load key.properties for signing configuration (optional in CI/Dependabot).
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+val keyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
+val keyPassword = keystoreProperties.getProperty("keyPassword").orEmpty()
+val storePassword = keystoreProperties.getProperty("storePassword").orEmpty()
+val storeFilePath = keystoreProperties.getProperty("storeFile").orEmpty()
+val storeFile = if (storeFilePath.isNotEmpty()) rootProject.file(storeFilePath) else null
+val hasReleaseKeystore =
+    keyAlias.isNotEmpty() &&
+        keyPassword.isNotEmpty() &&
+        storePassword.isNotEmpty() &&
+        storeFile != null &&
+        storeFile.isFile
 
 android {
     namespace = "net.moonbaseone.kinetic.parent"
@@ -42,17 +54,23 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias", "")
-            keyPassword = keystoreProperties.getProperty("keyPassword", "")
-            storeFile = rootProject.file(keystoreProperties.getProperty("storeFile", "keystore.jks"))
-            storePassword = keystoreProperties.getProperty("storePassword", "")
+        if (hasReleaseKeystore) {
+            create("release") {
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+                this.storeFile = storeFile
+                this.storePassword = storePassword
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
