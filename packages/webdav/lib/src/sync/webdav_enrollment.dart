@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import '../encryption/kinetic_encryption.dart';
 import '../sync_config.dart';
 import '../webdav_client.dart';
+import '../webdav_url.dart';
 
 /// First-time setup helpers for a WebDAV-backed Kinetic Link account.
 class WebDavEnrollment {
@@ -21,8 +22,15 @@ class WebDavEnrollment {
     String username,
     String password,
   ) async {
+    final String httpsUrl;
+    try {
+      httpsUrl = WebDavUrl.requireHttps(serverUrl);
+    } on FormatException catch (e) {
+      return e.message;
+    }
+
     final client = WebDavClient(
-      baseUrl: serverUrl,
+      baseUrl: httpsUrl,
       username: username,
       password: password,
     );

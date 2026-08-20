@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'encrypted_open.dart';
 import 'tables.dart';
 
 part 'app_database.drift.dart';
@@ -82,13 +82,12 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  // Open a persistent SQLite file in the app's documents directory.
+  /// Encrypted on-disk SQLite (SQLite3MultipleCiphers) in documents.
   static QueryExecutor _openConnection() {
-    return driftDatabase(
+    return openEncryptedDatabase(
       name: 'kinetic_parent',
-      native: DriftNativeOptions(
-        databaseDirectory: getApplicationDocumentsDirectory,
-      ),
+      databaseDirectory: getApplicationDocumentsDirectory,
     );
   }
 }
+

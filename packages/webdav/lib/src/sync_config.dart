@@ -1,8 +1,11 @@
 import 'dart:typed_data';
 
+import 'webdav_url.dart';
+
 /// Immutable configuration for a WebDAV sync connection.
 class SyncConfig {
   /// WebDAV server root, e.g. `https://nextcloud.example.com/remote.php/dav`.
+  /// Always HTTPS (enforced in the constructor).
   final String serverUrl;
 
   /// WebDAV username.
@@ -24,14 +27,14 @@ class SyncConfig {
   /// the key has been set at least once.
   final Uint8List? familyKeyBytes;
 
-  const SyncConfig({
-    required this.serverUrl,
+  SyncConfig({
+    required String serverUrl,
     required this.username,
     required this.password,
     required this.parentId,
     required this.personalKeyBytes,
     this.familyKeyBytes,
-  });
+  }) : serverUrl = WebDavUrl.requireHttps(serverUrl);
 
   /// Normalised server URL — trailing slash stripped.
   String get baseUrl => serverUrl.endsWith('/')

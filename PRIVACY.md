@@ -10,7 +10,7 @@ Kinetic Link (parent app `net.moonbaseone.kinetic.parent` and kids app `net.moon
 
 ## Data stored on your device
 
-- Tasks, notes, proposals, and settings in a local SQLite database
+- Tasks, notes, proposals, and settings in a local **encrypted** SQLite database (SQLite3MultipleCiphers; key in platform secure storage)
 - Encryption keys and WebDAV credentials in platform secure storage (Android Keystore / iOS Keychain)
 - Optional encrypted `.kvault` backup files you export yourself
 
@@ -20,6 +20,7 @@ Android auto-backup is disabled (`allowBackup=false`).
 
 If you configure a WebDAV server (for example Nextcloud), encrypted blobs are stored **on that server under your control**. Kinetic does not operate the server.
 
+- Sync requires **HTTPS** WebDAV URLs (`http://` is rejected)
 - Sync uses HTTP Basic authentication to your server
 - Personal data is encrypted with AES-256-GCM using a key derived from your 12-word recovery phrase
 - Shared family data is encrypted with the family key

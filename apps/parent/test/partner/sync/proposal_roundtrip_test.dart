@@ -36,7 +36,7 @@ final _familyKey = Uint8List.fromList(List.generate(32, (i) => i + 50));
   required Uint8List personalKey,
 }) {
   final config = SyncConfig(
-    serverUrl: 'http://fake-dav',
+    serverUrl: 'https://fake-dav',
     username: username,
     password: 'pass',
     parentId: parentId,
@@ -400,7 +400,7 @@ void main() {
         addTearDown(dbC.close);
 
         final configC = SyncConfig(
-          serverUrl: 'http://fake-dav',
+          serverUrl: 'https://fake-dav',
           username: 'carol',
           password: 'pass',
           parentId: '',
@@ -455,7 +455,7 @@ void main() {
       setUp(() {
         storage = SharedStorage();
         final config = SyncConfig(
-          serverUrl: 'http://fake',
+          serverUrl: 'https://fake',
           username: 'test',
           password: 'pass',
           parentId: '',
@@ -492,7 +492,7 @@ void main() {
         final rawClient = FakeHttpClient(storage);
         final req = http.Request(
           'PROPFIND',
-          Uri.parse('http://fake/kinetic/shared/proposals/'),
+          Uri.parse('https://fake/kinetic/shared/proposals/'),
         )..body = '';
         final resp = await rawClient.send(req);
         final body = await resp.stream.bytesToString();

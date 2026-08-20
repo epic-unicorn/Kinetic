@@ -285,17 +285,11 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
   }
 
   static String _normalizeUrl(String url) {
-    final uri = Uri.tryParse(url.trim());
-    if (uri == null) {
+    try {
+      return WebDavUrl.coerceHttps(url).toLowerCase();
+    } on FormatException {
       return url.trim().toLowerCase().replaceAll(RegExp(r'/+$'), '');
     }
-    final normalized = Uri(
-      scheme: uri.scheme.toLowerCase(),
-      host: uri.host.toLowerCase(),
-      port: uri.hasPort ? uri.port : null,
-      path: uri.path,
-    ).toString();
-    return normalized.replaceAll(RegExp(r'/+$'), '');
   }
 
   @override

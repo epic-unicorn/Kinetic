@@ -3,10 +3,12 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import 'webdav_url.dart';
+
 /// Lightweight WebDAV HTTP client.
 ///
 /// All methods use HTTP Basic auth with [username] + [password].
-/// The [baseUrl] should not include a trailing slash.
+/// The [baseUrl] must be HTTPS and should not include a trailing slash.
 class WebDavClient {
   final String baseUrl;
   final String username;
@@ -16,11 +18,12 @@ class WebDavClient {
   final http.Client _http;
 
   WebDavClient({
-    required this.baseUrl,
+    required String baseUrl,
     required this.username,
     required this.password,
     http.Client? httpClient,
-  }) : _http = httpClient ?? http.Client();
+  })  : baseUrl = WebDavUrl.requireHttps(baseUrl),
+        _http = httpClient ?? http.Client();
 
   // ---------------------------------------------------------------------------
   // Internal helpers

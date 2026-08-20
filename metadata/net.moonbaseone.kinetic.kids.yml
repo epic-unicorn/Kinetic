@@ -1,44 +1,49 @@
-Categories:TimeProductivity
-License:Apache-2.0
-AuthorName:Ingmar Struijs
-WebSite:https://github.com/ingmarstruijs/Kinetic
-SourceCode:https://github.com/ingmarstruijs/Kinetic
-IssueTracker:https://github.com/ingmarstruijs/Kinetic/issues
+Categories:
+  - Time
+  - Productivity
+License: Apache-2.0
+AuthorName: Ingmar Struijs
+WebSite: https://github.com/ingmarstruijs/Kinetic
+SourceCode: https://github.com/ingmarstruijs/Kinetic
+IssueTracker: https://github.com/ingmarstruijs/Kinetic/issues
+PrivacyPolicy: https://raw.githubusercontent.com/ingmarstruijs/Kinetic/main/PRIVACY.md
 
-AutoName:Kinetic Kids
-Name:Kinetic Kids
+AutoName: Kinetic Kids
+Name: Kinetic Kids
 
-Summary:Kids chores synced from Kinetic Link parents over encrypted WebDAV
-Description:|-
+Summary: Kids chores synced from Kinetic Link parents over encrypted WebDAV
+Description: |-
     Kinetic Kids shows chores assigned by a parent using Kinetic Link.
     Children mark tasks complete and earn XP. There is no account and no
-    telemetry.
+    telemetry. Local task data is stored in an encrypted SQLite database.
 
     Enrollment uses a family QR from the parent app; the WebDAV password is
     typed on the kids device (it is not embedded in the QR). Assigned tasks
-    sync from your own WebDAV server and are encrypted with the family key.
+    sync from your own HTTPS WebDAV server and are encrypted with the family key.
 
     Requires camera permission only for enrollment QR scanning.
+    WebDAV sync requires HTTPS.
 
-RepoType:git
-Repo:https://github.com/ingmarstruijs/Kinetic.git
+RepoType: git
+Repo: https://github.com/ingmarstruijs/Kinetic.git
 
 Builds:
   - versionName: 0.3.0
     versionCode: 1
-    commit: REPLACE_WITH_TAG_OR_COMMIT
+    commit: v0.3.0
     subdir: apps/kids
     output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
-      - flutter@stable
+      - flutter@3.44.1
     prebuild: |
       cd ../../
+      $$flutter$$ --version
       dart pub global activate melos
       melos bootstrap
     build: |
-      flutter build apk --release --build-name=$$VERSION$$ --build-number=$$VERCODE$$
+      $$flutter$$ build apk --release --build-name=$$VERSION$$ --build-number=$$VERCODE$$
 
-AutoUpdateMode:None
-UpdateCheckMode:None
-CurrentVersion:0.3.0
-CurrentVersionCode:1
+AutoUpdateMode: None
+UpdateCheckMode: None
+CurrentVersion: 0.3.0
+CurrentVersionCode: 1

@@ -59,14 +59,19 @@ class WebDavConfigRepository {
     // the setup screen generates and persists one on the next save.
     final parentId = await _store.read(key: _kParentId) ?? '';
 
-    return SyncConfig(
-      serverUrl: serverUrl,
-      username: username,
-      password: password,
-      parentId: parentId,
-      personalKeyBytes: personalKeyBytes,
-      familyKeyBytes: familyKeyBytes,
-    );
+    try {
+      return SyncConfig(
+        serverUrl: WebDavUrl.coerceHttps(serverUrl),
+        username: username,
+        password: password,
+        parentId: parentId,
+        personalKeyBytes: personalKeyBytes,
+        familyKeyBytes: familyKeyBytes,
+      );
+    } on FormatException {
+      // Legacy non-HTTPS configs are rejected; user must reconfigure.
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------

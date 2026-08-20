@@ -923,16 +923,10 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
               keyboardType: TextInputType.url,
               autocorrect: false,
               onChanged: (_) => setState(() => _testResult = null),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'Vul de server-URL in';
-                }
-                final uri = Uri.tryParse(v.trim());
-                if (uri == null || !uri.hasScheme) {
-                  return 'Ongeldige URL';
-                }
-                return null;
-              },
+              validator: (v) => WebDavUrl.validationError(
+                v,
+                emptyMessage: 'Vul de server-URL in',
+              ),
             ),
             const SizedBox(height: 16),
             // Username
