@@ -17,7 +17,7 @@ resolution: workspace
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.2+1
+version: 0.3.0+1
 
 environment:
   sdk: ^3.11.3
@@ -58,6 +58,9 @@ dependencies:
   # QR code display and scanning for partner key sharing
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.0
+
+  # Device lock before showing a recovery phrase
+  local_auth: ^2.3.0
 
   # File picker for database export/import
   file_picker: ^8.0.0

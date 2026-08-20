@@ -11,8 +11,10 @@ export 'src/sync_config.dart';
 // WebDAV HTTP client
 export 'src/webdav_client.dart';
 
-// Encryption — AES-256-GCM + PBKDF2
+// Encryption — AES-256-GCM + PBKDF2 + BIP-39 vault
 export 'src/encryption/kinetic_encryption.dart';
+export 'src/encryption/kinetic_vault.dart';
+export 'src/encryption/bip39_english.dart';
 
 // iCal wire format
 export 'src/ical/ical_task.dart';

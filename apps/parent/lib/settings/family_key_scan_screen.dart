@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
+import '../vault/widgets/mnemonic_phrase_field.dart';
 
 // ---------------------------------------------------------------------------
 // FamilyKeyScanScreen
@@ -56,7 +57,7 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     await _controller.stop();
 
     try {
-      final payload = KineticEncryption.importFamilyKeyQrPayload(raw);
+      final payload = await KineticVault.importFamilyQrPayload(raw);
       if (!mounted) return;
       await _showVerificationDialog(payload);
     } on FormatException catch (e) {
@@ -71,13 +72,20 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
   }
 
   Future<void> _showVerificationDialog(
-    ({String username, String serverUrl, Uint8List familyKey}) payload,
+    ({
+      Uint8List familyKey,
+      Uint8List? entropy,
+      String serverUrl,
+      String username,
+    }) payload,
   ) async {
     final currentUrl = _normalizeUrl(widget.currentConfig.serverUrl);
     final scannedUrl = _normalizeUrl(payload.serverUrl);
     final urlMatches = currentUrl == scannedUrl;
     final alreadyPaired = widget.currentConfig.familyKeyBytes != null;
+    final fingerprint = await KineticVault.fingerprint(payload.familyKey);
 
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -111,6 +119,12 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
               value: payload.serverUrl.isNotEmpty
                   ? payload.serverUrl
                   : '(onbekend)',
+            ),
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.fingerprint,
+              label: 'Vingerafdruk',
+              value: fingerprint,
             ),
             if (!urlMatches) ...[
               const SizedBox(height: 16),
@@ -194,7 +208,7 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     if (!mounted) return;
 
     if (confirmed == true) {
-      await _importKey(payload.familyKey);
+      await _importKey(payload.familyKey, entropy: payload.entropy);
     } else {
       // User cancelled — resume scanning
       await _controller.start();
@@ -202,9 +216,65 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     }
   }
 
-  Future<void> _importKey(Uint8List familyKey) async {
+  Future<void> _importFromPhrase() async {
+    if (_processing) return;
+    setState(() => _processing = true);
+    await _controller.stop();
+    final ctrl = TextEditingController();
+    final phrase = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Familiesleutel invoeren'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Vul de 12 woorden van je partner in. Daarna zie je de vingerafdruk ter controle.',
+            ),
+            const SizedBox(height: 12),
+            MnemonicPhraseField(controller: ctrl),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: const Text('Doorgaan'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (!mounted) return;
+    if (phrase == null || phrase.trim().isEmpty) {
+      await _controller.start();
+      setState(() => _processing = false);
+      return;
+    }
     try {
-      await widget.configRepo.saveFamilyKey(familyKey);
+      final words = KineticVault.parseMnemonic(phrase);
+      final key = await KineticVault.deriveAesKey(words.join(' '));
+      final entropy = await KineticVault.entropyFromMnemonic(words);
+      await _showVerificationDialog((
+        familyKey: key,
+        entropy: entropy,
+        serverUrl: widget.currentConfig.serverUrl,
+        username: '',
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      await _showErrorDialog('$e');
+      await _controller.start();
+      setState(() => _processing = false);
+    }
+  }
+
+  Future<void> _importKey(Uint8List familyKey, {Uint8List? entropy}) async {
+    try {
+      await widget.configRepo.saveFamilyKey(familyKey, entropy: entropy);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Familiesleutel opgeslagen.')),
@@ -256,6 +326,12 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
       appBar: AppBar(
         title: const Text('Familiesleutel scannen'),
         centerTitle: false,
+        actions: [
+          TextButton(
+            onPressed: _processing ? null : _importFromPhrase,
+            child: const Text('Zin invoeren'),
+          ),
+        ],
       ),
       body: Stack(
         children: [

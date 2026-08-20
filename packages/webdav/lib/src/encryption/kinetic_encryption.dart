@@ -244,23 +244,26 @@ class KineticEncryption {
   /// Serialises the credentials needed for the kids app to connect to the
   /// family WebDAV workspace into a compact JSON string for a QR code.
   ///
-  /// Format:
+  /// Format v2 (current — no password; typed on the kids device):
   /// ```json
-  /// {"v":1,"type":"kids","url":"https://...","user":"alice","pw":"secret","key":"<base64 32 bytes>","kid":"<uuid>"}
+  /// {"v":2,"type":"kids","url":"https://...","user":"alice","key":"<base64 32 bytes>","kid":"<uuid>"}
   /// ```
+  ///
+  /// Pass [password] only to emit a legacy v1 payload (includes `pw`).
   static String exportKidsEnrollmentQrPayload(
     Uint8List familyKey,
     String serverUrl,
-    String username,
-    String password, {
+    String username, {
+    String? password,
     required String kidId,
   }) {
+    final omitPassword = password == null || password.isEmpty;
     return jsonEncode({
-      'v': 1,
+      'v': omitPassword ? 2 : 1,
       'type': 'kids',
       'url': serverUrl,
       'user': username,
-      'pw': password,
+      if (!omitPassword) 'pw': password,
       'key': base64.encode(familyKey),
       'kid': kidId,
     });

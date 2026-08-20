@@ -47,7 +47,6 @@ class _KidsEnrollmentQrScreenState extends State<KidsEnrollmentQrScreen> {
     widget.config.familyKeyBytes!,
     widget.config.serverUrl,
     widget.config.username,
-    widget.config.password,
     kidId: _registeredKidId!,
   );
 
@@ -208,9 +207,10 @@ class _KidsEnrollmentQrScreenState extends State<KidsEnrollmentQrScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Deze QR-code bevat je WebDAV-inloggegevens en '
-                'de familiesleutel. Deel hem alleen met de kinderenapp '
-                'op een vertrouwd apparaat.',
+                'Deze QR-code bevat de server, het account en de '
+                'familiesleutel — niet het WebDAV-wachtwoord. Typ dat '
+                'wachtwoord één keer op het kindertoestel. Deel de code '
+                'alleen met de kinderenapp op een vertrouwd apparaat.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),

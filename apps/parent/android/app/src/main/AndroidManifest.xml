@@ -9,6 +9,9 @@
 
     <!-- Camera for QR enrollment scan -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Device lock before showing a recovery phrase -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- Notification permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
