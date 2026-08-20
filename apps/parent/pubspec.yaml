@@ -63,7 +63,7 @@ dependencies:
   local_auth: ^2.3.0
 
   # File picker for database export/import
-  file_picker: ^8.0.0
+  file_picker: ^11.0.3
 
 dev_dependencies:
   flutter_test:
