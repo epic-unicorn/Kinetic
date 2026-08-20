@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
@@ -101,25 +102,23 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
   }
 
   Future<void> _confirmRemoveKid(EnrolledKid kid) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${kid.name} verwijderen?'),
-        content: Text(
-          '${kid.name} wordt uit de familielijst verwijderd. '
-          'De kinderenapp kan daarna geen familietaken meer ontvangen tenzij opnieuw gekoppeld.',
-        ),
+        title: Text(l10n.kidsRemoveTitle(kid.name)),
+        content: Text(l10n.kidsRemoveBody(kid.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(ctx).colorScheme.error,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verwijderen'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -140,23 +139,24 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
   }
 
   Widget _buildKidSubtitle(BuildContext context, EnrolledKid kid) {
+    final l10n = AppLocalizations.of(context);
     final presence = _presenceByKidId[kid.id];
-    final enrolledText = 'Gekoppeld op ${_formatDate(kid.enrolledAt)}';
+    final enrolledText = l10n.kidsEnrolledOn(_formatDate(kid.enrolledAt));
     if (presence == null) {
       return Text(enrolledText);
     }
     final now = DateTime.now().toUtc();
     final diff = now.difference(presence.lastSeen);
     final stale = diff.inDays >= 14;
-    final lastSeenText = _formatLastSeen(diff);
+    final lastSeenText = _formatLastSeen(l10n, diff);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(enrolledText),
         Text(
           stale
-              ? 'Waarschuwing: voor het last gezien $lastSeenText'
-              : 'Voor het last gezien $lastSeenText',
+              ? l10n.kidsLastSeenWarning(lastSeenText)
+              : l10n.kidsLastSeen(lastSeenText),
           style: TextStyle(
             fontSize: 11,
             color: stale
@@ -168,34 +168,35 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
     );
   }
 
-  static String _formatLastSeen(Duration diff) {
-    if (diff.inMinutes < 2) return 'zojuist';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min. geleden';
-    if (diff.inHours < 24) return '${diff.inHours} uur geleden';
-    if (diff.inDays == 1) return 'gisteren';
-    return '${diff.inDays} dagen geleden';
+  static String _formatLastSeen(AppLocalizations l10n, Duration diff) {
+    if (diff.inMinutes < 2) return l10n.relativeJustNow;
+    if (diff.inMinutes < 60) return l10n.relativeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.relativeHoursAgo(diff.inHours);
+    if (diff.inDays == 1) return l10n.relativeYesterday;
+    return l10n.relativeDaysAgo(diff.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Kinderen'), centerTitle: false),
+      appBar: AppBar(title: Text(l10n.settingsKids), centerTitle: false),
       body: ListView(
         children: [
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.child_care, color: kColorTeal),
-            title: const Text('Kinderenapp koppelen'),
-            subtitle: const Text('Laat de kinderenapp de QR-code scannen.'),
+            title: Text(l10n.kidsLinkApp),
+            subtitle: Text(l10n.kidsLinkAppSubtitle),
             trailing: const Icon(Icons.qr_code),
             onTap: _enrollKid,
           ),
           if (_enrolledKids.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
-                'GEKOPPELDE KINDEREN',
-                style: TextStyle(
+                l10n.kidsEnrolledSection,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.1,
@@ -212,7 +213,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
                     Icons.person_remove_outlined,
                     color: Theme.of(context).colorScheme.error,
                   ),
-                  tooltip: 'Verwijder uit familie',
+                  tooltip: l10n.kidsRemoveTooltip,
                   onPressed: () => _confirmRemoveKid(kid),
                 ),
               ),
@@ -220,7 +221,7 @@ class _KidsSettingsScreenState extends State<KidsSettingsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Text(
-                'Nog geen kinderen gekoppeld.',
+                l10n.kidsNoneEnrolled,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

@@ -1,0 +1,48 @@
+Categories:TimeProductivity
+License:Apache-2.0
+AuthorName:Ingmar Struijs
+WebSite:https://github.com/ingmarstruijs/Kinetic
+SourceCode:https://github.com/ingmarstruijs/Kinetic
+IssueTracker:https://github.com/ingmarstruijs/Kinetic/issues
+
+AutoName:Kinetic Link
+Name:Kinetic Link
+
+Summary:Local-first encrypted family tasks and notes with optional WebDAV sync
+Description:|-
+    Kinetic Link helps families manage tasks and notes without accounts or
+    telemetry. Data stays on your device and can optionally sync to your own
+    WebDAV server (for example Nextcloud) using AES-256-GCM encryption.
+
+    Features:
+    * Personal tasks and markdown notes
+    * Partner proposals via QR pairing
+    * Kids chores with XP rewards (use with Kinetic Kids)
+    * Offline suggestion heuristics (no cloud AI)
+    * Encrypted .kvault backups
+
+    Requires camera permission only for QR pairing/enrollment.
+
+RepoType:git
+Repo:https://github.com/ingmarstruijs/Kinetic.git
+
+Builds:
+  - versionName: 0.3.0
+    versionCode: 1
+    commit: REPLACE_WITH_TAG_OR_COMMIT
+    subdir: apps/parent
+    output: build/app/outputs/flutter-apk/app-release.apk
+    srclibs:
+      - flutter@stable
+    prebuild: |
+      # Pin Flutter version in CI/fdroid builds; bootstrap Melos workspace from repo root.
+      cd ../../
+      dart pub global activate melos
+      melos bootstrap
+    build: |
+      flutter build apk --release --build-name=$$VERSION$$ --build-number=$$VERCODE$$
+
+AutoUpdateMode:None
+UpdateCheckMode:None
+CurrentVersion:0.3.0
+CurrentVersionCode:1

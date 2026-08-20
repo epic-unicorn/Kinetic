@@ -1,0 +1,308 @@
+{
+  "@@locale": "nl",
+
+  "navTasks": "Taken",
+  "navNotes": "Notities",
+  "navSettings": "Instellingen",
+
+  "commonCancel": "Annuleren",
+  "commonSave": "Opslaan",
+  "commonSaving": "Opslaan…",
+  "commonDelete": "Verwijderen",
+  "commonOk": "OK",
+  "commonError": "Fout",
+  "commonImport": "Importeren",
+  "commonContinue": "Doorgaan",
+  "commonClose": "Sluiten",
+  "commonBack": "Terug",
+  "commonCopy": "Kopiëren",
+  "commonUnknown": "(onbekend)",
+
+  "themeLight": "Licht",
+  "themeSand": "Zand",
+  "themeDusk": "Schemer",
+  "themeNight": "Nacht",
+  "themeLightDesc": "Helder blauw",
+  "themeSandDesc": "Warm papier",
+  "themeDuskDesc": "Blauw-grijs donker",
+  "themeNightDesc": "OLED zwart",
+  "themeChoose": "Thema kiezen",
+
+  "settingsTitle": "Instellingen",
+  "settingsSectionAppearance": "Uiterlijk",
+  "settingsTheme": "Thema",
+  "settingsSectionSync": "Synchronisatie",
+  "settingsWebDavConfigure": "WebDAV configureren",
+  "settingsWebDavConnected": "Verbonden",
+  "settingsWebDavConnectHint": "Verbind met een Nextcloud- of WebDAV-server",
+  "settingsSectionFamily": "Familie",
+  "settingsPartner": "Partner",
+  "settingsPartnerPaired": "Partner gekoppeld",
+  "settingsPartnerLinkHint": "Koppel met je partner",
+  "settingsKids": "Kinderen",
+  "settingsKidsLinkHint": "Koppel de kinderenapp",
+  "settingsKidsEnrolledCount": "{count, plural, =1{1 kind gekoppeld} other{{count} kinderen gekoppeld}}",
+  "@settingsKidsEnrolledCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "settingsSectionVault": "Kluis",
+  "settingsVerifyPhrase": "Herstelzin controleren",
+  "settingsVerifyPhraseSubtitle": "Controleer of je de 12 woorden nog kent. We tonen ze niet.",
+  "settingsShowPhrase": "Herstelzin tonen",
+  "settingsShowPhraseSubtitle": "Toon de 12 woorden op dit apparaat (schermvergrendeling).",
+  "settingsSectionBackup": "Back-up & Herstel",
+  "settingsExportBackup": "Back-up exporteren",
+  "settingsExportBackupSubtitle": "Versleuteld .kvault-bestand. De herstelzin zit er niet in.",
+  "settingsImportBackup": "Back-up importeren",
+  "settingsImportBackupSubtitle": "Herstel vanuit .kvault met je 12 woorden",
+
+  "notifServiceFailed": "Meldingenservice kon niet starten: {error}",
+  "@notifServiceFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "notifDisabledBanner": "Meldingen zijn uitgeschakeld. Zet ze aan in Instellingen om herinneringen te ontvangen.",
+  "notifExactAlarmBanner": "Precieze herinneringen zijn uitgeschakeld. Sta \"Alarmen & herinneringen\" toe voor exacte tijden.",
+
+  "familyKeyScanTitle": "Familiesleutel scannen",
+  "familyKeyScanHint": "Richt op de QR-code van je partner",
+  "familyKeyEnterPhrase": "Zin invoeren",
+  "familyKeyFound": "Sleutel gevonden",
+  "familyKeyPartner": "Partner",
+  "familyKeyServer": "Server",
+  "familyKeyFingerprint": "Vingerafdruk",
+  "familyKeyServerMismatch": "De server in de QR-code ({scanned}) komt niet overeen met jouw server ({current}). Weet je zeker dat je doorgaat?",
+  "@familyKeyServerMismatch": {
+    "placeholders": {
+      "scanned": {"type": "String"},
+      "current": {"type": "String"}
+    }
+  },
+  "familyKeyConfirmPartner": "Is dit de juiste partner? Controleer de gebruikersnaam hierboven.",
+  "familyKeyAlreadyPairedWarning": "Je hebt al een familiesleutel. Als je een nieuwe importeert, wordt data die al met de huidige sleutel is versleuteld onleesbaar totdat je opnieuw synchroniseert.",
+  "familyKeyEnterTitle": "Familiesleutel invoeren",
+  "familyKeyEnterSubtitle": "Vul de 12 woorden van je partner in. Daarna zie je de vingerafdruk ter controle.",
+  "familyKeySaved": "Familiesleutel opgeslagen.",
+  "familyKeySaveError": "Fout bij opslaan: {error}",
+  "@familyKeySaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "familyKeyInvalidQr": "Ongeldige QR-code: {error}",
+  "@familyKeyInvalidQr": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "familyKeyShareTitle": "Familiesleutel delen",
+  "familyKeyShareLegacyBody": "Laat je partner deze QR-code scannen. Deze familiesleutel is van vóór de herstelzin en heeft geen 12 woorden.",
+  "familyKeyShareBody": "Laat je partner deze QR-code scannen, of de 12 woorden typen.",
+  "familyKeyShareNoPassword": "De code bevat geen WebDAV-wachtwoord. Controleer samen de vingerafdruk.",
+  "familyKeyShareNoEntropy": "Geen herstelzin-gegevens op dit apparaat. Maak een nieuwe familiesleutel.",
+  "familyKeyShareFingerprint": "Vingerafdruk  {fingerprint}",
+  "@familyKeyShareFingerprint": {
+    "placeholders": {
+      "fingerprint": {"type": "String"}
+    }
+  },
+  "familyKeyPartnerScanned": "Partner heeft gescand",
+  "familyKeyShared": "Familiesleutel gedeeld",
+
+  "vaultWelcomeTitle": "Jouw kluis",
+  "vaultWelcomeBody": "Kinetic Link bewaart taken en notities met een herstelzin van 12 woorden. Schrijf die zin op papier. Op dit apparaat kun je hem later opnieuw tonen (met schermvergrendeling).",
+  "vaultNewVault": "Nieuwe kluis",
+  "vaultRestoreVault": "Kluis herstellen",
+  "vaultLegacyBackup": "Oude back-up (.kbak2)",
+  "vaultCreateVault": "Kluis aanmaken",
+  "vaultRecoveryPhrase": "Herstelzin",
+  "vaultConfirm": "Bevestigen",
+  "vaultWriteWords": "Schrijf deze 12 woorden op papier en bewaar ze veilig. Zonder deze zin kun je de kluis niet op een nieuw apparaat herstellen.",
+  "vaultPhraseCopied": "Herstelzin gekopieerd",
+  "vaultIWroteThemDown": "Ik heb ze opgeschreven",
+  "vaultQuizPrompt": "Vul de gevraagde woorden in om te bevestigen dat je de zin hebt bewaard.",
+  "vaultWordN": "Woord {n}",
+  "@vaultWordN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "vaultBackToWords": "Terug naar de woorden",
+  "vaultQuizMismatch": "Niet alle woorden kloppen. Probeer opnieuw.",
+  "vaultCreateFailed": "Kon de kluis niet aanmaken: {error}",
+  "@vaultCreateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "vaultCouldNotReadFile": "Kon het bestand niet lezen.",
+  "vaultInvalidLegacyBackup": "Ongeldige oude back-up: {error}",
+  "@vaultInvalidLegacyBackup": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "vaultRestoreTitle": "Kluis herstellen",
+  "vaultRestoreIntro": "Kies hoe je de kluis terugzet. De herstelzin is in beide gevallen dezelfde.",
+  "vaultRestoreFromFile": "Vanaf bestand",
+  "vaultRestoreFromWebDav": "Vanaf WebDAV",
+  "vaultRestoreFromWebDavSubtitle": "Server, inloggegevens en 12 woorden. Geen bestand nodig.",
+  "vaultRestoreFileTitle": "Herstellen vanaf bestand",
+  "vaultRestoreFileBody": "Vul je herstelzin in en kies daarna het .kvault-bestand.",
+  "vaultChooseFileAndRestore": "Bestand kiezen en herstellen",
+  "vaultNoVaultOnServer": "Geen kluis op deze server. Maak een nieuwe kluis of kies een andere server.",
+  "vaultPhraseMismatchServer": "Deze herstelzin hoort niet bij de kluis op deze server.",
+  "vaultRestoreWebDavTitle": "Herstellen vanaf WebDAV",
+  "vaultRestoreWebDavBody": "Log in op je server en vul dezelfde 12 woorden in als bij het aanmaken van de kluis.",
+  "vaultServerUrl": "Server-URL",
+  "vaultUsername": "Gebruikersnaam",
+  "vaultPassword": "Wachtwoord",
+  "vaultUnlock": "Kluis ontgrendelen",
+  "vaultPhraseFieldLabel": "Herstelzin (12 woorden)",
+
+  "vaultMigrateTitle": "Nieuwe herstelzin",
+  "vaultMigrateBody": "Je huidige sleutel is willekeurig (versie 0.2) en kan niet in 12 woorden. Taken en notities op dit apparaat blijven staan. We maken een nieuwe herstelzin. Bij de volgende sync worden persoonlijke bestanden opnieuw versleuteld. De familiesleutel blijft hetzelfde — partner en kinderen hoeven niet opnieuw te koppelen.",
+  "vaultMigrateActivate": "Nieuwe herstelzin activeren",
+  "vaultMigrateHeadline": "Schrijf deze nieuwe 12 woorden op. De oude sleutel werkt daarna niet meer voor WebDAV of een .kvault.",
+
+  "vaultRestoreFromFileSubtitle": "12 woorden + versleuteld .kvault-bestand. Geen internet nodig.",
+  "vaultBiometricsReason": "Toon de herstelzin op dit apparaat",
+  "vaultNoScreenLockTitle": "Geen schermvergrendeling",
+  "vaultNoScreenLockBody": "Dit apparaat heeft geen Face ID, vingerafdruk of pincode. Iedereen met toegang tot de app kan de woorden zien. Doorgaan?",
+  "vaultShowAnyway": "Toch tonen",
+  "vaultRevealWarning": "Schrijf de woorden opnieuw op papier als je de kopie kwijt bent. Laat dit scherm niet openstaan.",
+
+  "familyCreateTitle": "Familiesleutel",
+  "familyCreateWriteWords": "Schrijf deze 12 woorden op. Ze horen bij de familiesleutel die je deelt met je partner. We slaan de woorden niet op.",
+  "familyCreateFailed": "Kon de familiesleutel niet aanmaken: {error}",
+  "@familyCreateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "commonVerify": "Controleren",
+  "commonLeave": "Verlaten",
+
+  "relativeJustNow": "zojuist",
+  "relativeMinutesAgo": "{count} minuten geleden",
+  "@relativeMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeHoursAgo": "{count} uur geleden",
+  "@relativeHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeYesterday": "gisteren",
+  "relativeDaysAgo": "{count} dagen geleden",
+  "@relativeDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "partnerVerifyTitle": "Familiesleutel controleren",
+  "partnerVerifyBody": "Vul de 12 woorden in. We tonen ze niet; we controleren alleen of ze kloppen.",
+  "partnerVerifyOk": "De familiesleutel klopt.",
+  "partnerVerifyMismatch": "Deze herstelzin hoort niet bij deze familiesleutel.",
+  "partnerRevealMissing": "Deze familiesleutel is van voor de herstelzin (0.2) of kwam binnen als ruwe sleutel. We kunnen de woorden niet tonen. Maak een nieuwe familiesleutel en laat partner en kinderen opnieuw koppelen.",
+  "partnerUnlinkTitle": "Partner ontkoppelen?",
+  "partnerUnlinkBody": "Alle gedeelde notities worden van dit apparaat verwijderd. Je eigen taken en privé-notities blijven behouden. Je partner verliest de verbinding niet — alleen jij verlaat de gedeelde werkruimte.",
+  "partnerShareViaQr": "Familiesleutel delen via QR",
+  "partnerShareViaQrSubtitle": "Laat je partner de QR-code scannen om samen te werken.",
+  "partnerScanKey": "Familiesleutel scannen",
+  "partnerScanKeySubtitle": "Scan de QR of typ de 12 woorden van je partner.",
+  "partnerReshareKey": "Familiesleutel opnieuw delen",
+  "partnerReshareKeySubtitle": "Deel de sleutel met een nieuw apparaat van je partner.",
+  "partnerVerifyPhrase": "Herstelzin controleren",
+  "partnerVerifyPhraseSubtitle": "Controleer of je de 12 woorden van de familiesleutel nog kent.",
+  "partnerShowKey": "Familiesleutel tonen",
+  "partnerShowKeySubtitle": "Toon de 12 woorden op dit apparaat (schermvergrendeling).",
+  "partnerUnlink": "Partner ontkoppelen",
+  "partnerUnlinkSubtitle": "Verwijder de familiesleutel en gedeelde notities van dit apparaat.",
+  "partnerStatusPaired": "Partner gekoppeld — familiesleutel aanwezig",
+  "partnerStatusUnpaired": "Partner niet gekoppeld — scan of deel de QR-code om te koppelen",
+  "partnerLastSeen": "Partner voor het laatst gezien {when}",
+  "@partnerLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "partnerLastSeenWarning": "Waarschuwing: partner voor het laatst gezien {when}",
+  "@partnerLastSeenWarning": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "partnerFingerprint": "Vingerafdruk {fingerprint}",
+  "@partnerFingerprint": {
+    "placeholders": {
+      "fingerprint": {"type": "String"}
+    }
+  },
+
+  "kidsLinkApp": "Kinderenapp koppelen",
+  "kidsLinkAppSubtitle": "Laat de kinderenapp de QR-code scannen.",
+  "kidsEnrolledSection": "GEKOPPELDE KINDEREN",
+  "kidsNoneEnrolled": "Nog geen kinderen gekoppeld.",
+  "kidsRemoveTooltip": "Verwijder uit familie",
+  "kidsRemoveTitle": "{name} verwijderen?",
+  "@kidsRemoveTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsRemoveBody": "{name} wordt uit de familielijst verwijderd. De kinderenapp kan daarna geen familietaken meer ontvangen tenzij opnieuw gekoppeld.",
+  "@kidsRemoveBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrolledOn": "Gekoppeld op {date}",
+  "@kidsEnrolledOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "kidsLastSeen": "Voor het laatst gezien {when}",
+  "@kidsLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "kidsLastSeenWarning": "Waarschuwing: voor het laatst gezien {when}",
+  "@kidsLastSeenWarning": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+
+  "kidsEnrollTitle": "Kinderenapp koppelen",
+  "kidsEnrollNameTitle": "Naam van het kind",
+  "kidsEnrollNameBody": "Voer de naam in van het kind dat je wilt koppelen.",
+  "kidsEnrollNameLabel": "Naam kind",
+  "kidsEnrollContinueToQr": "Doorgaan naar QR-code",
+  "kidsEnrollQrTitle": "QR-code voor {name}",
+  "@kidsEnrollQrTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrollQrBody": "Open de kinderenapp op het toestel van {name} en scan deze code.",
+  "@kidsEnrollQrBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrollWhatShared": "Wat wordt er gedeeld?",
+  "kidsEnrollWhatSharedBody": "Deze QR-code bevat de server, het account en de familiesleutel — niet het WebDAV-wachtwoord. Typ dat wachtwoord één keer op het kindertoestel. Deel de code alleen met de kinderenapp op een vertrouwd apparaat."
+}
