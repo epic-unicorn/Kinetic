@@ -617,4 +617,736 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kidsEnrollWhatSharedBody =>
       'This QR code contains the server, account, and family key — not the WebDAV password. Type that password once on the kids device. Only share the code with the kids app on a trusted device.';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLanguageDutch => 'Nederlands';
+
+  @override
+  String get settingsLanguageChoose => 'Choose language';
+
+  @override
+  String get commonAdd => 'Add';
+
+  @override
+  String get commonSend => 'Send';
+
+  @override
+  String get commonRetry => 'Try again';
+
+  @override
+  String get commonDismiss => 'Dismiss';
+
+  @override
+  String get commonCloseAction => 'Close';
+
+  @override
+  String get commonExporting => 'Exporting…';
+
+  @override
+  String get commonImporting => 'Importing…';
+
+  @override
+  String get commonNone => 'None';
+
+  @override
+  String get commonEveryone => 'Everyone';
+
+  @override
+  String get commonTitle => 'Title';
+
+  @override
+  String get commonNotes => 'Notes';
+
+  @override
+  String get commonContent => 'Content';
+
+  @override
+  String get commonLow => 'Low';
+
+  @override
+  String get commonMedium => 'Medium';
+
+  @override
+  String get commonHigh => 'High';
+
+  @override
+  String get commonPrivate => 'Private';
+
+  @override
+  String get commonShared => 'Shared';
+
+  @override
+  String get commonKids => 'Kids';
+
+  @override
+  String get commonPartner => 'Partner';
+
+  @override
+  String get commonReminder => 'Reminder';
+
+  @override
+  String get commonTime => 'Time';
+
+  @override
+  String get commonCategory => 'Category';
+
+  @override
+  String get commonPriority => 'Priority';
+
+  @override
+  String get commonNoCategory => 'No category';
+
+  @override
+  String commonSaveError(String error) {
+    return 'Error saving: $error';
+  }
+
+  @override
+  String commonDeleteError(String error) {
+    return 'Error deleting: $error';
+  }
+
+  @override
+  String relativeWeeksAgo(int count) {
+    return '$count weeks ago';
+  }
+
+  @override
+  String get dateToday => 'Today';
+
+  @override
+  String get dateTomorrow => 'Tomorrow';
+
+  @override
+  String get dateYesterday => 'Yesterday';
+
+  @override
+  String dateDaysOverdue(int count) {
+    return '${count}d overdue';
+  }
+
+  @override
+  String dateInDays(int count) {
+    return 'In $count days';
+  }
+
+  @override
+  String get dateWeekdayMonday => 'Monday';
+
+  @override
+  String get dateWeekdayTuesday => 'Tuesday';
+
+  @override
+  String get dateWeekdayWednesday => 'Wednesday';
+
+  @override
+  String get dateWeekdayThursday => 'Thursday';
+
+  @override
+  String get dateWeekdayFriday => 'Friday';
+
+  @override
+  String get dateWeekdaySaturday => 'Saturday';
+
+  @override
+  String get dateWeekdaySunday => 'Sunday';
+
+  @override
+  String get dateMonthJan => 'Jan';
+
+  @override
+  String get dateMonthFeb => 'Feb';
+
+  @override
+  String get dateMonthMar => 'Mar';
+
+  @override
+  String get dateMonthApr => 'Apr';
+
+  @override
+  String get dateMonthMay => 'May';
+
+  @override
+  String get dateMonthJun => 'Jun';
+
+  @override
+  String get dateMonthJul => 'Jul';
+
+  @override
+  String get dateMonthAug => 'Aug';
+
+  @override
+  String get dateMonthSep => 'Sep';
+
+  @override
+  String get dateMonthOct => 'Oct';
+
+  @override
+  String get dateMonthNov => 'Nov';
+
+  @override
+  String get dateMonthDec => 'Dec';
+
+  @override
+  String get connNotConnected => 'Not connected';
+
+  @override
+  String connNotConnectedSince(String when) {
+    return 'Not connected since $when';
+  }
+
+  @override
+  String get connUnknownNoSync => 'Connection unknown (no sync)';
+
+  @override
+  String connStale(String when) {
+    return 'Connection stale ($when)';
+  }
+
+  @override
+  String get connConnected => 'Connected';
+
+  @override
+  String connConnectedSince(String when) {
+    return 'Connected ($when)';
+  }
+
+  @override
+  String get notifChannelName => 'Task reminders';
+
+  @override
+  String get notifChannelDesc => 'Reminders for tasks and assignments';
+
+  @override
+  String get notifReminderTitle => 'Reminder';
+
+  @override
+  String get backupNoVault => 'No vault on this device.';
+
+  @override
+  String backupSaved(String path) {
+    return 'Backup saved: $path';
+  }
+
+  @override
+  String backupExportError(String error) {
+    return 'Error exporting: $error';
+  }
+
+  @override
+  String get backupVerifyTitle => 'Verify recovery phrase';
+
+  @override
+  String get backupVerifyBody =>
+      'Enter your 12 words. We will not show the phrase; we only check that it matches.';
+
+  @override
+  String get backupVerifyOk => 'The recovery phrase matches.';
+
+  @override
+  String get backupVerifyMismatch =>
+      'This recovery phrase does not belong to this vault.';
+
+  @override
+  String get backupRevealTitle => 'Recovery phrase';
+
+  @override
+  String get backupRevealMissing =>
+      'We cannot show the words again on this device. Use your paper copy, or restore the vault with the 12 words.';
+
+  @override
+  String get backupImportTitle => 'Import backup';
+
+  @override
+  String get backupImportBody =>
+      'Enter the 12 words of the vault inside the .kvault file. This replaces your current tasks and notes.';
+
+  @override
+  String get backupCouldNotReadFile => 'Could not read the file.';
+
+  @override
+  String get backupRestored => 'Backup restored successfully.';
+
+  @override
+  String backupInvalidFile(String error) {
+    return 'Invalid backup file: $error';
+  }
+
+  @override
+  String backupImportError(String error) {
+    return 'Error importing: $error';
+  }
+
+  @override
+  String get backupRestoring => 'Restoring backup…';
+
+  @override
+  String get webdavSetupTitle => 'Set up WebDAV';
+
+  @override
+  String get webdavUrlRequired => 'Enter the server URL';
+
+  @override
+  String get webdavUsernameRequired => 'Enter the username';
+
+  @override
+  String get webdavPasswordRequired => 'Enter the password';
+
+  @override
+  String get webdavTestConnection => 'Test connection';
+
+  @override
+  String get webdavTestingConnection => 'Testing connection…';
+
+  @override
+  String get webdavConnectionOk => 'Connection succeeded';
+
+  @override
+  String get webdavTestFirst => 'Test the connection before saving.';
+
+  @override
+  String get webdavCreateVaultFirst => 'Create a vault before linking WebDAV.';
+
+  @override
+  String get webdavPhraseMismatchServer =>
+      'This server already has a vault that does not match your recovery phrase.';
+
+  @override
+  String get webdavConfigSaved => 'WebDAV configuration saved.';
+
+  @override
+  String webdavSaveError(String error) {
+    return 'Error saving: $error';
+  }
+
+  @override
+  String get webdavMigrationTitle => 'Existing data found';
+
+  @override
+  String get webdavMigrationIntro =>
+      'The WebDAV server already has encrypted files:';
+
+  @override
+  String webdavMigrationTaskFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '  • $count task files',
+      one: '  • 1 task file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String webdavMigrationNoteFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '  • $count note files',
+      one: '  • 1 note file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get webdavMigrationChoose =>
+      'These files are encrypted with a vault. Choose how to continue:';
+
+  @override
+  String get webdavMigrationCleanOption =>
+      '1. Clean install — remove the old files on the server and start fresh.';
+
+  @override
+  String get webdavMigrationImportOption =>
+      '2. Import backup — select a .kvault file. This vault\'s recovery phrase unlocks the file.';
+
+  @override
+  String get webdavMigrationClean => 'Clean install';
+
+  @override
+  String get webdavMigrationImport => 'Import backup';
+
+  @override
+  String get webdavBackupRestoredSync =>
+      'Backup restored. The app will now sync with the server.';
+
+  @override
+  String webdavRestoreError(String error) {
+    return 'Error restoring backup: $error';
+  }
+
+  @override
+  String webdavMigrationCheckFailed(String error) {
+    return 'Migration check failed: $error';
+  }
+
+  @override
+  String webdavFilesDeleted(int count) {
+    return '$count files deleted.';
+  }
+
+  @override
+  String webdavCleanupError(String error) {
+    return 'Error cleaning up: $error';
+  }
+
+  @override
+  String get tasksTitle => 'Tasks';
+
+  @override
+  String get tasksCompletedTooltip => 'Completed tasks';
+
+  @override
+  String get tasksTabPrivate => 'Private';
+
+  @override
+  String get tasksTabSuggestions => 'Suggestions';
+
+  @override
+  String get tasksTabKids => 'Kids';
+
+  @override
+  String get tasksSyncFailed => 'Sync failed, tap to retry.';
+
+  @override
+  String get tasksSyncing => 'Syncing';
+
+  @override
+  String get tasksForYou => 'For you';
+
+  @override
+  String get tasksForPartner => 'For partner';
+
+  @override
+  String get tasksFromPartner => 'From partner';
+
+  @override
+  String get tasksRefreshSuggestions => 'Refresh suggestions';
+
+  @override
+  String get tasksAddReminder => 'Reminder';
+
+  @override
+  String get tasksAddTask => 'Add';
+
+  @override
+  String get tasksToPartner => 'To partner';
+
+  @override
+  String get tasksNoPartnerSuggestions => 'No partner suggestions';
+
+  @override
+  String get tasksNoPartnerSuggestionsHint =>
+      'Your partner has not suggested any tasks yet';
+
+  @override
+  String get tasksViaSuggestion => 'Via suggestion';
+
+  @override
+  String get tasksReject => 'Reject';
+
+  @override
+  String get tasksAccept => 'Accept';
+
+  @override
+  String get tasksProposalAccepted => 'Suggestion accepted';
+
+  @override
+  String get tasksProposalRejected => 'Suggestion rejected';
+
+  @override
+  String get tasksLoadProposalsError => 'Error loading suggestions';
+
+  @override
+  String tasksXpResetTitle(String name) {
+    return 'Reset XP for $name?';
+  }
+
+  @override
+  String get tasksXpResetBody =>
+      'This resets the XP counter to 0. The assignments stay.';
+
+  @override
+  String get tasksXpResetAction => 'Reset';
+
+  @override
+  String tasksXpResetDone(String name) {
+    return 'XP reset for $name';
+  }
+
+  @override
+  String tasksXpResetError(String error) {
+    return 'Error resetting: $error';
+  }
+
+  @override
+  String get tasksLoadKidsError => 'Error loading kids assignments';
+
+  @override
+  String get tasksNoKidsAssignments => 'No kids assignments';
+
+  @override
+  String get tasksNoKidsAssignmentsHint =>
+      'Send a task to the kids app to see it here.';
+
+  @override
+  String get tasksResetXp => 'Reset XP';
+
+  @override
+  String tasksDoneOn(int day, int month) {
+    return 'Done on $day/$month';
+  }
+
+  @override
+  String get tasksCompletedTitle => 'Completed tasks';
+
+  @override
+  String get tasksDeleteAll => 'Delete all';
+
+  @override
+  String get tasksDeleteCompletedTitle => 'Delete completed tasks';
+
+  @override
+  String get tasksDeleteCompletedBody =>
+      'Are you sure you want to delete all completed tasks? This cannot be undone.';
+
+  @override
+  String get tasksEmptySuggestionsPartner =>
+      'Suggestions from the smart planner and proposals from your partner appear here';
+
+  @override
+  String get tasksEmptySuggestionsSolo =>
+      'Suggestions from the smart planner based on your habits appear here';
+
+  @override
+  String get tasksNoSuggestions => 'No suggestions';
+
+  @override
+  String get tasksAllDone => 'All done!';
+
+  @override
+  String get tasksNoOpenTasks => 'You have no open tasks';
+
+  @override
+  String get tasksNoCompleted => 'No completed tasks';
+
+  @override
+  String get tasksNoCompletedHint => 'Completed tasks appear here';
+
+  @override
+  String get tasksAssignment => 'Assignment';
+
+  @override
+  String get taskDeleteTitle => 'Delete task?';
+
+  @override
+  String taskDeleteBody(String title) {
+    return '\"$title\" will be permanently deleted. This cannot be undone.';
+  }
+
+  @override
+  String get taskForwardTitle => 'Forward task';
+
+  @override
+  String get taskAssignmentCreated => 'Assignment created ✓';
+
+  @override
+  String get taskNoConnectedFamily => 'No connected partner or kids';
+
+  @override
+  String get taskStaleConnectionTitle => 'Connection stale';
+
+  @override
+  String taskStalePartnerBody(String status) {
+    return 'Your partner was last seen $status. Send anyway?';
+  }
+
+  @override
+  String taskStaleKidBody(String name, String status) {
+    return '$name was last seen $status. Send anyway?';
+  }
+
+  @override
+  String get taskSendAnyway => 'Send anyway';
+
+  @override
+  String get taskSendToPartnerTitle => 'Send to partner?';
+
+  @override
+  String taskSendToPartnerBody(String title) {
+    return '\"$title\" will be sent as a proposal to your partner and removed from your list once they accept it.';
+  }
+
+  @override
+  String taskSendToKidTitle(String name) {
+    return 'Send to $name?';
+  }
+
+  @override
+  String get taskSendToKidBody =>
+      'The task disappears from your list once the child completes it.';
+
+  @override
+  String taskSendToKidLead(String title, String name) {
+    return '\"$title\" will be sent as an assignment to $name.';
+  }
+
+  @override
+  String get taskXpReward => 'XP reward:';
+
+  @override
+  String get taskNameHint => 'Task name';
+
+  @override
+  String get taskAddTime => 'Add time';
+
+  @override
+  String get taskAddCategory => 'Add category';
+
+  @override
+  String get taskRepeat => 'Repeat';
+
+  @override
+  String get taskForward => 'Forward';
+
+  @override
+  String get taskRecurrenceNone => 'No recurrence';
+
+  @override
+  String get taskRecurrenceDaily => 'Daily';
+
+  @override
+  String get taskRecurrenceWeekdays => 'Weekdays';
+
+  @override
+  String get taskRecurrenceWeekly => 'Weekly';
+
+  @override
+  String get taskRecurrenceBiweekly => 'Biweekly';
+
+  @override
+  String get taskRecurrenceMonthly => 'Monthly';
+
+  @override
+  String get notesTitle => 'Notes';
+
+  @override
+  String get notesTabPrivate => 'Private';
+
+  @override
+  String get notesTabShared => 'Shared';
+
+  @override
+  String get notesNewTooltip => 'New note';
+
+  @override
+  String get notesLoadError => 'Error loading notes';
+
+  @override
+  String get notesEmptyShared => 'No shared notes';
+
+  @override
+  String get notesEmptyPrivate => 'No private notes';
+
+  @override
+  String get notesEmptySharedHint =>
+      'Notes shared with your partner appear here';
+
+  @override
+  String get notesEmptyPrivateHint => 'Your private notes appear here';
+
+  @override
+  String get notesSaved => 'Note saved';
+
+  @override
+  String get notesSharedBadge => 'Shared';
+
+  @override
+  String get notesTitleRequired => 'Title is required';
+
+  @override
+  String get notesDeleteTitle => 'Delete note?';
+
+  @override
+  String get notesDeleteBody => 'You cannot undo this.';
+
+  @override
+  String get notesSharedWithPartner => 'Shared with partner';
+
+  @override
+  String get suggestWebDavRequired => 'Link WebDAV first to send a suggestion.';
+
+  @override
+  String get suggestPartnerSeesTitle => 'What your partner sees';
+
+  @override
+  String get suggestPartnerSeesGeneric =>
+      'Intentionally generic — no private titles or notes.';
+
+  @override
+  String get suggestPartnerSeesFull =>
+      'The title and any notes from this suggestion will be included.';
+
+  @override
+  String get suggestSend => 'Send';
+
+  @override
+  String get suggestSent => 'Suggestion sent to partner';
+
+  @override
+  String get suggestSnoozeTitle => 'Snooze';
+
+  @override
+  String get suggestSnoozeBody => 'Snooze this suggestion for 7 days?';
+
+  @override
+  String get suggestSnoozeAction => 'Snooze';
+
+  @override
+  String get suggestAdd => 'Add';
+
+  @override
+  String get suggestReasonHabit => 'Habit';
+
+  @override
+  String get suggestReasonPartner => 'Partner complement';
+
+  @override
+  String get suggestReasonSeasonal => 'Seasonal';
+
+  @override
+  String get suggestReasonLoadBalance => 'Load balance';
+
+  @override
+  String get suggestReasonStale => 'Open task';
+
+  @override
+  String get suggestReasonCalendar => 'Calendar';
+
+  @override
+  String get categoryTitle => 'Category';
+
+  @override
+  String get categoryNewHint => 'New category';
+
+  @override
+  String get categoryNewAction => 'New category…';
+
+  @override
+  String get quickAddHint => 'New task…';
+
+  @override
+  String get quickAddMoreOptions => 'More options';
+
+  @override
+  String get timeInvalid => 'Enter a valid time (00:00 – 23:59).';
+
+  @override
+  String get timeOk => 'OK';
 }

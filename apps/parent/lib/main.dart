@@ -26,16 +26,20 @@ import 'vault/vault_gate.dart';
 // Global theme notifier — allows theme changes from anywhere in the app
 final themeNotifier = ValueNotifier<AppTheme>(AppTheme.light);
 
+/// Global locale notifier — English by default; `en` / `nl` only.
+final localeNotifier = ValueNotifier<Locale>(const Locale('en'));
+
 enum SyncStatus { idle, syncing, error }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load persisted theme preference
+  // Load persisted theme + locale preference
   final db = AppDatabase();
   final settingsRepo = SettingsRepository(db: db);
   final savedTheme = await settingsRepo.loadTheme();
   themeNotifier.value = savedTheme;
+  localeNotifier.value = await settingsRepo.loadLocale();
 
   runApp(KineticParentApp(db: db, settingsRepo: settingsRepo));
 }
@@ -55,18 +59,24 @@ class KineticParentApp extends StatelessWidget {
     return ValueListenableBuilder<AppTheme>(
       valueListenable: themeNotifier,
       builder: (context, theme, _) {
-        return MaterialApp(
-          title: 'Kinetic Link',
-          debugShowCheckedModeBanner: false,
-          theme: buildTheme(theme),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: VaultGate(
-            db: db,
-            settingsRepo: settingsRepo,
-            readyBuilder: (context) =>
-                _RootShell(db: db, settingsRepo: settingsRepo),
-          ),
+        return ValueListenableBuilder<Locale>(
+          valueListenable: localeNotifier,
+          builder: (context, locale, _) {
+            return MaterialApp(
+              title: 'Kinetic Link',
+              debugShowCheckedModeBanner: false,
+              theme: buildTheme(theme),
+              locale: locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VaultGate(
+                db: db,
+                settingsRepo: settingsRepo,
+                readyBuilder: (context) =>
+                    _RootShell(db: db, settingsRepo: settingsRepo),
+              ),
+            );
+          },
         );
       },
     );

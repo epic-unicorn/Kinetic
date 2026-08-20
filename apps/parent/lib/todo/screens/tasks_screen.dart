@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../../main.dart';
@@ -178,7 +179,7 @@ class _TasksScreenState extends State<TasksScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: AppHeader(title: 'Taken', centerTitle: false),
+        title: AppHeader(title: AppLocalizations.of(context).tasksTitle, centerTitle: false),
         centerTitle: false,
         actions: [
           if (widget.syncStatus != null)
@@ -189,7 +190,7 @@ class _TasksScreenState extends State<TasksScreen>
             ),
           IconButton(
             icon: const Icon(Icons.delete_outlined),
-            tooltip: 'Voltooide taken',
+            tooltip: AppLocalizations.of(context).tasksCompletedTooltip,
             onPressed: () => _showCompletedSheet(context),
           ),
           IconButton(
@@ -211,18 +212,18 @@ class _TasksScreenState extends State<TasksScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            const Tab(text: 'Privé'),
+            Tab(text: AppLocalizations.of(context).tasksTabPrivate),
             Tab(
               child: Badge(
                 isLabelVisible: _pendingVoorstlagenCount > 0,
                 label: Text('$_pendingVoorstlagenCount'),
-                child: const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: Text('Voorstellen'),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(AppLocalizations.of(context).tasksTabSuggestions),
                 ),
               ),
             ),
-            if (widget.enrolledKidsCount > 0) const Tab(text: 'Kinderen'),
+            if (widget.enrolledKidsCount > 0) Tab(text: AppLocalizations.of(context).tasksTabKids),
           ],
         ),
       ),
@@ -284,7 +285,7 @@ class _SyncIcon extends StatelessWidget {
       ),
       SyncStatus.error => IconButton(
         onPressed: onSyncPressed,
-        tooltip: 'Sync mislukt, tap om opnieuw te proberen.',
+        tooltip: AppLocalizations.of(context).tasksSyncFailed,
         icon: Icon(
           Icons.sync_problem_outlined,
           color: Theme.of(context).colorScheme.error,
@@ -292,7 +293,7 @@ class _SyncIcon extends StatelessWidget {
       ),
       SyncStatus.idle => IconButton(
         onPressed: onSyncPressed,
-        tooltip: 'Synchroniseren',
+        tooltip: AppLocalizations.of(context).tasksSyncing,
         icon: const Icon(Icons.cloud_done_outlined),
       ),
     };
@@ -454,7 +455,7 @@ class _OpenTasksTabState extends State<_OpenTasksTab> {
             if (item is _HeaderItem) {
               return _CategoryHeader(
                 key: ValueKey('header_${item.category}'),
-                label: item.category ?? 'Geen categorie',
+                label: item.category ?? AppLocalizations.of(context).commonNoCategory,
                 index: index,
               );
             }
@@ -684,7 +685,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                   padding: const EdgeInsets.only(bottom: 8),
                   children: [
                     _SuggestionSection(
-                      title: 'Voor jou',
+                      title: AppLocalizations.of(context).tasksForYou,
                       stream: widget.suggestionRepo!.watchPendingSelf(),
                       todoRepo: widget.todoRepo,
                       suggestionRepo: widget.suggestionRepo!,
@@ -694,7 +695,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                     ),
                     if (widget.partnerPaired && widget.proposalRepo != null)
                       _SuggestionSection(
-                        title: 'Voor partner',
+                        title: AppLocalizations.of(context).tasksForPartner,
                         stream: widget.suggestionRepo!.watchPendingPartner(),
                         todoRepo: widget.todoRepo,
                         suggestionRepo: widget.suggestionRepo!,
@@ -710,7 +711,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                         child: Row(
                           children: [
                             Text(
-                              'Van partner',
+                              AppLocalizations.of(context).tasksFromPartner,
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     color: scheme.onSurfaceVariant,
@@ -732,7 +733,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                                 : IconButton(
                                     icon: const Icon(Icons.refresh, size: 20),
                                     onPressed: _refresh,
-                                    tooltip: 'Vernieuw voorstellen',
+                                    tooltip: AppLocalizations.of(context).tasksRefreshSuggestions,
                                     color: scheme.onSurfaceVariant,
                                   ),
                           ],
@@ -770,7 +771,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                       child: Row(
                         children: [
                           Text(
-                            'Van partner',
+                            AppLocalizations.of(context).tasksFromPartner,
                             style: Theme.of(context).textTheme.labelSmall
                                 ?.copyWith(
                                   color: scheme.onSurfaceVariant,
@@ -792,7 +793,7 @@ class _VoorstlagenTabState extends State<_VoorstlagenTab> {
                               : IconButton(
                                   icon: const Icon(Icons.refresh, size: 20),
                                   onPressed: _refresh,
-                                  tooltip: 'Vernieuw voorstellen',
+                                  tooltip: AppLocalizations.of(context).tasksRefreshSuggestions,
                                   color: scheme.onSurfaceVariant,
                                 ),
                         ],
@@ -835,7 +836,7 @@ class _SuggestionSection extends StatelessWidget {
     this.partnerOnly = false,
   });
 
-  String _reasonLabel(SuggestionReason r) => r.label;
+  String _reasonLabel(SuggestionReason r, AppLocalizations l10n) => r.label(l10n);
 
   @override
   Widget build(BuildContext context) {
@@ -879,7 +880,7 @@ class _SuggestionSection extends StatelessWidget {
                             ),
                             Chip(
                               label: Text(
-                                _reasonLabel(suggestion.reason),
+                                _reasonLabel(suggestion.reason, AppLocalizations.of(context)),
                                 style: Theme.of(context).textTheme.labelSmall,
                               ),
                               visualDensity: VisualDensity.compact,
@@ -915,8 +916,8 @@ class _SuggestionSection extends StatelessWidget {
                                 icon: const Icon(Icons.add, size: 16),
                                 label: Text(
                                   suggestion.reason == SuggestionReason.stale
-                                      ? 'Herinnering'
-                                      : 'Toevoegen',
+                                      ? AppLocalizations.of(context).tasksAddReminder
+                                      : AppLocalizations.of(context).tasksAddTask,
                                 ),
                                 style: FilledButton.styleFrom(
                                   visualDensity: VisualDensity.compact,
@@ -938,7 +939,7 @@ class _SuggestionSection extends StatelessWidget {
                                   Icons.person_outline,
                                   size: 16,
                                 ),
-                                label: const Text('Naar partner'),
+                                label: Text(AppLocalizations.of(context).tasksToPartner),
                                 style: OutlinedButton.styleFrom(
                                   visualDensity: VisualDensity.compact,
                                 ),
@@ -947,7 +948,7 @@ class _SuggestionSection extends StatelessWidget {
                               onPressed: () =>
                                   suggestionRepo.dismiss(suggestion.id),
                               icon: const Icon(Icons.close, size: 16),
-                              label: const Text('Sluiten'),
+                              label: Text(AppLocalizations.of(context).commonCloseAction),
                               style: OutlinedButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
                               ),
@@ -1007,7 +1008,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(height: 16),
-                const Text('Fout bij laden van voorstellen'),
+                Text(AppLocalizations.of(context).tasksLoadProposalsError),
               ],
             ),
           );
@@ -1025,14 +1026,14 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Geen partnervoorstellen',
+                  AppLocalizations.of(context).tasksNoPartnerSuggestions,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Je partner heeft nog geen taken voorgesteld',
+                  AppLocalizations.of(context).tasksNoPartnerSuggestionsHint,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -1088,7 +1089,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
                           padding: const EdgeInsets.only(top: 4),
                           child: Chip(
                             label: Text(
-                              'Via suggestie',
+                              AppLocalizations.of(context).tasksViaSuggestion,
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             visualDensity: VisualDensity.compact,
@@ -1147,12 +1148,12 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
               children: [
                 OutlinedButton(
                   onPressed: () => _dismissProposal(proposal.id),
-                  child: const Text('Afwijzen'),
+                  child: Text(AppLocalizations.of(context).tasksReject),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.check),
-                  label: const Text('Accepteren'),
+                  label: Text(AppLocalizations.of(context).tasksAccept),
                   onPressed: () => _acceptProposal(proposal.id),
                 ),
               ],
@@ -1169,7 +1170,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Voorstel geaccepteerd')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).tasksProposalAccepted)));
     }
   }
 
@@ -1179,7 +1180,7 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Voorstel afgewezen')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).tasksProposalRejected)));
     }
   }
 
@@ -1193,9 +1194,10 @@ class _PartnerProposalsSectionState extends State<_PartnerProposalsSection> {
   String _formatDate(DateTime date) {
     final today = DateTime.now();
     final diff = date.difference(today).inDays;
-    if (diff == 0) return 'Vandaag';
-    if (diff == 1) return 'Morgen';
-    if (diff < 7) return 'Over $diff dagen';
+    final l10n = AppLocalizations.of(context);
+    if (diff == 0) return l10n.dateToday;
+    if (diff == 1) return l10n.dateTomorrow;
+    if (diff < 7) return l10n.dateInDays(diff);
     return '${date.day}/${date.month}';
   }
 }
@@ -1257,7 +1259,7 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
         final xp = int.tryParse(xpStr ?? '') ?? 0;
         String label;
         if (targetId == null || targetId.isEmpty) {
-          label = 'Iedereen';
+          label = AppLocalizations.of(context).commonEveryone;
         } else {
           final kid = enrolledKids.cast<EnrolledKid?>().firstWhere(
             (k) => k?.id == targetId,
@@ -1289,19 +1291,18 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('XP resetten voor ${kid.name}?'),
-        content: const Text(
-          'Dit stelt de XP-teller terug naar 0. '
-          'De opdrachten blijven bewaard.',
+        title: Text(AppLocalizations.of(context).tasksXpResetTitle(kid.name)),
+        content: Text(
+          AppLocalizations.of(context).tasksXpResetBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Resetten'),
+            child: Text(AppLocalizations.of(context).tasksXpResetAction),
           ),
         ],
       ),
@@ -1322,14 +1323,14 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('XP gereset voor ${kid.name}')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).tasksXpResetDone(kid.name))));
         _reload();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij resetten: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).tasksXpResetError('$e'))));
       }
     } finally {
       client.dispose();
@@ -1361,11 +1362,11 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(height: 16),
-                const Text('Fout bij laden van kinderopdrachten'),
+                Text(AppLocalizations.of(context).tasksLoadKidsError),
                 const SizedBox(height: 12),
                 TextButton.icon(
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Opnieuw proberen'),
+                  label: Text(AppLocalizations.of(context).commonRetry),
                   onPressed: _reload,
                 ),
               ],
@@ -1386,14 +1387,14 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Geen kinderopdrachten',
+                  AppLocalizations.of(context).tasksNoKidsAssignments,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Stuur een taak naar de kinderenapp om hem hier te zien.',
+                  AppLocalizations.of(context).tasksNoKidsAssignmentsHint,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1409,7 +1410,7 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
           final targetId = _prop(task.description, 'xKineticTargetKidId');
           String label;
           if (targetId == null || targetId.isEmpty) {
-            label = 'Iedereen';
+            label = AppLocalizations.of(context).commonEveryone;
           } else {
             final kid = data.enrolledKids.cast<EnrolledKid?>().firstWhere(
               (k) => k?.id == targetId,
@@ -1445,7 +1446,7 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                               fontWeight: FontWeight.bold,
                             ),
                       ),
-                      if (entry.key != 'Iedereen') ...[
+                      if (entry.key != AppLocalizations.of(context).commonEveryone) ...[
                         const SizedBox(width: 8),
                         TextButton(
                           style: TextButton.styleFrom(
@@ -1457,7 +1458,7 @@ class _KidsTasksTabState extends State<_KidsTasksTab> {
                           ),
                           onPressed: () =>
                               _resetXp(entry.key, data.enrolledKids),
-                          child: const Text('Reset XP'),
+                          child: Text(AppLocalizations.of(context).tasksResetXp),
                         ),
                       ],
                     ],
@@ -1500,7 +1501,7 @@ class _KidsTaskTile extends StatelessWidget {
       subtitleParts.add('${due.toLocal().day}/${due.toLocal().month}');
     }
     if (completedAt != null) {
-      subtitleParts.add('Gedaan op ${completedAt.day}/${completedAt.month}');
+      subtitleParts.add(AppLocalizations.of(context).tasksDoneOn(completedAt.day, completedAt.month));
     }
 
     return ListTile(
@@ -1575,7 +1576,7 @@ class _CompletedBottomSheet extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Voltooide taken',
+                      AppLocalizations.of(context).tasksCompletedTitle,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const Spacer(),
@@ -1583,7 +1584,7 @@ class _CompletedBottomSheet extends StatelessWidget {
                       TextButton.icon(
                         onPressed: () => _confirmDeleteAll(ctx, repo),
                         icon: const Icon(Icons.delete_sweep_outlined, size: 16),
-                        label: const Text('Verwijder alles'),
+                        label: Text(AppLocalizations.of(context).tasksDeleteAll),
                         style: TextButton.styleFrom(
                           foregroundColor: Theme.of(
                             context,
@@ -1624,14 +1625,14 @@ class _CompletedBottomSheet extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Voltooide taken verwijderen'),
-        content: const Text(
-          'Weet je zeker dat je alle voltooide taken wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+        title: Text(AppLocalizations.of(context).tasksDeleteCompletedTitle),
+        content: Text(
+          AppLocalizations.of(context).tasksDeleteCompletedBody,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
@@ -1639,7 +1640,7 @@ class _CompletedBottomSheet extends StatelessWidget {
               Navigator.pop(ctx);
               repo.deleteCompletedTasks();
             },
-            child: const Text('Verwijderen'),
+            child: Text(AppLocalizations.of(context).commonDelete),
           ),
         ],
       ),
@@ -1660,8 +1661,8 @@ class _EmptyVoorstellen extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final subtitle = partnerPaired
-        ? 'Hier verschijnen suggesties van de slimme\nplanner en voorstellen van je partner'
-        : 'Hier verschijnen suggesties van de slimme\nplanner op basis van je gewoonten';
+        ? AppLocalizations.of(context).tasksEmptySuggestionsPartner
+        : AppLocalizations.of(context).tasksEmptySuggestionsSolo;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1673,7 +1674,7 @@ class _EmptyVoorstellen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Geen voorstellen',
+            AppLocalizations.of(context).tasksNoSuggestions,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
@@ -1709,14 +1710,14 @@ class _EmptyOpen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Alles klaar!',
+            AppLocalizations.of(context).tasksAllDone,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            'Je hebt geen openstaande taken',
+            AppLocalizations.of(context).tasksNoOpenTasks,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
@@ -1740,14 +1741,14 @@ class _EmptyCompleted extends StatelessWidget {
           Icon(Icons.inbox_outlined, size: 56, color: scheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
-            'Geen voltooide taken',
+            AppLocalizations.of(context).tasksNoCompleted,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            'Voltooide taken verschijnen hier',
+            AppLocalizations.of(context).tasksNoCompletedHint,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),

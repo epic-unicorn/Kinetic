@@ -120,21 +120,21 @@ class FullBackupService {
     try {
       payload = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
     } catch (_) {
-      throw const FormatException('Ongeldig back-upbestand: geen geldig JSON.');
+      throw const FormatException('Invalid backup file: not valid JSON.');
     }
 
     final version = payload['version'] as int?;
     if (version != 2 && version != 3) {
       throw FormatException(
-        'Onbekende back-up versie: $version. '
-        'Verwacht versie 2 of 3 (.kbak2).',
+        'Unknown backup version: $version. '
+        'Expected version 2 or 3 (.kbak2).',
       );
     }
 
     final keyStr = payload['personalKey'] as String?;
     if (keyStr == null || keyStr.isEmpty) {
       throw const FormatException(
-        'Back-upbestand bevat geen persoonlijke sleutel.',
+        'Backup file contains no personal key.',
       );
     }
 
@@ -143,14 +143,14 @@ class FullBackupService {
       personalKey = Uint8List.fromList(base64.decode(keyStr));
     } catch (_) {
       throw const FormatException(
-        'Persoonlijke sleutel in back-upbestand is beschadigd.',
+        'Personal key in backup file is corrupt.',
       );
     }
 
     final dbStr = payload['database'] as String?;
     if (dbStr == null || dbStr.isEmpty) {
       throw const FormatException(
-        'Back-upbestand bevat geen databasegegevens.',
+        'Backup file contains no database data.',
       );
     }
 
@@ -159,7 +159,7 @@ class FullBackupService {
       kbakBlob = Uint8List.fromList(base64.decode(dbStr));
     } catch (_) {
       throw const FormatException(
-        'Databasegegevens in back-upbestand zijn beschadigd.',
+        'Database data in backup file is corrupt.',
       );
     }
 
@@ -261,12 +261,12 @@ class FullBackupService {
     try {
       inner = jsonDecode(utf8.decode(innerBytes)) as Map<String, dynamic>;
     } catch (_) {
-      throw const FormatException('Kluisbestand is beschadigd.');
+      throw const FormatException('Vault file is corrupt.');
     }
 
     final dbStr = inner['database'] as String?;
     if (dbStr == null || dbStr.isEmpty) {
-      throw const FormatException('Kluisbestand bevat geen database.');
+      throw const FormatException('Vault file does not contain a database.');
     }
 
     final Uint8List kbakBlob;
@@ -274,7 +274,7 @@ class FullBackupService {
       kbakBlob = Uint8List.fromList(base64.decode(dbStr));
     } catch (_) {
       throw const FormatException(
-        'Databasegegevens in kluisbestand zijn beschadigd.',
+        'Database data in vault file is corrupt.',
       );
     }
 

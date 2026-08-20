@@ -693,7 +693,7 @@ class TodoRepository {
     try {
       await notif.scheduleReminder(
         id: _notifId(task.id),
-        title: 'Herinnering',
+        title: 'Reminder',
         body: task.title,
         at: at,
       );

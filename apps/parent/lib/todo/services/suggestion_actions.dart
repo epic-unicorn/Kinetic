@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../partner/services/partner_proposal_repository.dart';
 import '../models/ai_suggestion.dart';
 import '../models/enums.dart';
@@ -50,12 +51,11 @@ Future<bool> confirmAndSendSuggestionToPartner({
   required AiSuggestionRepository suggestionRepo,
   required String? myParentId,
 }) async {
+  final l10n = AppLocalizations.of(context);
   if (myParentId == null || myParentId.isEmpty) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Koppel eerst WebDAV om een voorstel te sturen.'),
-        ),
+        SnackBar(content: Text(l10n.suggestWebDavRequired)),
       );
     }
     return false;
@@ -64,9 +64,10 @@ Future<bool> confirmAndSendSuggestionToPartner({
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) {
+      final dialogL10n = AppLocalizations.of(ctx);
       final tt = Theme.of(ctx).textTheme;
       return AlertDialog(
-        title: const Text('Dit ziet je partner'),
+        title: Text(dialogL10n.suggestPartnerSeesTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,8 +76,8 @@ Future<bool> confirmAndSendSuggestionToPartner({
             const SizedBox(height: 8),
             Text(
               suggestion.isPartnerTargeted
-                  ? 'Bewust algemeen — geen privé-titels of notities.'
-                  : 'Titel en eventuele notities van deze suggestie gaan mee.',
+                  ? dialogL10n.suggestPartnerSeesGeneric
+                  : dialogL10n.suggestPartnerSeesFull,
               style: tt.bodySmall,
             ),
           ],
@@ -84,11 +85,11 @@ Future<bool> confirmAndSendSuggestionToPartner({
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(dialogL10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Versturen'),
+            child: Text(dialogL10n.suggestSend),
           ),
         ],
       );
@@ -107,7 +108,7 @@ Future<bool> confirmAndSendSuggestionToPartner({
   await suggestionRepo.accept(suggestion.id);
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Voorstel naar partner gestuurd')),
+      SnackBar(content: Text(AppLocalizations.of(context).suggestSent)),
     );
   }
   return true;

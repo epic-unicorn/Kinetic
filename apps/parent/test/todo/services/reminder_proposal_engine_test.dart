@@ -25,8 +25,8 @@ void main() {
         now: DateTime(2026, 6, 17, 10),
       );
       expect(chips, isNotEmpty);
-      expect(chips.map((c) => c.label), contains('Over 1 uur'));
-      expect(chips.map((c) => c.label), contains('Morgen 09:00'));
+      expect(chips.map((c) => c.label), contains('In 1 hour'));
+      expect(chips.map((c) => c.label), contains('Tomorrow 09:00'));
     });
 
     test('school keyword suggests tomorrow morning', () {
@@ -35,7 +35,7 @@ void main() {
         completedTasks: const [],
         now: DateTime(2026, 6, 17, 10),
       );
-      expect(chips.first.label, 'Morgen 07:00');
+      expect(chips.first.label, 'Tomorrow 07:00');
     });
 
     test('habit time wins over category default', () {
@@ -52,7 +52,7 @@ void main() {
         ],
         now: DateTime(2026, 6, 17, 10),
       );
-      expect(chips.first.label, startsWith('Za'));
+      expect(chips.first.label, startsWith('Sat'));
       expect(chips.first.explanation, isNotNull);
     });
 
@@ -62,7 +62,7 @@ void main() {
         completedTasks: const [],
         now: DateTime(2026, 6, 17, 21),
       );
-      expect(chips.map((c) => c.label), isNot(contains('Vanavond 20:00')));
+      expect(chips.map((c) => c.label), isNot(contains('Tonight 20:00')));
     });
 
     test('deduplicates near-identical times', () {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/material.dart';
 
 import '../db/app_database.dart';
 import '../theme/app_themes.dart';
@@ -10,6 +11,8 @@ class SettingsRepository {
   final AppDatabase _db;
 
   SettingsRepository({required AppDatabase db}) : _db = db;
+
+  static const supportedLocales = [Locale('en'), Locale('nl')];
 
   /// Load the current theme preference from database.
   Future<AppTheme> loadTheme() async {
@@ -22,6 +25,7 @@ class SettingsRepository {
             AppSettingsCompanion(
               key: const Value('default'),
               theme: const Value('light'),
+              localeCode: const Value('en'),
               updatedAt: Value(DateTime.now().toUtc()),
             ),
           );
@@ -42,6 +46,35 @@ class SettingsRepository {
             updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+  }
+
+  /// Load UI locale (`en` / `nl` only). Defaults to English.
+  Future<Locale> loadLocale() async {
+    final rows = await _db.select(_db.appSettings).get();
+    if (rows.isEmpty) {
+      await loadTheme();
+      return const Locale('en');
+    }
+    return _localeFromCode(rows.first.localeCode);
+  }
+
+  /// Persist UI locale (`en` / `nl` only).
+  Future<void> saveLocale(Locale locale) async {
+    final code = locale.languageCode == 'nl' ? 'nl' : 'en';
+    await _db
+        .into(_db.appSettings)
+        .insertOnConflictUpdate(
+          AppSettingsCompanion(
+            key: const Value('default'),
+            localeCode: Value(code),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+  }
+
+  static Locale _localeFromCode(String? code) {
+    if (code == 'nl') return const Locale('nl');
+    return const Locale('en');
   }
 
   /// Stream theme changes (if needed for reactive updates).

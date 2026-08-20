@@ -161,7 +161,7 @@ class WebDavConfigRepository {
   Future<Uint8List> requirePersonalKey() async {
     final existing = await loadPersonalKeyBytes();
     if (existing == null) {
-      throw StateError('Geen kluis op dit apparaat');
+      throw StateError('No vault on this device');
     }
     return existing;
   }

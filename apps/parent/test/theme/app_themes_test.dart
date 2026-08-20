@@ -211,21 +211,23 @@ void main() {
   });
 
   group('Date formatting', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     test('formatDueDate returns today label', () {
       final today = DateTime.now();
-      final formatted = formatDueDate(today);
+      final formatted = formatDueDate(today, l10n);
       expect(formatted, isNotEmpty);
     });
 
     test('formatDueDate returns tomorrow label', () {
       final tomorrow = DateTime.now().add(const Duration(days: 1));
-      final formatted = formatDueDate(tomorrow);
+      final formatted = formatDueDate(tomorrow, l10n);
       expect(formatted, isNotEmpty);
     });
 
     test('formatDueDate returns yesterday label', () {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final formatted = formatDueDate(yesterday);
+      final formatted = formatDueDate(yesterday, l10n);
       expect(formatted, isNotEmpty);
     });
 
@@ -241,7 +243,7 @@ void main() {
 
     test('formatDueDate includes time when not allDay', () {
       final date = DateTime(2026, 4, 15, 14, 30);
-      final formatted = formatDueDate(date, allDay: false);
+      final formatted = formatDueDate(date, l10n, allDay: false);
       expect(formatted, isNotEmpty);
     });
   });

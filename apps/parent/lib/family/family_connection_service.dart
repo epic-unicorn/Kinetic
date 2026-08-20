@@ -1,5 +1,6 @@
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../settings/models/enrolled_kid.dart';
 
 enum FamilyMemberType { partner, kid }
@@ -22,11 +23,13 @@ class FamilyMemberStatus {
     this.lastSeen,
   });
 
-  String get statusLabel => FamilyConnectionService.formatStatus(
-    isConnected: isConnected,
-    isStale: isStale,
-    lastSeen: lastSeen,
-  );
+  String statusLabel(AppLocalizations l10n) =>
+      FamilyConnectionService.formatStatus(
+        isConnected: isConnected,
+        isStale: isStale,
+        lastSeen: lastSeen,
+        l10n: l10n,
+      );
 }
 
 /// Evaluates partner/kid connectivity from enrollment flags and presence data.
@@ -107,17 +110,22 @@ class FamilyConnectionService {
     required bool isConnected,
     required bool isStale,
     DateTime? lastSeen,
+    required AppLocalizations l10n,
   }) {
     if (!isConnected) {
-      if (lastSeen == null) return 'Niet verbonden';
-      return 'Niet verbonden sinds ${_formatLastSeen(DateTime.now(), lastSeen)}';
+      if (lastSeen == null) return l10n.connNotConnected;
+      return l10n.connNotConnectedSince(
+        _formatLastSeen(DateTime.now(), lastSeen, l10n),
+      );
     }
-    if (isStale && lastSeen == null) return 'Verbinding onbekend (geen sync)';
+    if (isStale && lastSeen == null) return l10n.connUnknownNoSync;
     if (isStale) {
-      return 'Verbinding verouderd (${_formatLastSeen(DateTime.now(), lastSeen!)})';
+      return l10n.connStale(_formatLastSeen(DateTime.now(), lastSeen!, l10n));
     }
-    if (lastSeen == null) return 'Verbonden';
-    return 'Verbonden (${_formatLastSeen(DateTime.now(), lastSeen)})';
+    if (lastSeen == null) return l10n.connConnected;
+    return l10n.connConnectedSince(
+      _formatLastSeen(DateTime.now(), lastSeen, l10n),
+    );
   }
 
   static (bool connected, bool stale) _evaluate(
@@ -135,12 +143,16 @@ class FamilyConnectionService {
     return (true, false);
   }
 
-  static String _formatLastSeen(DateTime now, DateTime lastSeen) {
+  static String _formatLastSeen(
+    DateTime now,
+    DateTime lastSeen,
+    AppLocalizations l10n,
+  ) {
     final diff = now.difference(lastSeen.toLocal());
-    if (diff.inMinutes < 1) return 'zojuist';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min geleden';
-    if (diff.inHours < 24) return '${diff.inHours} uur geleden';
-    if (diff.inDays < 7) return '${diff.inDays} dagen geleden';
-    return '${diff.inDays ~/ 7} weken geleden';
+    if (diff.inMinutes < 1) return l10n.relativeJustNow;
+    if (diff.inMinutes < 60) return l10n.relativeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.relativeHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.relativeDaysAgo(diff.inDays);
+    return l10n.relativeWeeksAgo(diff.inDays ~/ 7);
   }
 }

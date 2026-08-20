@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_themes.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 import '../../main.dart';
 import '../../settings/settings_repository.dart';
@@ -81,7 +83,7 @@ class _NotesScreenState extends State<NotesScreen>
     );
     if (context.mounted && result != null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Notitie opgeslagen')),
+        SnackBar(content: Text(AppLocalizations.of(context).notesSaved)),
       );
     }
   }
@@ -90,7 +92,7 @@ class _NotesScreenState extends State<NotesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: AppHeader(title: 'Notities', centerTitle: false),
+        title: AppHeader(title: AppLocalizations.of(context).notesTitle, centerTitle: false),
         centerTitle: false,
         actions: [
           if (widget.syncStatus != null)
@@ -107,7 +109,7 @@ class _NotesScreenState extends State<NotesScreen>
                 ),
                 SyncStatus.error => IconButton(
                   onPressed: widget.onSyncRetry,
-                  tooltip: 'Sync mislukt, tap om opnieuw te proberen.',
+                  tooltip: AppLocalizations.of(context).tasksSyncFailed,
                   icon: Icon(
                     Icons.sync_problem_outlined,
                     color: Theme.of(context).colorScheme.error,
@@ -115,7 +117,7 @@ class _NotesScreenState extends State<NotesScreen>
                 ),
                 SyncStatus.idle => IconButton(
                   onPressed: widget.onSyncRetry,
-                  tooltip: 'Synchroniseren',
+                  tooltip: AppLocalizations.of(context).tasksSyncing,
                   icon: const Icon(Icons.cloud_done_outlined),
                 ),
               },
@@ -128,9 +130,9 @@ class _NotesScreenState extends State<NotesScreen>
         bottom: widget.partnerPaired && _tabController != null
             ? TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Privé'),
-                  Tab(text: 'Gedeeld'),
+                tabs: [
+                  Tab(text: AppLocalizations.of(context).notesTabPrivate),
+                  Tab(text: AppLocalizations.of(context).notesTabShared),
                 ],
               )
             : null,
@@ -161,7 +163,7 @@ class _NotesScreenState extends State<NotesScreen>
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(initialIsShared: _onSharedTab),
-        tooltip: 'Nieuwe notitie',
+        tooltip: AppLocalizations.of(context).notesNewTooltip,
         child: const Icon(Icons.add),
       ),
     );
@@ -208,7 +210,7 @@ class _NotesTabBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Fout bij laden notities',
+                    AppLocalizations.of(context).notesLoadError,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
@@ -239,7 +241,7 @@ class _NotesTabBody extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isShared ? 'Geen gedeelde notities' : 'Geen privé notities',
+                  isShared ? AppLocalizations.of(context).notesEmptyShared : AppLocalizations.of(context).notesEmptyPrivate,
                   style: Theme.of(
                     context,
                   ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
@@ -247,8 +249,8 @@ class _NotesTabBody extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   isShared
-                      ? 'Notities gedeeld met je partner verschijnen hier'
-                      : 'Je privé notities verschijnen hier',
+                      ? AppLocalizations.of(context).notesEmptySharedHint
+                      : AppLocalizations.of(context).notesEmptyPrivateHint,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -373,7 +375,7 @@ class _NoteGroupedListState extends State<_NoteGroupedList> {
         if (item is _NoteHeaderItem) {
           return _NoteCategoryHeader(
             key: ValueKey('header_${item.category}'),
-            label: item.category ?? 'Geen categorie',
+            label: item.category ?? AppLocalizations.of(context).commonNoCategory,
             index: index,
           );
         }
@@ -558,7 +560,7 @@ class _NoteTile extends StatelessWidget {
                       children: [
                         if (note.remindAt != null)
                           Text(
-                            formatDueDate(note.remindAt!, allDay: false),
+                            formatDueDate(note.remindAt!, AppLocalizations.of(context), allDay: false),
                             style: tt.labelSmall?.copyWith(
                               color: reminderColor ?? metaColor,
                             ),
@@ -569,7 +571,7 @@ class _NoteTile extends StatelessWidget {
                           Text(' · ', style: TextStyle(color: metaColor)),
                         if (note.isShared && showSharedBadge)
                           Text(
-                            'Gedeeld',
+                            AppLocalizations.of(context).notesSharedBadge,
                             style: tt.labelSmall?.copyWith(color: kColorTeal),
                           ),
                       ],

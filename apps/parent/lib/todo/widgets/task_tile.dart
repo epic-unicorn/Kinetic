@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../theme/app_themes.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
@@ -262,9 +264,7 @@ class _TaskTileContentState extends State<_TaskTileContent> {
                         children: [
                           if (hasDate)
                             Text(
-                              formatDueDate(
-                                widget.task.dueDate!,
-                                allDay: widget.task.isAllDay,
+                              formatDueDate(widget.task.dueDate!, AppLocalizations.of(context), allDay: widget.task.isAllDay,
                               ),
                               style: tt.labelSmall?.copyWith(
                                 color: overdue
@@ -457,7 +457,7 @@ class _MissionBadge extends StatelessWidget {
           const Icon(Icons.bolt, size: 10, color: kColorGold),
           const SizedBox(width: 2),
           Text(
-            'Opdracht',
+            AppLocalizations.of(context).tasksAssignment,
             style: Theme.of(
               context,
             ).textTheme.labelSmall?.copyWith(color: kColorGold, fontSize: 10),

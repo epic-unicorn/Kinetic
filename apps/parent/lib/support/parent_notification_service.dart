@@ -14,8 +14,8 @@ import '../notifications/notification_service.dart';
 // ---------------------------------------------------------------------------
 
 const _kChannelId = 'task_reminders';
-const _kChannelName = 'Taakopdrachten';
-const _kChannelDesc = 'Herinneringen voor taken en opdrachten';
+const _kChannelName = 'Task reminders';
+const _kChannelDesc = 'Reminders for tasks and assignments';
 
 const _kNotifDetails = NotificationDetails(
   android: AndroidNotificationDetails(

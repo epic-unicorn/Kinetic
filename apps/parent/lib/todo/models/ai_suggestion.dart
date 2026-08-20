@@ -1,5 +1,7 @@
 import 'package:uuid/uuid.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
 /// Reason a suggestion was generated.
 enum SuggestionReason {
   habit,
@@ -11,13 +13,13 @@ enum SuggestionReason {
 }
 
 extension SuggestionReasonLabel on SuggestionReason {
-  String get label => switch (this) {
-    SuggestionReason.habit => 'Gewoonte',
-    SuggestionReason.partnerComplement => 'Partner-aanvulling',
-    SuggestionReason.seasonal => 'Seizoensgebonden',
-    SuggestionReason.loadBalance => 'Taakverdeling',
-    SuggestionReason.stale => 'Open taak',
-    SuggestionReason.calendar => 'Kalender',
+  String label(AppLocalizations l10n) => switch (this) {
+    SuggestionReason.habit => l10n.suggestReasonHabit,
+    SuggestionReason.partnerComplement => l10n.suggestReasonPartner,
+    SuggestionReason.seasonal => l10n.suggestReasonSeasonal,
+    SuggestionReason.loadBalance => l10n.suggestReasonLoadBalance,
+    SuggestionReason.stale => l10n.suggestReasonStale,
+    SuggestionReason.calendar => l10n.suggestReasonCalendar,
   };
 
   bool get isSelfTargeted =>

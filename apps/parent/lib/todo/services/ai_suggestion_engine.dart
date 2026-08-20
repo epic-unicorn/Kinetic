@@ -124,10 +124,10 @@ class AiSuggestionEngine {
             .toLocal(),
         reason: SuggestionReason.habit,
         explanation: times.length >= 2
-            ? 'Je deed "${original.title}" gemiddeld elke $median dagen. '
-                  'Laatste keer: $daysSince dagen geleden.'
-            : 'Je deed "${original.title}" $daysSince dagen geleden. '
-                  'Opnieuw inplannen?',
+            ? 'You did "${original.title}" about every $median days. '
+                  'Last time: $daysSince days ago.'
+            : 'You did "${original.title}" $daysSince days ago. '
+                  'Schedule again?',
       );
       await _suggestionRepo.upsertSuggestion(suggested);
     }
@@ -211,7 +211,7 @@ class AiSuggestionEngine {
         category: original.category.name,
         reason: SuggestionReason.seasonal,
         explanation:
-            'Je voltooide "${original.title}" in $monthName vorig jaar.',
+            'You completed "${original.title}" in $monthName last year.',
       );
       await _suggestionRepo.upsertSuggestion(suggested);
     }
@@ -263,7 +263,7 @@ class AiSuggestionEngine {
           suggestedDueDate: suggestedReminderAt(_now()),
           reason: SuggestionReason.stale,
           explanation:
-              '"${task.title}" staat al $ageDays dagen open zonder herinnering.',
+              '"${task.title}" has been open for $ageDays days without a reminder.',
         ),
       );
     }
@@ -303,8 +303,8 @@ class AiSuggestionEngine {
         category: entry.key,
         reason: SuggestionReason.loadBalance,
         explanation:
-            'Je hebt ${entry.value.length} open taken in '
-            '${categoryLabelNl(entry.key)}. Het voorstel is bewust algemeen.',
+            'You have ${entry.value.length} open tasks in '
+            '${categoryLabel(entry.key)}. The suggestion is intentionally generic.',
       );
       await _suggestionRepo.upsertSuggestion(suggested);
     }
@@ -351,17 +351,17 @@ class AiSuggestionEngine {
   }
 
   String _monthName(int month) => const [
-    'januari',
-    'februari',
-    'maart',
-    'april',
-    'mei',
-    'juni',
-    'juli',
-    'augustus',
-    'september',
-    'oktober',
-    'november',
-    'december',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ][month - 1];
 }

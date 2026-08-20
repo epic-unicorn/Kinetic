@@ -304,5 +304,382 @@
     }
   },
   "kidsEnrollWhatShared": "Wat wordt er gedeeld?",
-  "kidsEnrollWhatSharedBody": "Deze QR-code bevat de server, het account en de familiesleutel — niet het WebDAV-wachtwoord. Typ dat wachtwoord één keer op het kindertoestel. Deel de code alleen met de kinderenapp op een vertrouwd apparaat."
+  "kidsEnrollWhatSharedBody": "Deze QR-code bevat de server, het account en de familiesleutel — niet het WebDAV-wachtwoord. Typ dat wachtwoord één keer op het kindertoestel. Deel de code alleen met de kinderenapp op een vertrouwd apparaat.",
+
+  "settingsLanguage": "Taal",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageDutch": "Nederlands",
+  "settingsLanguageChoose": "Taal kiezen",
+
+  "commonAdd": "Toevoegen",
+  "commonSend": "Sturen",
+  "commonRetry": "Opnieuw proberen",
+  "commonDismiss": "Afwijzen",
+  "commonCloseAction": "Sluiten",
+  "commonExporting": "Exporteren…",
+  "commonImporting": "Importeren…",
+  "commonNone": "Geen",
+  "commonEveryone": "Iedereen",
+  "commonTitle": "Titel",
+  "commonNotes": "Notities",
+  "commonContent": "Inhoud",
+  "commonLow": "Laag",
+  "commonMedium": "Middel",
+  "commonHigh": "Hoog",
+  "commonPrivate": "Privé",
+  "commonShared": "Gedeeld",
+  "commonKids": "Kinderen",
+  "commonPartner": "Partner",
+  "commonReminder": "Herinnering",
+  "commonTime": "Tijd",
+  "commonCategory": "Categorie",
+  "commonPriority": "Prioriteit",
+  "commonNoCategory": "Geen categorie",
+  "commonSaveError": "Fout bij opslaan: {error}",
+  "@commonSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "commonDeleteError": "Fout bij verwijderen: {error}",
+  "@commonDeleteError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "relativeWeeksAgo": "{count} weken geleden",
+  "@relativeWeeksAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "dateToday": "Vandaag",
+  "dateTomorrow": "Morgen",
+  "dateYesterday": "Gisteren",
+  "dateDaysOverdue": "{count}d te laat",
+  "@dateDaysOverdue": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dateInDays": "Over {count} dagen",
+  "@dateInDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dateWeekdayMonday": "Maandag",
+  "dateWeekdayTuesday": "Dinsdag",
+  "dateWeekdayWednesday": "Woensdag",
+  "dateWeekdayThursday": "Donderdag",
+  "dateWeekdayFriday": "Vrijdag",
+  "dateWeekdaySaturday": "Zaterdag",
+  "dateWeekdaySunday": "Zondag",
+  "dateMonthJan": "jan",
+  "dateMonthFeb": "feb",
+  "dateMonthMar": "mrt",
+  "dateMonthApr": "apr",
+  "dateMonthMay": "mei",
+  "dateMonthJun": "jun",
+  "dateMonthJul": "jul",
+  "dateMonthAug": "aug",
+  "dateMonthSep": "sep",
+  "dateMonthOct": "okt",
+  "dateMonthNov": "nov",
+  "dateMonthDec": "dec",
+
+  "connNotConnected": "Niet verbonden",
+  "connNotConnectedSince": "Niet verbonden sinds {when}",
+  "@connNotConnectedSince": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "connUnknownNoSync": "Verbinding onbekend (geen sync)",
+  "connStale": "Verbinding verouderd ({when})",
+  "@connStale": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "connConnected": "Verbonden",
+  "connConnectedSince": "Verbonden ({when})",
+  "@connConnectedSince": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+
+  "notifChannelName": "Taakherinneringen",
+  "notifChannelDesc": "Herinneringen voor taken en opdrachten",
+  "notifReminderTitle": "Herinnering",
+
+  "backupNoVault": "Geen kluis op dit apparaat.",
+  "backupSaved": "Back-up opgeslagen: {path}",
+  "@backupSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "backupExportError": "Fout bij exporteren: {error}",
+  "@backupExportError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupVerifyTitle": "Herstelzin controleren",
+  "backupVerifyBody": "Vul je 12 woorden in. We tonen de zin niet; we controleren alleen of hij klopt.",
+  "backupVerifyOk": "De herstelzin klopt.",
+  "backupVerifyMismatch": "Deze herstelzin hoort niet bij deze kluis.",
+  "backupRevealTitle": "Herstelzin",
+  "backupRevealMissing": "We kunnen de woorden op dit apparaat niet opnieuw tonen. Gebruik je papieren kopie, of herstel de kluis met de 12 woorden.",
+  "backupImportTitle": "Back-up importeren",
+  "backupImportBody": "Vul de 12 woorden in van de kluis die in het .kvault-bestand zit. Dit vervangt je huidige taken en notities.",
+  "backupCouldNotReadFile": "Kon het bestand niet lezen.",
+  "backupRestored": "Back-up succesvol hersteld.",
+  "backupInvalidFile": "Ongeldig back-upbestand: {error}",
+  "@backupInvalidFile": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupImportError": "Fout bij importeren: {error}",
+  "@backupImportError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupRestoring": "Back-up herstellen…",
+
+  "webdavSetupTitle": "WebDAV instellen",
+  "webdavUrlRequired": "Vul de server-URL in",
+  "webdavUsernameRequired": "Vul de gebruikersnaam in",
+  "webdavPasswordRequired": "Vul het wachtwoord in",
+  "webdavTestConnection": "Verbinding testen",
+  "webdavTestingConnection": "Verbinding testen…",
+  "webdavConnectionOk": "Verbinding geslaagd",
+  "webdavTestFirst": "Test de verbinding eerst voordat je opslaat.",
+  "webdavCreateVaultFirst": "Maak eerst een kluis voordat je WebDAV koppelt.",
+  "webdavPhraseMismatchServer": "Op deze server staat al een kluis die niet bij jouw herstelzin past.",
+  "webdavConfigSaved": "WebDAV-configuratie opgeslagen.",
+  "webdavSaveError": "Fout bij opslaan: {error}",
+  "@webdavSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavMigrationTitle": "Bestaande gegevens gevonden",
+  "webdavMigrationIntro": "Op de WebDAV-server staan al versleutelde bestanden:",
+  "webdavMigrationTaskFiles": "{count, plural, =1{  • 1 taakbestand} other{  • {count} taakbestanden}}",
+  "@webdavMigrationTaskFiles": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavMigrationNoteFiles": "{count, plural, =1{  • 1 notitiebestand} other{  • {count} notitiebestanden}}",
+  "@webdavMigrationNoteFiles": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavMigrationChoose": "Deze bestanden zijn versleuteld met een kluis. Kies hoe je verder wilt gaan:",
+  "webdavMigrationCleanOption": "1. Schone installatie — verwijder de oude bestanden op de server en begin opnieuw.",
+  "webdavMigrationImportOption": "2. Back-up importeren — selecteer een .kvault-bestand. De herstelzin van deze kluis ontsleutelt het bestand.",
+  "webdavMigrationClean": "Schone installatie",
+  "webdavMigrationImport": "Back-up importeren",
+  "webdavBackupRestoredSync": "Back-up hersteld. De app synchroniseert nu met de server.",
+  "webdavRestoreError": "Fout bij herstellen van back-up: {error}",
+  "@webdavRestoreError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavMigrationCheckFailed": "Migratiecontrole mislukt: {error}",
+  "@webdavMigrationCheckFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavFilesDeleted": "{count} bestanden verwijderd.",
+  "@webdavFilesDeleted": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavCleanupError": "Fout bij opschonen: {error}",
+  "@webdavCleanupError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "tasksTitle": "Taken",
+  "tasksCompletedTooltip": "Voltooide taken",
+  "tasksTabPrivate": "Privé",
+  "tasksTabSuggestions": "Voorstellen",
+  "tasksTabKids": "Kinderen",
+  "tasksSyncFailed": "Sync mislukt, tap om opnieuw te proberen.",
+  "tasksSyncing": "Synchroniseren",
+  "tasksForYou": "Voor jou",
+  "tasksForPartner": "Voor partner",
+  "tasksFromPartner": "Van partner",
+  "tasksRefreshSuggestions": "Vernieuw voorstellen",
+  "tasksAddReminder": "Herinnering",
+  "tasksAddTask": "Toevoegen",
+  "tasksToPartner": "Naar partner",
+  "tasksNoPartnerSuggestions": "Geen partnervoorstellen",
+  "tasksNoPartnerSuggestionsHint": "Je partner heeft nog geen taken voorgesteld",
+  "tasksViaSuggestion": "Via suggestie",
+  "tasksReject": "Afwijzen",
+  "tasksAccept": "Accepteren",
+  "tasksProposalAccepted": "Voorstel geaccepteerd",
+  "tasksProposalRejected": "Voorstel afgewezen",
+  "tasksLoadProposalsError": "Fout bij laden van voorstellen",
+  "tasksXpResetTitle": "XP resetten voor {name}?",
+  "@tasksXpResetTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "tasksXpResetBody": "Dit stelt de XP-teller terug naar 0. De opdrachten blijven bewaard.",
+  "tasksXpResetAction": "Resetten",
+  "tasksXpResetDone": "XP gereset voor {name}",
+  "@tasksXpResetDone": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "tasksXpResetError": "Fout bij resetten: {error}",
+  "@tasksXpResetError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "tasksLoadKidsError": "Fout bij laden van kinderopdrachten",
+  "tasksNoKidsAssignments": "Geen kinderopdrachten",
+  "tasksNoKidsAssignmentsHint": "Stuur een taak naar de kinderenapp om hem hier te zien.",
+  "tasksResetXp": "Reset XP",
+  "tasksDoneOn": "Gedaan op {day}/{month}",
+  "@tasksDoneOn": {
+    "placeholders": {
+      "day": {"type": "int"},
+      "month": {"type": "int"}
+    }
+  },
+  "tasksCompletedTitle": "Voltooide taken",
+  "tasksDeleteAll": "Verwijder alles",
+  "tasksDeleteCompletedTitle": "Voltooide taken verwijderen",
+  "tasksDeleteCompletedBody": "Weet je zeker dat je alle voltooide taken wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "tasksEmptySuggestionsPartner": "Hier verschijnen suggesties van de slimme planner en voorstellen van je partner",
+  "tasksEmptySuggestionsSolo": "Hier verschijnen suggesties van de slimme planner op basis van je gewoonten",
+  "tasksNoSuggestions": "Geen voorstellen",
+  "tasksAllDone": "Alles klaar!",
+  "tasksNoOpenTasks": "Je hebt geen openstaande taken",
+  "tasksNoCompleted": "Geen voltooide taken",
+  "tasksNoCompletedHint": "Voltooide taken verschijnen hier",
+  "tasksAssignment": "Opdracht",
+
+  "taskDeleteTitle": "Taak verwijderen?",
+  "taskDeleteBody": "\"{title}\" wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+  "@taskDeleteBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "taskForwardTitle": "Taak doorsturen",
+  "taskAssignmentCreated": "Opdracht aangemaakt ✓",
+  "taskNoConnectedFamily": "Geen verbonden partner of kinderen",
+  "taskStaleConnectionTitle": "Verbinding verouderd",
+  "taskStalePartnerBody": "Je partner is voor het laatst gezien {status}. Toch sturen?",
+  "@taskStalePartnerBody": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "taskStaleKidBody": "{name} is voor het laatst gezien {status}. Toch sturen?",
+  "@taskStaleKidBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "taskSendAnyway": "Toch sturen",
+  "taskSendToPartnerTitle": "Stuur naar partner?",
+  "taskSendToPartnerBody": "\"{title}\" wordt als voorstel naar je partner gestuurd en verdwijnt uit jouw lijst zodra zij/hij het accepteert.",
+  "@taskSendToPartnerBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "taskSendToKidTitle": "Stuur naar {name}?",
+  "@taskSendToKidTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "taskSendToKidBody": "De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.",
+  "taskSendToKidLead": "\"{title}\" wordt als opdracht naar {name} gestuurd.",
+  "@taskSendToKidLead": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "taskXpReward": "XP beloning:",
+  "taskNameHint": "Taaknaam",
+  "taskAddTime": "Tijd toevoegen",
+  "taskAddCategory": "Categorie toevoegen",
+  "taskRepeat": "Herhalen",
+  "taskForward": "Doorsturen",
+  "taskRecurrenceNone": "Geen herhaling",
+  "taskRecurrenceDaily": "Dagelijks",
+  "taskRecurrenceWeekdays": "Werkdagen",
+  "taskRecurrenceWeekly": "Wekelijks",
+  "taskRecurrenceBiweekly": "Tweewekelijks",
+  "taskRecurrenceMonthly": "Maandelijks",
+
+  "notesTitle": "Notities",
+  "notesTabPrivate": "Privé",
+  "notesTabShared": "Gedeeld",
+  "notesNewTooltip": "Nieuwe notitie",
+  "notesLoadError": "Fout bij laden notities",
+  "notesEmptyShared": "Geen gedeelde notities",
+  "notesEmptyPrivate": "Geen privé notities",
+  "notesEmptySharedHint": "Notities gedeeld met je partner verschijnen hier",
+  "notesEmptyPrivateHint": "Je privé notities verschijnen hier",
+  "notesSaved": "Notitie opgeslagen",
+  "notesSharedBadge": "Gedeeld",
+  "notesTitleRequired": "Titel is verplicht",
+  "notesDeleteTitle": "Notitie verwijderen?",
+  "notesDeleteBody": "Je kunt dit niet ongedaan maken.",
+  "notesSharedWithPartner": "Gedeeld met partner",
+
+  "suggestWebDavRequired": "Koppel eerst WebDAV om een voorstel te sturen.",
+  "suggestPartnerSeesTitle": "Dit ziet je partner",
+  "suggestPartnerSeesGeneric": "Bewust algemeen — geen privé-titels of notities.",
+  "suggestPartnerSeesFull": "Titel en eventuele notities van deze suggestie gaan mee.",
+  "suggestSend": "Versturen",
+  "suggestSent": "Voorstel naar partner gestuurd",
+  "suggestSnoozeTitle": "Uitstellen",
+  "suggestSnoozeBody": "Suggestie 7 dagen uitstellen?",
+  "suggestSnoozeAction": "Uitstellen",
+  "suggestAdd": "Toevoegen",
+  "suggestReasonHabit": "Gewoonte",
+  "suggestReasonPartner": "Partner-aanvulling",
+  "suggestReasonSeasonal": "Seizoensgebonden",
+  "suggestReasonLoadBalance": "Taakverdeling",
+  "suggestReasonStale": "Open taak",
+  "suggestReasonCalendar": "Kalender",
+
+  "categoryTitle": "Categorie",
+  "categoryNewHint": "Nieuwe categorie",
+  "categoryNewAction": "Nieuwe categorie…",
+
+  "quickAddHint": "Nieuwe taak…",
+  "quickAddMoreOptions": "Meer opties",
+
+  "timeInvalid": "Voer een geldige tijd in (00:00 – 23:59).",
+  "timeOk": "OK"
 }

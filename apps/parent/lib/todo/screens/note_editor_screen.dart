@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 import '../../theme/app_theme.dart';
 import '../models/personal_note.dart';
@@ -57,7 +58,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     if (_titleCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Titel is verplicht')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).notesTitleRequired)));
       return;
     }
 
@@ -93,7 +94,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij opslaan: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).commonSaveError('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -146,16 +147,16 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Notitie verwijderen?'),
-        content: const Text('Je kunt dit niet ongedaan maken.'),
+        title: Text(AppLocalizations.of(context).notesDeleteTitle),
+        content: Text(AppLocalizations.of(context).notesDeleteBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verwijderen'),
+            child: Text(AppLocalizations.of(context).commonDelete),
           ),
         ],
       ),
@@ -168,7 +169,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij verwijderen: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).commonDeleteError('$e'))));
       }
     }
   }
@@ -228,7 +229,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               autofocus: widget.note == null,
               style: tt.titleLarge,
               decoration: InputDecoration(
-                hintText: 'Titel',
+                hintText: AppLocalizations.of(context).commonTitle,
                 hintStyle: tt.titleLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -244,7 +245,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
               controller: _bodyCtrl,
               style: tt.bodyMedium,
               decoration: InputDecoration(
-                hintText: 'Inhoud',
+                hintText: AppLocalizations.of(context).commonContent,
                 hintStyle: tt.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -258,7 +259,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           const Divider(height: 16),
           DetailMetaRow(
             icon: Icons.alarm_outlined,
-            label: 'Herinnering',
+            label: AppLocalizations.of(context).commonReminder,
             active: _remindAt != null,
             onTap: _pickReminder,
             titleWidget: _remindAt != null
@@ -277,7 +278,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           ),
           DetailMetaRow(
             icon: Icons.label_outline,
-            label: _category ?? 'Categorie toevoegen',
+            label: _category ?? AppLocalizations.of(context).taskAddCategory,
             active: _category != null,
             onTap: _pickCategory,
             trailing: _category != null
@@ -290,7 +291,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           if (widget.hasFamilyKey)
             DetailMetaRow(
               icon: Icons.people_outline,
-              label: 'Gedeeld met partner',
+              label: AppLocalizations.of(context).notesSharedWithPartner,
               active: _isShared,
               onTap: () => setState(() => _isShared = !_isShared),
               trailing: Switch(
@@ -307,18 +308,18 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     color: Theme.of(context).colorScheme.error,
-                    tooltip: 'Verwijderen',
+                    tooltip: AppLocalizations.of(context).commonDelete,
                     onPressed: _saving ? null : _confirmDelete,
                   ),
                 const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Annuleren'),
+                  child: Text(AppLocalizations.of(context).commonCancel),
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: Text(widget.note == null ? 'Toevoegen' : 'Opslaan'),
+                  child: Text(widget.note == null ? AppLocalizations.of(context).commonAdd : AppLocalizations.of(context).commonSave),
                 ),
               ],
             ),

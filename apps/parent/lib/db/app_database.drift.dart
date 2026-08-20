@@ -542,6 +542,9 @@ class $PersonalTasksTable extends PersonalTasks
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES personal_lists (id)',
+    ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -2469,6 +2472,9 @@ class $PersonalSubtasksTable extends PersonalSubtasks
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES personal_tasks (id)',
+    ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -3561,6 +3567,18 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('dark'),
   );
+  static const VerificationMeta _localeCodeMeta = const VerificationMeta(
+    'localeCode',
+  );
+  @override
+  late final GeneratedColumn<String> localeCode = GeneratedColumn<String>(
+    'locale_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('en'),
+  );
   static const VerificationMeta _taskCategoryOrderMeta = const VerificationMeta(
     'taskCategoryOrder',
   );
@@ -3622,6 +3640,7 @@ class $AppSettingsTable extends AppSettings
   List<GeneratedColumn> get $columns => [
     key,
     theme,
+    localeCode,
     taskCategoryOrder,
     noteCategoryOrder,
     lastSuggestionRunAt,
@@ -3650,6 +3669,12 @@ class $AppSettingsTable extends AppSettings
       context.handle(
         _themeMeta,
         theme.isAcceptableOrUnknown(data['theme']!, _themeMeta),
+      );
+    }
+    if (data.containsKey('locale_code')) {
+      context.handle(
+        _localeCodeMeta,
+        localeCode.isAcceptableOrUnknown(data['locale_code']!, _localeCodeMeta),
       );
     }
     if (data.containsKey('task_category_order')) {
@@ -3713,6 +3738,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}theme'],
       )!,
+      localeCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale_code'],
+      )!,
       taskCategoryOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}task_category_order'],
@@ -3745,6 +3774,7 @@ class $AppSettingsTable extends AppSettings
 class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   final String key;
   final String theme;
+  final String localeCode;
   final String? taskCategoryOrder;
   final String? noteCategoryOrder;
   final DateTime? lastSuggestionRunAt;
@@ -3753,6 +3783,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   const AppSettingsRow({
     required this.key,
     required this.theme,
+    required this.localeCode,
     this.taskCategoryOrder,
     this.noteCategoryOrder,
     this.lastSuggestionRunAt,
@@ -3764,6 +3795,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     final map = <String, Expression>{};
     map['key'] = Variable<String>(key);
     map['theme'] = Variable<String>(theme);
+    map['locale_code'] = Variable<String>(localeCode);
     if (!nullToAbsent || taskCategoryOrder != null) {
       map['task_category_order'] = Variable<String>(taskCategoryOrder);
     }
@@ -3786,6 +3818,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return AppSettingsCompanion(
       key: Value(key),
       theme: Value(theme),
+      localeCode: Value(localeCode),
       taskCategoryOrder: taskCategoryOrder == null && nullToAbsent
           ? const Value.absent()
           : Value(taskCategoryOrder),
@@ -3811,6 +3844,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return AppSettingsRow(
       key: serializer.fromJson<String>(json['key']),
       theme: serializer.fromJson<String>(json['theme']),
+      localeCode: serializer.fromJson<String>(json['localeCode']),
       taskCategoryOrder: serializer.fromJson<String?>(
         json['taskCategoryOrder'],
       ),
@@ -3832,6 +3866,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
       'theme': serializer.toJson<String>(theme),
+      'localeCode': serializer.toJson<String>(localeCode),
       'taskCategoryOrder': serializer.toJson<String?>(taskCategoryOrder),
       'noteCategoryOrder': serializer.toJson<String?>(noteCategoryOrder),
       'lastSuggestionRunAt': serializer.toJson<DateTime?>(lastSuggestionRunAt),
@@ -3845,6 +3880,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   AppSettingsRow copyWith({
     String? key,
     String? theme,
+    String? localeCode,
     Value<String?> taskCategoryOrder = const Value.absent(),
     Value<String?> noteCategoryOrder = const Value.absent(),
     Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
@@ -3853,6 +3889,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   }) => AppSettingsRow(
     key: key ?? this.key,
     theme: theme ?? this.theme,
+    localeCode: localeCode ?? this.localeCode,
     taskCategoryOrder: taskCategoryOrder.present
         ? taskCategoryOrder.value
         : this.taskCategoryOrder,
@@ -3871,6 +3908,9 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return AppSettingsRow(
       key: data.key.present ? data.key.value : this.key,
       theme: data.theme.present ? data.theme.value : this.theme,
+      localeCode: data.localeCode.present
+          ? data.localeCode.value
+          : this.localeCode,
       taskCategoryOrder: data.taskCategoryOrder.present
           ? data.taskCategoryOrder.value
           : this.taskCategoryOrder,
@@ -3892,6 +3932,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
     return (StringBuffer('AppSettingsRow(')
           ..write('key: $key, ')
           ..write('theme: $theme, ')
+          ..write('localeCode: $localeCode, ')
           ..write('taskCategoryOrder: $taskCategoryOrder, ')
           ..write('noteCategoryOrder: $noteCategoryOrder, ')
           ..write('lastSuggestionRunAt: $lastSuggestionRunAt, ')
@@ -3905,6 +3946,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
   int get hashCode => Object.hash(
     key,
     theme,
+    localeCode,
     taskCategoryOrder,
     noteCategoryOrder,
     lastSuggestionRunAt,
@@ -3917,6 +3959,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
       (other is AppSettingsRow &&
           other.key == this.key &&
           other.theme == this.theme &&
+          other.localeCode == this.localeCode &&
           other.taskCategoryOrder == this.taskCategoryOrder &&
           other.noteCategoryOrder == this.noteCategoryOrder &&
           other.lastSuggestionRunAt == this.lastSuggestionRunAt &&
@@ -3927,6 +3970,7 @@ class AppSettingsRow extends DataClass implements Insertable<AppSettingsRow> {
 class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   final Value<String> key;
   final Value<String> theme;
+  final Value<String> localeCode;
   final Value<String?> taskCategoryOrder;
   final Value<String?> noteCategoryOrder;
   final Value<DateTime?> lastSuggestionRunAt;
@@ -3936,6 +3980,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   const AppSettingsCompanion({
     this.key = const Value.absent(),
     this.theme = const Value.absent(),
+    this.localeCode = const Value.absent(),
     this.taskCategoryOrder = const Value.absent(),
     this.noteCategoryOrder = const Value.absent(),
     this.lastSuggestionRunAt = const Value.absent(),
@@ -3946,6 +3991,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   AppSettingsCompanion.insert({
     this.key = const Value.absent(),
     this.theme = const Value.absent(),
+    this.localeCode = const Value.absent(),
     this.taskCategoryOrder = const Value.absent(),
     this.noteCategoryOrder = const Value.absent(),
     this.lastSuggestionRunAt = const Value.absent(),
@@ -3956,6 +4002,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   static Insertable<AppSettingsRow> custom({
     Expression<String>? key,
     Expression<String>? theme,
+    Expression<String>? localeCode,
     Expression<String>? taskCategoryOrder,
     Expression<String>? noteCategoryOrder,
     Expression<DateTime>? lastSuggestionRunAt,
@@ -3966,6 +4013,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     return RawValuesInsertable({
       if (key != null) 'key': key,
       if (theme != null) 'theme': theme,
+      if (localeCode != null) 'locale_code': localeCode,
       if (taskCategoryOrder != null) 'task_category_order': taskCategoryOrder,
       if (noteCategoryOrder != null) 'note_category_order': noteCategoryOrder,
       if (lastSuggestionRunAt != null)
@@ -3980,6 +4028,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
   AppSettingsCompanion copyWith({
     Value<String>? key,
     Value<String>? theme,
+    Value<String>? localeCode,
     Value<String?>? taskCategoryOrder,
     Value<String?>? noteCategoryOrder,
     Value<DateTime?>? lastSuggestionRunAt,
@@ -3990,6 +4039,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     return AppSettingsCompanion(
       key: key ?? this.key,
       theme: theme ?? this.theme,
+      localeCode: localeCode ?? this.localeCode,
       taskCategoryOrder: taskCategoryOrder ?? this.taskCategoryOrder,
       noteCategoryOrder: noteCategoryOrder ?? this.noteCategoryOrder,
       lastSuggestionRunAt: lastSuggestionRunAt ?? this.lastSuggestionRunAt,
@@ -4008,6 +4058,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     }
     if (theme.present) {
       map['theme'] = Variable<String>(theme.value);
+    }
+    if (localeCode.present) {
+      map['locale_code'] = Variable<String>(localeCode.value);
     }
     if (taskCategoryOrder.present) {
       map['task_category_order'] = Variable<String>(taskCategoryOrder.value);
@@ -4039,6 +4092,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsRow> {
     return (StringBuffer('AppSettingsCompanion(')
           ..write('key: $key, ')
           ..write('theme: $theme, ')
+          ..write('localeCode: $localeCode, ')
           ..write('taskCategoryOrder: $taskCategoryOrder, ')
           ..write('noteCategoryOrder: $noteCategoryOrder, ')
           ..write('lastSuggestionRunAt: $lastSuggestionRunAt, ')
@@ -5136,6 +5190,34 @@ typedef $$PersonalListsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$PersonalListsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow> {
+  $$PersonalListsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$PersonalTasksTable, List<PersonalTaskRow>>
+  _personalTasksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.personalTasks,
+    aliasName: 'personal_lists__id__personal_tasks__list_id',
+  );
+
+  $$PersonalTasksTableProcessedTableManager get personalTasksRefs {
+    final manager = $$PersonalTasksTableTableManager(
+      $_db,
+      $_db.personalTasks,
+    ).filter((f) => f.listId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_personalTasksRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$PersonalListsTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalListsTable> {
   $$PersonalListsTableFilterComposer({
@@ -5184,6 +5266,31 @@ class $$PersonalListsTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> personalTasksRefs(
+    Expression<bool> Function($$PersonalTasksTableFilterComposer f) f,
+  ) {
+    final $$PersonalTasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.personalTasks,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalTasksTableFilterComposer(
+            $db: $db,
+            $table: $db.personalTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PersonalListsTableOrderingComposer
@@ -5274,6 +5381,31 @@ class $$PersonalListsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> personalTasksRefs<T extends Object>(
+    Expression<T> Function($$PersonalTasksTableAnnotationComposer a) f,
+  ) {
+    final $$PersonalTasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.personalTasks,
+      getReferencedColumn: (t) => t.listId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalTasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personalTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PersonalListsTableTableManager
@@ -5287,12 +5419,9 @@ class $$PersonalListsTableTableManager
           $$PersonalListsTableAnnotationComposer,
           $$PersonalListsTableCreateCompanionBuilder,
           $$PersonalListsTableUpdateCompanionBuilder,
-          (
-            PersonalListRow,
-            BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow>,
-          ),
+          (PersonalListRow, $$PersonalListsTableReferences),
           PersonalListRow,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool personalTasksRefs})
         > {
   $$PersonalListsTableTableManager(_$AppDatabase db, $PersonalListsTable table)
     : super(
@@ -5350,9 +5479,45 @@ class $$PersonalListsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PersonalListsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({personalTasksRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (personalTasksRefs) db.personalTasks,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (personalTasksRefs)
+                    await $_getPrefetchedData<
+                      PersonalListRow,
+                      $PersonalListsTable,
+                      PersonalTaskRow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PersonalListsTableReferences
+                          ._personalTasksRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$PersonalListsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).personalTasksRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.listId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -5367,12 +5532,9 @@ typedef $$PersonalListsTableProcessedTableManager =
       $$PersonalListsTableAnnotationComposer,
       $$PersonalListsTableCreateCompanionBuilder,
       $$PersonalListsTableUpdateCompanionBuilder,
-      (
-        PersonalListRow,
-        BaseReferences<_$AppDatabase, $PersonalListsTable, PersonalListRow>,
-      ),
+      (PersonalListRow, $$PersonalListsTableReferences),
       PersonalListRow,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool personalTasksRefs})
     >;
 typedef $$PersonalTasksTableCreateCompanionBuilder =
     PersonalTasksCompanion Function({
@@ -5429,6 +5591,53 @@ typedef $$PersonalTasksTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$PersonalTasksTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow> {
+  $$PersonalTasksTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PersonalListsTable _listIdTable(_$AppDatabase db) => db.personalLists
+      .createAlias('personal_tasks__list_id__personal_lists__id');
+
+  $$PersonalListsTableProcessedTableManager? get listId {
+    final $_column = $_itemColumn<String>('list_id');
+    if ($_column == null) return null;
+    final manager = $$PersonalListsTableTableManager(
+      $_db,
+      $_db.personalLists,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_listIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PersonalSubtasksTable, List<PersonalSubtaskRow>>
+  _personalSubtasksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.personalSubtasks,
+    aliasName: 'personal_tasks__id__personal_subtasks__task_id',
+  );
+
+  $$PersonalSubtasksTableProcessedTableManager get personalSubtasksRefs {
+    final manager = $$PersonalSubtasksTableTableManager(
+      $_db,
+      $_db.personalSubtasks,
+    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _personalSubtasksRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$PersonalTasksTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalTasksTable> {
   $$PersonalTasksTableFilterComposer({
@@ -5440,11 +5649,6 @@ class $$PersonalTasksTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get listId => $composableBuilder(
-    column: $table.listId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5552,6 +5756,54 @@ class $$PersonalTasksTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$PersonalListsTableFilterComposer get listId {
+    final $$PersonalListsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.personalLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalListsTableFilterComposer(
+            $db: $db,
+            $table: $db.personalLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> personalSubtasksRefs(
+    Expression<bool> Function($$PersonalSubtasksTableFilterComposer f) f,
+  ) {
+    final $$PersonalSubtasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.personalSubtasks,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalSubtasksTableFilterComposer(
+            $db: $db,
+            $table: $db.personalSubtasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PersonalTasksTableOrderingComposer
@@ -5565,11 +5817,6 @@ class $$PersonalTasksTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get listId => $composableBuilder(
-    column: $table.listId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5677,6 +5924,29 @@ class $$PersonalTasksTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$PersonalListsTableOrderingComposer get listId {
+    final $$PersonalListsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.personalLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalListsTableOrderingComposer(
+            $db: $db,
+            $table: $db.personalLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PersonalTasksTableAnnotationComposer
@@ -5690,9 +5960,6 @@ class $$PersonalTasksTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get listId =>
-      $composableBuilder(column: $table.listId, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -5770,6 +6037,54 @@ class $$PersonalTasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PersonalListsTableAnnotationComposer get listId {
+    final $$PersonalListsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.listId,
+      referencedTable: $db.personalLists,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalListsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personalLists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> personalSubtasksRefs<T extends Object>(
+    Expression<T> Function($$PersonalSubtasksTableAnnotationComposer a) f,
+  ) {
+    final $$PersonalSubtasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.personalSubtasks,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalSubtasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personalSubtasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PersonalTasksTableTableManager
@@ -5783,12 +6098,9 @@ class $$PersonalTasksTableTableManager
           $$PersonalTasksTableAnnotationComposer,
           $$PersonalTasksTableCreateCompanionBuilder,
           $$PersonalTasksTableUpdateCompanionBuilder,
-          (
-            PersonalTaskRow,
-            BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow>,
-          ),
+          (PersonalTaskRow, $$PersonalTasksTableReferences),
           PersonalTaskRow,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool listId, bool personalSubtasksRefs})
         > {
   $$PersonalTasksTableTableManager(_$AppDatabase db, $PersonalTasksTable table)
     : super(
@@ -5906,9 +6218,81 @@ class $$PersonalTasksTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PersonalTasksTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({listId = false, personalSubtasksRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (personalSubtasksRefs) db.personalSubtasks,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (listId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.listId,
+                                    referencedTable:
+                                        $$PersonalTasksTableReferences
+                                            ._listIdTable(db),
+                                    referencedColumn:
+                                        $$PersonalTasksTableReferences
+                                            ._listIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (personalSubtasksRefs)
+                        await $_getPrefetchedData<
+                          PersonalTaskRow,
+                          $PersonalTasksTable,
+                          PersonalSubtaskRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PersonalTasksTableReferences
+                              ._personalSubtasksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PersonalTasksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).personalSubtasksRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.taskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
         ),
       );
 }
@@ -5923,12 +6307,9 @@ typedef $$PersonalTasksTableProcessedTableManager =
       $$PersonalTasksTableAnnotationComposer,
       $$PersonalTasksTableCreateCompanionBuilder,
       $$PersonalTasksTableUpdateCompanionBuilder,
-      (
-        PersonalTaskRow,
-        BaseReferences<_$AppDatabase, $PersonalTasksTable, PersonalTaskRow>,
-      ),
+      (PersonalTaskRow, $$PersonalTasksTableReferences),
       PersonalTaskRow,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool listId, bool personalSubtasksRefs})
     >;
 typedef $$PersonalNotesTableCreateCompanionBuilder =
     PersonalNotesCompanion Function({
@@ -6265,6 +6646,37 @@ typedef $$PersonalSubtasksTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$PersonalSubtasksTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PersonalSubtasksTable,
+          PersonalSubtaskRow
+        > {
+  $$PersonalSubtasksTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PersonalTasksTable _taskIdTable(_$AppDatabase db) => db.personalTasks
+      .createAlias('personal_subtasks__task_id__personal_tasks__id');
+
+  $$PersonalTasksTableProcessedTableManager get taskId {
+    final $_column = $_itemColumn<String>('task_id')!;
+
+    final manager = $$PersonalTasksTableTableManager(
+      $_db,
+      $_db.personalTasks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$PersonalSubtasksTableFilterComposer
     extends Composer<_$AppDatabase, $PersonalSubtasksTable> {
   $$PersonalSubtasksTableFilterComposer({
@@ -6276,11 +6688,6 @@ class $$PersonalSubtasksTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get taskId => $composableBuilder(
-    column: $table.taskId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6298,6 +6705,29 @@ class $$PersonalSubtasksTableFilterComposer
     column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$PersonalTasksTableFilterComposer get taskId {
+    final $$PersonalTasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.personalTasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalTasksTableFilterComposer(
+            $db: $db,
+            $table: $db.personalTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PersonalSubtasksTableOrderingComposer
@@ -6311,11 +6741,6 @@ class $$PersonalSubtasksTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get taskId => $composableBuilder(
-    column: $table.taskId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6333,6 +6758,29 @@ class $$PersonalSubtasksTableOrderingComposer
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$PersonalTasksTableOrderingComposer get taskId {
+    final $$PersonalTasksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.personalTasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalTasksTableOrderingComposer(
+            $db: $db,
+            $table: $db.personalTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PersonalSubtasksTableAnnotationComposer
@@ -6347,9 +6795,6 @@ class $$PersonalSubtasksTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get taskId =>
-      $composableBuilder(column: $table.taskId, builder: (column) => column);
-
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
@@ -6360,6 +6805,29 @@ class $$PersonalSubtasksTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  $$PersonalTasksTableAnnotationComposer get taskId {
+    final $$PersonalTasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.personalTasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonalTasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personalTasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PersonalSubtasksTableTableManager
@@ -6373,16 +6841,9 @@ class $$PersonalSubtasksTableTableManager
           $$PersonalSubtasksTableAnnotationComposer,
           $$PersonalSubtasksTableCreateCompanionBuilder,
           $$PersonalSubtasksTableUpdateCompanionBuilder,
-          (
-            PersonalSubtaskRow,
-            BaseReferences<
-              _$AppDatabase,
-              $PersonalSubtasksTable,
-              PersonalSubtaskRow
-            >,
-          ),
+          (PersonalSubtaskRow, $$PersonalSubtasksTableReferences),
           PersonalSubtaskRow,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool taskId})
         > {
   $$PersonalSubtasksTableTableManager(
     _$AppDatabase db,
@@ -6430,9 +6891,56 @@ class $$PersonalSubtasksTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PersonalSubtasksTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({taskId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (taskId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.taskId,
+                                referencedTable:
+                                    $$PersonalSubtasksTableReferences
+                                        ._taskIdTable(db),
+                                referencedColumn:
+                                    $$PersonalSubtasksTableReferences
+                                        ._taskIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -6447,16 +6955,9 @@ typedef $$PersonalSubtasksTableProcessedTableManager =
       $$PersonalSubtasksTableAnnotationComposer,
       $$PersonalSubtasksTableCreateCompanionBuilder,
       $$PersonalSubtasksTableUpdateCompanionBuilder,
-      (
-        PersonalSubtaskRow,
-        BaseReferences<
-          _$AppDatabase,
-          $PersonalSubtasksTable,
-          PersonalSubtaskRow
-        >,
-      ),
+      (PersonalSubtaskRow, $$PersonalSubtasksTableReferences),
       PersonalSubtaskRow,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool taskId})
     >;
 typedef $$PartnerProposalsTableCreateCompanionBuilder =
     PartnerProposalsCompanion Function({
@@ -6817,6 +7318,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
     AppSettingsCompanion Function({
       Value<String> key,
       Value<String> theme,
+      Value<String> localeCode,
       Value<String?> taskCategoryOrder,
       Value<String?> noteCategoryOrder,
       Value<DateTime?> lastSuggestionRunAt,
@@ -6828,6 +7330,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
       Value<String> key,
       Value<String> theme,
+      Value<String> localeCode,
       Value<String?> taskCategoryOrder,
       Value<String?> noteCategoryOrder,
       Value<DateTime?> lastSuggestionRunAt,
@@ -6852,6 +7355,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get theme => $composableBuilder(
     column: $table.theme,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6900,6 +7408,11 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get taskCategoryOrder => $composableBuilder(
     column: $table.taskCategoryOrder,
     builder: (column) => ColumnOrderings(column),
@@ -6941,6 +7454,11 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get theme =>
       $composableBuilder(column: $table.theme, builder: (column) => column);
+
+  GeneratedColumn<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get taskCategoryOrder => $composableBuilder(
     column: $table.taskCategoryOrder,
@@ -7000,6 +7518,7 @@ class $$AppSettingsTableTableManager
               ({
                 Value<String> key = const Value.absent(),
                 Value<String> theme = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
                 Value<String?> taskCategoryOrder = const Value.absent(),
                 Value<String?> noteCategoryOrder = const Value.absent(),
                 Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
@@ -7010,6 +7529,7 @@ class $$AppSettingsTableTableManager
               }) => AppSettingsCompanion(
                 key: key,
                 theme: theme,
+                localeCode: localeCode,
                 taskCategoryOrder: taskCategoryOrder,
                 noteCategoryOrder: noteCategoryOrder,
                 lastSuggestionRunAt: lastSuggestionRunAt,
@@ -7021,6 +7541,7 @@ class $$AppSettingsTableTableManager
               ({
                 Value<String> key = const Value.absent(),
                 Value<String> theme = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
                 Value<String?> taskCategoryOrder = const Value.absent(),
                 Value<String?> noteCategoryOrder = const Value.absent(),
                 Value<DateTime?> lastSuggestionRunAt = const Value.absent(),
@@ -7031,6 +7552,7 @@ class $$AppSettingsTableTableManager
               }) => AppSettingsCompanion.insert(
                 key: key,
                 theme: theme,
+                localeCode: localeCode,
                 taskCategoryOrder: taskCategoryOrder,
                 noteCategoryOrder: noteCategoryOrder,
                 lastSuggestionRunAt: lastSuggestionRunAt,

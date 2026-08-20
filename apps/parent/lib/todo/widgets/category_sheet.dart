@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +10,7 @@ import '../../theme/app_theme.dart';
 //
 // Returns:
 //   null       → dismissed (no change)
-//   ''         → user chose "Geen categorie" (clear / uncategorised)
+//   ''         → user chose "No category" (clear / uncategorised)
 //   non-empty  → selected or newly-created category label
 // ---------------------------------------------------------------------------
 
@@ -62,6 +63,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -73,7 +75,6 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Header ─────────────────────────────────────────────────────────
           const SizedBox(height: 8),
           Center(
             child: Container(
@@ -88,21 +89,17 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text('Categorie', style: tt.titleMedium),
+            child: Text(l10n.categoryTitle, style: tt.titleMedium),
           ),
           const SizedBox(height: 4),
-
-          // ── "Geen categorie" ────────────────────────────────────────────────
           ListTile(
             leading: const Icon(Icons.label_off_outlined),
-            title: const Text('Geen categorie'),
+            title: Text(l10n.commonNoCategory),
             trailing: widget.currentCategory == null
                 ? Icon(Icons.check, color: kColorTeal)
                 : null,
             onTap: () => _submit(''),
           ),
-
-          // ── Existing categories ─────────────────────────────────────────────
           for (final cat in widget.existingCategories)
             ListTile(
               leading: const Icon(Icons.label_outline),
@@ -112,10 +109,7 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                   : null,
               onTap: () => _submit(cat),
             ),
-
           const Divider(height: 8),
-
-          // ── New category ────────────────────────────────────────────────────
           if (_showNewField)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -126,8 +120,8 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
                       controller: _newCategoryCtrl,
                       autofocus: true,
                       textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
-                        hintText: 'Nieuwe categorie',
+                      decoration: InputDecoration(
+                        hintText: l10n.categoryNewHint,
                         isDense: true,
                       ),
                       onSubmitted: (_) => _addNew(),
@@ -145,10 +139,9 @@ class _CategoryPickerSheetState extends State<_CategoryPickerSheet> {
           else
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('Nieuwe categorie…'),
+              title: Text(l10n.categoryNewAction),
               onTap: () => setState(() => _showNewField = true),
             ),
-
           const SizedBox(height: 8),
         ],
       ),
