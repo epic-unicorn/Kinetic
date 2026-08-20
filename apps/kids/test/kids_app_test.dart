@@ -1,9 +1,32 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kids/l10n/generated/app_localizations.dart';
 import 'package:kids/main.dart';
 import 'package:kids/notifications/kids_notification_service.dart';
 import 'package:kids/task/screens/kids_home_screen.dart';
 import 'helpers/test_database.dart';
+
+Widget _wrapHome(Widget home) {
+  return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('en'),
+    home: home,
+    theme: ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFF97316),
+        brightness: Brightness.dark,
+      ),
+    ),
+  );
+}
 
 void main() {
   group('KineticKidsApp', () {
@@ -45,19 +68,7 @@ void main() {
     testWidgets('renders home screen', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: KidsHomeScreen(appDb: appDb),
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFF97316),
-                brightness: Brightness.dark,
-              ),
-            ),
-          ),
-        );
-
+        await tester.pumpWidget(_wrapHome(KidsHomeScreen(appDb: appDb)));
         expect(find.byType(KidsHomeScreen), findsOneWidget);
       } finally {
         await appDb.close();
@@ -67,18 +78,7 @@ void main() {
     testWidgets('home screen has app bar', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: KidsHomeScreen(appDb: appDb),
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFE7BB41),
-              ),
-            ),
-          ),
-        );
-
+        await tester.pumpWidget(_wrapHome(KidsHomeScreen(appDb: appDb)));
         expect(find.byType(AppBar), findsOneWidget);
       } finally {
         await appDb.close();
@@ -88,19 +88,8 @@ void main() {
     testWidgets('home screen displays title', (WidgetTester tester) async {
       final appDb = createTestDatabase();
       try {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: KidsHomeScreen(appDb: appDb),
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFE7BB41),
-              ),
-            ),
-          ),
-        );
-
-        expect(find.byType(Text), findsWidgets);
+        await tester.pumpWidget(_wrapHome(KidsHomeScreen(appDb: appDb)));
+        expect(find.text('My Tasks'), findsOneWidget);
       } finally {
         await appDb.close();
       }
