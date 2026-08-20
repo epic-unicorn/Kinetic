@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:kinetic_qr_scanner/kinetic_qr_scanner.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../sync/webdav_config_repository.dart';
 
@@ -34,29 +34,15 @@ class KidsEnrollmentScreen extends StatefulWidget {
 }
 
 class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
-  final MobileScannerController _scanner = MobileScannerController();
   bool _processing = false;
 
-  @override
-  void dispose() {
-    _scanner.dispose();
-    super.dispose();
-  }
-
-  void _onDetect(BarcodeCapture capture) {
+  void _onDetect(String raw) {
     if (_processing) return;
-    for (final barcode in capture.barcodes) {
-      final raw = barcode.rawValue;
-      if (raw != null) {
-        _handlePayload(raw);
-        return;
-      }
-    }
+    _handlePayload(raw);
   }
 
   Future<void> _handlePayload(String raw) async {
     setState(() => _processing = true);
-    await _scanner.stop();
 
     try {
       final data = KineticEncryption.importKidsEnrollmentQrPayload(raw);
@@ -65,10 +51,7 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
     } on FormatException catch (e) {
       if (!mounted) return;
       _showError('Ongeldige QR-code: $e');
-      if (mounted) {
-        await _scanner.start();
-        setState(() => _processing = false);
-      }
+      if (mounted) setState(() => _processing = false);
     }
   }
 
@@ -89,7 +72,6 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
     );
 
     if (password == null || !mounted) {
-      await _scanner.start();
       setState(() => _processing = false);
       return;
     }
@@ -129,17 +111,9 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
           Expanded(
             child: Stack(
               children: [
-                MobileScanner(controller: _scanner, onDetect: _onDetect),
-                // Overlay with scan area indicator
-                Center(
-                  child: Container(
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white70, width: 2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                KineticQrScanView(
+                  enabled: !_processing,
+                  onDetect: _onDetect,
                 ),
                 if (_processing)
                   Container(

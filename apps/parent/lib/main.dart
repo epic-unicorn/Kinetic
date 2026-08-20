@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
@@ -213,7 +214,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
       syncStatus.value = SyncStatus.idle;
       _syncDoneCount.value++;
     } catch (e) {
-      print('Sync error: $e');
+      if (kDebugMode) debugPrint('Sync error: $e');
       syncStatus.value = SyncStatus.error;
     }
   }

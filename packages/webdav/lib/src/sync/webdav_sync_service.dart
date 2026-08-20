@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
+
 import '../encryption/kinetic_encryption.dart';
 import '../ical/ical_note.dart';
 import '../ical/ical_serializer.dart';
@@ -90,11 +92,13 @@ class WebDavSyncService {
     final notes = <ICalNote>[];
     // Personal notes
     final personalEntries = await _listIcsFiles(_personalNotesPath);
-    print('Found ${personalEntries.length} personal note files');
+    if (kDebugMode) {
+      debugPrint('Found ${personalEntries.length} personal note files');
+    }
     for (final entry in personalEntries) {
       try {
         final href = _relativizeHref(entry.href);
-        print('Attempting to GET personal note: $href');
+        if (kDebugMode) debugPrint('Attempting to GET personal note: $href');
         final blob = await client.get(href);
         final plain =
             await KineticEncryption.decrypt(blob, config.personalKeyBytes);
@@ -102,14 +106,21 @@ class WebDavSyncService {
       } on WebDavException catch (e) {
         // Skip 404s — file may have been deleted or PROPFIND returned stale entry
         if (e.message.contains('404')) {
-          print('Personal note file not found (may be stale): ${entry.href}');
+          if (kDebugMode) {
+            debugPrint(
+              'Personal note file not found (may be stale): ${entry.href}',
+            );
+          }
           continue;
         }
-        // Log other decryption failures for debugging, but continue
-        print('Error decrypting personal note from ${entry.href}: $e');
+        if (kDebugMode) {
+          debugPrint('Error decrypting personal note from ${entry.href}: $e');
+        }
         continue;
       } catch (e) {
-        print('Error decrypting personal note from ${entry.href}: $e');
+        if (kDebugMode) {
+          debugPrint('Error decrypting personal note from ${entry.href}: $e');
+        }
         continue;
       }
     }
@@ -117,30 +128,39 @@ class WebDavSyncService {
     final familyKey = config.familyKeyBytes;
     if (familyKey != null) {
       final sharedEntries = await _listIcsFiles(_sharedNotesPath);
-      print('Found ${sharedEntries.length} shared note files');
+      if (kDebugMode) {
+        debugPrint('Found ${sharedEntries.length} shared note files');
+      }
       for (final entry in sharedEntries) {
         try {
           final href = _relativizeHref(entry.href);
-          print('Attempting to GET shared note: $href');
+          if (kDebugMode) debugPrint('Attempting to GET shared note: $href');
           final blob = await client.get(href);
           final plain = await KineticEncryption.decrypt(blob, familyKey);
           notes.add(ICalSerializer.vjournalToNote(utf8.decode(plain)));
         } on WebDavException catch (e) {
           // Skip 404s — file may have been deleted or PROPFIND returned stale entry
           if (e.message.contains('404')) {
-            print('Shared note file not found (may be stale): ${entry.href}');
+            if (kDebugMode) {
+              debugPrint(
+                'Shared note file not found (may be stale): ${entry.href}',
+              );
+            }
             continue;
           }
-          // Log other decryption failures for debugging, but continue
-          print('Error decrypting shared note from ${entry.href}: $e');
+          if (kDebugMode) {
+            debugPrint('Error decrypting shared note from ${entry.href}: $e');
+          }
           continue;
         } catch (e) {
-          print('Error decrypting shared note from ${entry.href}: $e');
+          if (kDebugMode) {
+            debugPrint('Error decrypting shared note from ${entry.href}: $e');
+          }
           continue;
         }
       }
     } else {
-      print('No family key available, skipping shared notes');
+      if (kDebugMode) debugPrint('No family key available, skipping shared notes');
     }
     return notes;
   }

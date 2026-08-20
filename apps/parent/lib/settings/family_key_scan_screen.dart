@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:kinetic_qr_scanner/kinetic_qr_scanner.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
@@ -31,30 +31,15 @@ class FamilyKeyScanScreen extends StatefulWidget {
 }
 
 class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
-  final MobileScannerController _controller = MobileScannerController();
-
   bool _processing = false;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onDetect(BarcodeCapture capture) {
+  void _onDetect(String raw) {
     if (_processing) return;
-    for (final barcode in capture.barcodes) {
-      final raw = barcode.rawValue;
-      if (raw != null) {
-        _handlePayload(raw);
-        return;
-      }
-    }
+    _handlePayload(raw);
   }
 
   Future<void> _handlePayload(String raw) async {
     setState(() => _processing = true);
-    await _controller.stop();
 
     try {
       final payload = await KineticVault.importFamilyQrPayload(raw);
@@ -63,11 +48,7 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     } on FormatException catch (e) {
       if (!mounted) return;
       await _showErrorDialog('Ongeldige QR-code: $e');
-      // Resume scanning after error
-      if (mounted) {
-        await _controller.start();
-        setState(() => _processing = false);
-      }
+      if (mounted) setState(() => _processing = false);
     }
   }
 
@@ -77,7 +58,8 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
       Uint8List? entropy,
       String serverUrl,
       String username,
-    }) payload,
+    })
+    payload,
   ) async {
     final currentUrl = _normalizeUrl(widget.currentConfig.serverUrl);
     final scannedUrl = _normalizeUrl(payload.serverUrl);
@@ -210,8 +192,6 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     if (confirmed == true) {
       await _importKey(payload.familyKey, entropy: payload.entropy);
     } else {
-      // User cancelled — resume scanning
-      await _controller.start();
       setState(() => _processing = false);
     }
   }
@@ -219,7 +199,6 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
   Future<void> _importFromPhrase() async {
     if (_processing) return;
     setState(() => _processing = true);
-    await _controller.stop();
     final ctrl = TextEditingController();
     final phrase = await showDialog<String>(
       context: context,
@@ -250,7 +229,6 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     ctrl.dispose();
     if (!mounted) return;
     if (phrase == null || phrase.trim().isEmpty) {
-      await _controller.start();
       setState(() => _processing = false);
       return;
     }
@@ -267,7 +245,6 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     } catch (e) {
       if (!mounted) return;
       await _showErrorDialog('$e');
-      await _controller.start();
       setState(() => _processing = false);
     }
   }
@@ -279,11 +256,10 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Familiesleutel opgeslagen.')),
       );
-      Navigator.of(context).pop(true); // signal success to caller
+      Navigator.of(context).pop(true);
     } on Exception catch (e) {
       if (!mounted) return;
       await _showErrorDialog('Fout bij opslaan: $e');
-      await _controller.start();
       setState(() => _processing = false);
     }
   }
@@ -304,11 +280,11 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
     );
   }
 
-  /// Normalises a URL for comparison: lowercase scheme + host, strip trailing slash.
   static String _normalizeUrl(String url) {
     final uri = Uri.tryParse(url.trim());
-    if (uri == null)
+    if (uri == null) {
       return url.trim().toLowerCase().replaceAll(RegExp(r'/+$'), '');
+    }
     final normalized = Uri(
       scheme: uri.scheme.toLowerCase(),
       host: uri.host.toLowerCase(),
@@ -320,8 +296,6 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Familiesleutel scannen'),
@@ -335,77 +309,24 @@ class _FamilyKeyScanScreenState extends State<FamilyKeyScanScreen> {
       ),
       body: Stack(
         children: [
-          // Camera view
-          MobileScanner(controller: _controller, onDetect: _onDetect),
-
-          // Scan overlay
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 260,
-                  height: 260,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: kColorTeal, width: 3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(150),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Richt op de QR-code van je partner',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
+          KineticQrScanView(
+            enabled: !_processing,
+            onDetect: _onDetect,
+            hint: 'Richt op de QR-code van je partner',
+            frameColor: kColorTeal,
+            frameSize: 260,
+            showTorch: true,
           ),
-
-          // Processing indicator
           if (_processing)
             Container(
               color: Colors.black.withAlpha(120),
               child: const Center(child: CircularProgressIndicator()),
             ),
-
-          // Torch toggle
-          Positioned(
-            bottom: 40,
-            right: 24,
-            child: FloatingActionButton.small(
-              backgroundColor: scheme.surfaceContainerHighest,
-              onPressed: () => _controller.toggleTorch(),
-              child: ValueListenableBuilder(
-                valueListenable: _controller,
-                builder: (ctx, state, _) => Icon(
-                  state.torchState == TorchState.on
-                      ? Icons.flashlight_off
-                      : Icons.flashlight_on,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Helper widget
-// ---------------------------------------------------------------------------
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
