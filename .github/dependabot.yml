@@ -1,0 +1,53 @@
+# Keep GitHub Actions and Pub dependencies current.
+# Dependabot alerts / security updates are enabled at the repository level.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - pub
+
+  - package-ecosystem: pub
+    directory: /apps/parent
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - pub
+
+  - package-ecosystem: pub
+    directory: /apps/kids
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - pub
+
+  - package-ecosystem: pub
+    directory: /packages/webdav
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - pub
