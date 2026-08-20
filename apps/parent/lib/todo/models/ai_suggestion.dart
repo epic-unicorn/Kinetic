@@ -1,7 +1,35 @@
 import 'package:uuid/uuid.dart';
 
 /// Reason a suggestion was generated.
-enum SuggestionReason { habit, partnerComplement, seasonal, loadBalance }
+enum SuggestionReason {
+  habit,
+  partnerComplement,
+  seasonal,
+  loadBalance,
+  stale,
+  calendar,
+}
+
+extension SuggestionReasonLabel on SuggestionReason {
+  String get label => switch (this) {
+    SuggestionReason.habit => 'Gewoonte',
+    SuggestionReason.partnerComplement => 'Partner-aanvulling',
+    SuggestionReason.seasonal => 'Seizoensgebonden',
+    SuggestionReason.loadBalance => 'Taakverdeling',
+    SuggestionReason.stale => 'Open taak',
+    SuggestionReason.calendar => 'Kalender',
+  };
+
+  bool get isSelfTargeted =>
+      this == SuggestionReason.habit ||
+      this == SuggestionReason.seasonal ||
+      this == SuggestionReason.stale ||
+      this == SuggestionReason.calendar;
+
+  bool get isPartnerTargeted =>
+      this == SuggestionReason.partnerComplement ||
+      this == SuggestionReason.loadBalance;
+}
 
 /// Lifecycle state of a suggestion.
 enum SuggestionStatus { pending, accepted, dismissed, snoozed }
@@ -35,9 +63,7 @@ class AiSuggestion {
     required this.updatedAt,
   });
 
-  bool get isPartnerTargeted =>
-      reason == SuggestionReason.partnerComplement ||
-      reason == SuggestionReason.loadBalance;
+  bool get isPartnerTargeted => reason.isPartnerTargeted;
 
   static AiSuggestion create({
     required String title,

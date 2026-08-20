@@ -63,7 +63,10 @@ class _NotesScreenState extends State<NotesScreen>
     super.dispose();
   }
 
-  Future<void> _openEditor({PersonalNote? note, bool initialIsShared = false}) async {
+  Future<void> _openEditor({
+    PersonalNote? note,
+    bool initialIsShared = false,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
     final result = await showModalBottomSheet<PersonalNote?>(
       context: context,
@@ -514,54 +517,67 @@ class _NoteTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final preview = note.body.trim();
+    final scheme = Theme.of(context).colorScheme;
     final reminderPassed = note.remindAt != null && isOverdue(note.remindAt!);
     final reminderColor = reminderPassed ? Colors.redAccent : null;
-    final metaColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    final metaColor = scheme.onSurfaceVariant;
+    final showMeta =
+        note.remindAt != null || (note.isShared && showSharedBadge);
 
     return InkWell(
       onTap: onTap,
       onLongPress: () => _pickCategory(context),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(note.title, style: tt.bodyLarge),
-            if (preview.isNotEmpty ||
-                note.remindAt != null ||
-                (note.isShared && showSharedBadge)) ...[
-              const SizedBox(height: 3),
-              Row(
+            Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.only(top: 1, right: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: scheme.outlineVariant, width: 2),
+                color: scheme.surfaceContainerHighest.withAlpha(80),
+              ),
+              child: Icon(
+                Icons.sticky_note_2_outlined,
+                size: 14,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (note.remindAt != null) ...[
-                    Text(
-                      formatDueDate(note.remindAt!, allDay: false),
-                      style: tt.labelSmall?.copyWith(color: reminderColor ?? metaColor),
-                    ),
-                  ],
-                  if (note.remindAt != null && preview.isNotEmpty)
-                    Text(' · ', style: TextStyle(color: metaColor)),
-                  if (preview.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        preview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.labelSmall?.copyWith(color: metaColor),
-                      ),
-                    ),
-                  if (note.isShared && showSharedBadge) ...[
-                    if (note.remindAt != null || preview.isNotEmpty)
-                      Text(' · ', style: TextStyle(color: metaColor)),
-                    Text(
-                      'Gedeeld',
-                      style: tt.labelSmall?.copyWith(color: kColorTeal),
+                  Text(note.title, style: tt.bodyLarge),
+                  if (showMeta) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        if (note.remindAt != null)
+                          Text(
+                            formatDueDate(note.remindAt!, allDay: false),
+                            style: tt.labelSmall?.copyWith(
+                              color: reminderColor ?? metaColor,
+                            ),
+                          ),
+                        if (note.remindAt != null &&
+                            note.isShared &&
+                            showSharedBadge)
+                          Text(' · ', style: TextStyle(color: metaColor)),
+                        if (note.isShared && showSharedBadge)
+                          Text(
+                            'Gedeeld',
+                            style: tt.labelSmall?.copyWith(color: kColorTeal),
+                          ),
+                      ],
                     ),
                   ],
                 ],
               ),
-            ],
+            ),
           ],
         ),
       ),

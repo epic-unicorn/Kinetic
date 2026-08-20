@@ -176,10 +176,7 @@ class FullBackupService {
         // 3a. Theme.
         final themeName = settings['theme'] as String?;
         if (themeName != null && settingsRepo != null) {
-          final theme = AppTheme.values.firstWhere(
-            (t) => t.name == themeName,
-            orElse: () => AppTheme.light,
-          );
+          final theme = appThemeFromName(themeName);
           await settingsRepo.saveTheme(theme);
           onThemeRestored?.call(theme);
         }

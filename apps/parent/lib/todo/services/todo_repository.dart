@@ -282,6 +282,28 @@ class TodoRepository {
     onWrite?.call();
   }
 
+  /// Sets a due date + reminder on the first open task whose title matches
+  /// [title]. Returns false when no matching open task exists.
+  Future<bool> applyReminderToOpenTask({
+    required String title,
+    required DateTime dueDate,
+  }) async {
+    final open = await watchOpenTasks().first;
+    final needle = title.trim().toLowerCase();
+    PersonalTask? match;
+    for (final t in open) {
+      if (t.title.trim().toLowerCase() == needle) {
+        match = t;
+        break;
+      }
+    }
+    if (match == null) return false;
+    await updateTask(
+      match.copyWith(dueDate: dueDate, isAllDay: false, remindAt: dueDate),
+    );
+    return true;
+  }
+
   Future<void> completeTask(String taskId) async {
     // Check if the task has a recurrence rule — if so, advance due date instead.
     final row = await (_db.select(
