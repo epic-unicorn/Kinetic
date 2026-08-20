@@ -1,6 +1,5 @@
 import java.util.Properties
 import java.io.FileInputStream
-import java.io.File
 
 plugins {
     id("com.android.application")
@@ -16,17 +15,18 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-val keyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
-val keyPassword = keystoreProperties.getProperty("keyPassword").orEmpty()
-val storePassword = keystoreProperties.getProperty("storePassword").orEmpty()
-val storeFilePath = keystoreProperties.getProperty("storeFile").orEmpty()
-val storeFile = if (storeFilePath.isNotEmpty()) rootProject.file(storeFilePath) else null
+val releaseKeyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
+val releaseKeyPassword = keystoreProperties.getProperty("keyPassword").orEmpty()
+val releaseStorePassword = keystoreProperties.getProperty("storePassword").orEmpty()
+val releaseStoreFilePath = keystoreProperties.getProperty("storeFile").orEmpty()
+val releaseStoreFile =
+    if (releaseStoreFilePath.isNotEmpty()) rootProject.file(releaseStoreFilePath) else null
 val hasReleaseKeystore =
-    keyAlias.isNotEmpty() &&
-        keyPassword.isNotEmpty() &&
-        storePassword.isNotEmpty() &&
-        storeFile != null &&
-        storeFile.isFile
+    releaseKeyAlias.isNotEmpty() &&
+        releaseKeyPassword.isNotEmpty() &&
+        releaseStorePassword.isNotEmpty() &&
+        releaseStoreFile != null &&
+        releaseStoreFile.isFile
 
 android {
     namespace = "net.moonbaseone.kinetic.kids"
@@ -57,10 +57,10 @@ android {
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
-                this.storeFile = storeFile
-                this.storePassword = storePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeFile = releaseStoreFile
+                storePassword = releaseStorePassword
             }
         }
     }
