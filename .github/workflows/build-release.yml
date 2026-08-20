@@ -30,7 +30,7 @@ jobs:
     if: "!endsWith(github.ref_name, '-kids') && !endsWith(github.ref_name, '-parent')"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -39,7 +39,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -132,7 +132,7 @@ jobs:
     if: "!endsWith(github.ref_name, '-kids') && !endsWith(github.ref_name, '-parent')"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -141,7 +141,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -237,7 +237,7 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract version from tag
         id: version
@@ -252,13 +252,13 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download kids app
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: kids-app-release
           path: ./artifacts/kids
 
       - name: Download parent app
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: parent-app-release
           path: ./artifacts/parent
