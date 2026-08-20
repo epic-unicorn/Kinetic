@@ -252,13 +252,13 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download kids app
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: kids-app-release
           path: ./artifacts/kids
 
       - name: Download parent app
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: parent-app-release
           path: ./artifacts/parent
