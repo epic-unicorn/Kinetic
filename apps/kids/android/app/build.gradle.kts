@@ -1,6 +1,5 @@
 import java.util.Properties
 import java.io.FileInputStream
-import java.io.File
 
 plugins {
     id("com.android.application")
@@ -9,12 +8,25 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Load key.properties for signing configuration
+// Load key.properties for signing configuration (optional in CI/Dependabot).
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+val releaseKeyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
+val releaseKeyPassword = keystoreProperties.getProperty("keyPassword").orEmpty()
+val releaseStorePassword = keystoreProperties.getProperty("storePassword").orEmpty()
+val releaseStoreFilePath = keystoreProperties.getProperty("storeFile").orEmpty()
+val releaseStoreFile =
+    if (releaseStoreFilePath.isNotEmpty()) rootProject.file(releaseStoreFilePath) else null
+val hasReleaseKeystore =
+    releaseKeyAlias.isNotEmpty() &&
+        releaseKeyPassword.isNotEmpty() &&
+        releaseStorePassword.isNotEmpty() &&
+        releaseStoreFile != null &&
+        releaseStoreFile.isFile
 
 android {
     namespace = "net.moonbaseone.kinetic.kids"
@@ -43,17 +55,23 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias", "")
-            keyPassword = keystoreProperties.getProperty("keyPassword", "")
-            storeFile = rootProject.file(keystoreProperties.getProperty("storeFile", "keystore.jks"))
-            storePassword = keystoreProperties.getProperty("storePassword", "")
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeFile = releaseStoreFile
+                storePassword = releaseStorePassword
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
