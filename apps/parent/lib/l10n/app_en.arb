@@ -1,0 +1,308 @@
+{
+  "@@locale": "en",
+
+  "navTasks": "Tasks",
+  "navNotes": "Notes",
+  "navSettings": "Settings",
+
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonSaving": "Saving…",
+  "commonDelete": "Delete",
+  "commonOk": "OK",
+  "commonError": "Error",
+  "commonImport": "Import",
+  "commonContinue": "Continue",
+  "commonClose": "Close",
+  "commonBack": "Back",
+  "commonCopy": "Copy",
+  "commonUnknown": "(unknown)",
+
+  "themeLight": "Light",
+  "themeSand": "Sand",
+  "themeDusk": "Dusk",
+  "themeNight": "Night",
+  "themeLightDesc": "Bright blue",
+  "themeSandDesc": "Warm paper",
+  "themeDuskDesc": "Blue-grey dark",
+  "themeNightDesc": "OLED black",
+  "themeChoose": "Choose theme",
+
+  "settingsTitle": "Settings",
+  "settingsSectionAppearance": "Appearance",
+  "settingsTheme": "Theme",
+  "settingsSectionSync": "Sync",
+  "settingsWebDavConfigure": "Configure WebDAV",
+  "settingsWebDavConnected": "Connected",
+  "settingsWebDavConnectHint": "Connect to a Nextcloud or WebDAV server",
+  "settingsSectionFamily": "Family",
+  "settingsPartner": "Partner",
+  "settingsPartnerPaired": "Partner linked",
+  "settingsPartnerLinkHint": "Link with your partner",
+  "settingsKids": "Kids",
+  "settingsKidsLinkHint": "Link the kids app",
+  "settingsKidsEnrolledCount": "{count, plural, =1{1 kid linked} other{{count} kids linked}}",
+  "@settingsKidsEnrolledCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "settingsSectionVault": "Vault",
+  "settingsVerifyPhrase": "Verify recovery phrase",
+  "settingsVerifyPhraseSubtitle": "Check that you still know the 12 words. We will not show them.",
+  "settingsShowPhrase": "Show recovery phrase",
+  "settingsShowPhraseSubtitle": "Show the 12 words on this device (screen lock).",
+  "settingsSectionBackup": "Backup & Restore",
+  "settingsExportBackup": "Export backup",
+  "settingsExportBackupSubtitle": "Encrypted .kvault file. The recovery phrase is not included.",
+  "settingsImportBackup": "Import backup",
+  "settingsImportBackupSubtitle": "Restore from .kvault with your 12 words",
+
+  "notifServiceFailed": "Notification service failed to start: {error}",
+  "@notifServiceFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "notifDisabledBanner": "Notifications are disabled. Turn them on in Settings to receive reminders.",
+  "notifExactAlarmBanner": "Exact reminders are disabled. Allow \"Alarms & reminders\" for precise times.",
+
+  "familyKeyScanTitle": "Scan family key",
+  "familyKeyScanHint": "Point at your partner's QR code",
+  "familyKeyEnterPhrase": "Enter phrase",
+  "familyKeyFound": "Key found",
+  "familyKeyPartner": "Partner",
+  "familyKeyServer": "Server",
+  "familyKeyFingerprint": "Fingerprint",
+  "familyKeyServerMismatch": "The server in the QR code ({scanned}) does not match your server ({current}). Are you sure you want to continue?",
+  "@familyKeyServerMismatch": {
+    "placeholders": {
+      "scanned": {"type": "String"},
+      "current": {"type": "String"}
+    }
+  },
+  "familyKeyConfirmPartner": "Is this the right partner? Check the username above.",
+  "familyKeyAlreadyPairedWarning": "You already have a family key. Importing a new one will make data encrypted with the current key unreadable until you sync again.",
+  "familyKeyEnterTitle": "Enter family key",
+  "familyKeyEnterSubtitle": "Enter your partner's 12 words. You will then see the fingerprint to verify.",
+  "familyKeySaved": "Family key saved.",
+  "familyKeySaveError": "Error saving: {error}",
+  "@familyKeySaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "familyKeyInvalidQr": "Invalid QR code: {error}",
+  "@familyKeyInvalidQr": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "familyKeyShareTitle": "Share family key",
+  "familyKeyShareLegacyBody": "Have your partner scan this QR code. This family key is from before the recovery phrase and has no 12 words.",
+  "familyKeyShareBody": "Have your partner scan this QR code, or type the 12 words.",
+  "familyKeyShareNoPassword": "The code does not include the WebDAV password. Check the fingerprint together.",
+  "familyKeyShareNoEntropy": "No recovery-phrase data on this device. Create a new family key.",
+  "familyKeyShareFingerprint": "Fingerprint  {fingerprint}",
+  "@familyKeyShareFingerprint": {
+    "placeholders": {
+      "fingerprint": {"type": "String"}
+    }
+  },
+  "familyKeyPartnerScanned": "Partner has scanned",
+  "familyKeyShared": "Family key shared",
+
+  "vaultWelcomeTitle": "Your vault",
+  "vaultWelcomeBody": "Kinetic Link stores tasks and notes with a 12-word recovery phrase. Write that phrase on paper. On this device you can show it again later (with screen lock).",
+  "vaultNewVault": "New vault",
+  "vaultRestoreVault": "Restore vault",
+  "vaultLegacyBackup": "Legacy backup (.kbak2)",
+  "vaultCreateVault": "Create vault",
+  "vaultRecoveryPhrase": "Recovery phrase",
+  "vaultConfirm": "Confirm",
+  "vaultWriteWords": "Write these 12 words on paper and keep them safe. Without this phrase you cannot restore the vault on a new device.",
+  "vaultPhraseCopied": "Recovery phrase copied",
+  "vaultIWroteThemDown": "I wrote them down",
+  "vaultQuizPrompt": "Fill in the requested words to confirm you saved the phrase.",
+  "vaultWordN": "Word {n}",
+  "@vaultWordN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "vaultBackToWords": "Back to the words",
+  "vaultQuizMismatch": "Not all words match. Try again.",
+  "vaultCreateFailed": "Could not create the vault: {error}",
+  "@vaultCreateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "vaultCouldNotReadFile": "Could not read the file.",
+  "vaultInvalidLegacyBackup": "Invalid legacy backup: {error}",
+  "@vaultInvalidLegacyBackup": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "vaultRestoreTitle": "Restore vault",
+  "vaultRestoreIntro": "Choose how to restore the vault. The recovery phrase is the same in both cases.",
+  "vaultRestoreFromFile": "From file",
+  "vaultRestoreFromWebDav": "From WebDAV",
+  "vaultRestoreFromWebDavSubtitle": "Server, credentials, and 12 words. No file needed.",
+  "vaultRestoreFileTitle": "Restore from file",
+  "vaultRestoreFileBody": "Enter your recovery phrase, then choose the .kvault file.",
+  "vaultChooseFileAndRestore": "Choose file and restore",
+  "vaultNoVaultOnServer": "No vault on this server. Create a new vault or choose a different server.",
+  "vaultPhraseMismatchServer": "This recovery phrase does not match the vault on this server.",
+  "vaultRestoreWebDavTitle": "Restore from WebDAV",
+  "vaultRestoreWebDavBody": "Sign in to your server and enter the same 12 words used when creating the vault.",
+  "vaultServerUrl": "Server URL",
+  "vaultUsername": "Username",
+  "vaultPassword": "Password",
+  "vaultUnlock": "Unlock vault",
+  "vaultPhraseFieldLabel": "Recovery phrase (12 words)",
+
+  "vaultMigrateTitle": "New recovery phrase",
+  "vaultMigrateBody": "Your current key is random (version 0.2) and cannot become 12 words. Tasks and notes on this device stay. We will create a new recovery phrase. On the next sync, personal files are re-encrypted. The family key stays the same — partner and kids do not need to re-link.",
+  "vaultMigrateActivate": "Activate new recovery phrase",
+  "vaultMigrateHeadline": "Write down these new 12 words. The old key will no longer work for WebDAV or a .kvault.",
+
+  "vaultRestoreFromFileSubtitle": "12 words + encrypted .kvault file. No internet needed.",
+  "vaultBiometricsReason": "Show the recovery phrase on this device",
+  "vaultNoScreenLockTitle": "No screen lock",
+  "vaultNoScreenLockBody": "This device has no Face ID, fingerprint, or PIN. Anyone with access to the app can see the words. Continue?",
+  "vaultShowAnyway": "Show anyway",
+  "vaultRevealWarning": "Write the words down again on paper if you lost your copy. Do not leave this screen open.",
+
+  "familyCreateTitle": "Family key",
+  "familyCreateWriteWords": "Write these 12 words down. They belong to the family key you share with your partner. We do not store the words.",
+  "familyCreateFailed": "Could not create the family key: {error}",
+  "@familyCreateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "commonVerify": "Verify",
+  "commonLeave": "Leave",
+
+  "relativeJustNow": "just now",
+  "relativeMinutesAgo": "{count} minutes ago",
+  "@relativeMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeHoursAgo": "{count} hours ago",
+  "@relativeHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeYesterday": "yesterday",
+  "relativeDaysAgo": "{count} days ago",
+  "@relativeDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "partnerVerifyTitle": "Verify family key",
+  "partnerVerifyBody": "Enter the 12 words. We will not show them; we only check that they match.",
+  "partnerVerifyOk": "The family key matches.",
+  "partnerVerifyMismatch": "This recovery phrase does not match this family key.",
+  "partnerRevealMissing": "This family key is from before the recovery phrase (0.2) or arrived as a raw key. We cannot show the words. Create a new family key and have partner and kids re-link.",
+  "partnerUnlinkTitle": "Unlink partner?",
+  "partnerUnlinkBody": "All shared notes will be removed from this device. Your own tasks and private notes stay. Your partner does not lose the connection — only you leave the shared workspace.",
+  "partnerShareViaQr": "Share family key via QR",
+  "partnerShareViaQrSubtitle": "Have your partner scan the QR code to collaborate.",
+  "partnerScanKey": "Scan family key",
+  "partnerScanKeySubtitle": "Scan the QR or type your partner's 12 words.",
+  "partnerReshareKey": "Share family key again",
+  "partnerReshareKeySubtitle": "Share the key with a new device of your partner.",
+  "partnerVerifyPhrase": "Verify recovery phrase",
+  "partnerVerifyPhraseSubtitle": "Check that you still know the 12 words of the family key.",
+  "partnerShowKey": "Show family key",
+  "partnerShowKeySubtitle": "Show the 12 words on this device (screen lock).",
+  "partnerUnlink": "Unlink partner",
+  "partnerUnlinkSubtitle": "Remove the family key and shared notes from this device.",
+  "partnerStatusPaired": "Partner linked — family key present",
+  "partnerStatusUnpaired": "Partner not linked — scan or share the QR code to link",
+  "partnerLastSeen": "Partner last seen {when}",
+  "@partnerLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "partnerLastSeenWarning": "Warning: partner last seen {when}",
+  "@partnerLastSeenWarning": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "partnerFingerprint": "Fingerprint {fingerprint}",
+  "@partnerFingerprint": {
+    "placeholders": {
+      "fingerprint": {"type": "String"}
+    }
+  },
+
+  "kidsLinkApp": "Link kids app",
+  "kidsLinkAppSubtitle": "Have the kids app scan the QR code.",
+  "kidsEnrolledSection": "ENROLLED KIDS",
+  "kidsNoneEnrolled": "No kids linked yet.",
+  "kidsRemoveTooltip": "Remove from family",
+  "kidsRemoveTitle": "Remove {name}?",
+  "@kidsRemoveTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsRemoveBody": "{name} will be removed from the family list. The kids app will no longer receive family tasks unless linked again.",
+  "@kidsRemoveBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrolledOn": "Linked on {date}",
+  "@kidsEnrolledOn": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "kidsLastSeen": "Last seen {when}",
+  "@kidsLastSeen": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "kidsLastSeenWarning": "Warning: last seen {when}",
+  "@kidsLastSeenWarning": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+
+  "kidsEnrollTitle": "Link kids app",
+  "kidsEnrollNameTitle": "Child's name",
+  "kidsEnrollNameBody": "Enter the name of the child you want to link.",
+  "kidsEnrollNameLabel": "Child name",
+  "kidsEnrollContinueToQr": "Continue to QR code",
+  "kidsEnrollQrTitle": "QR code for {name}",
+  "@kidsEnrollQrTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrollQrBody": "Open the kids app on {name}'s device and scan this code.",
+  "@kidsEnrollQrBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "kidsEnrollWhatShared": "What is shared?",
+  "kidsEnrollWhatSharedBody": "This QR code contains the server, account, and family key — not the WebDAV password. Type that password once on the kids device. Only share the code with the kids app on a trusted device."
+}

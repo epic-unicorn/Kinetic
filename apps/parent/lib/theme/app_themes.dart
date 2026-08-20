@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../todo/models/enums.dart';
 
 // ---------------------------------------------------------------------------
@@ -118,18 +119,18 @@ String _month(int m) => const [
 enum AppTheme { light, sand, dusk, night }
 
 extension AppThemeLabel on AppTheme {
-  String get label => switch (this) {
-    AppTheme.light => 'Licht',
-    AppTheme.sand => 'Zand',
-    AppTheme.dusk => 'Schemer',
-    AppTheme.night => 'Nacht',
+  String label(AppLocalizations l10n) => switch (this) {
+    AppTheme.light => l10n.themeLight,
+    AppTheme.sand => l10n.themeSand,
+    AppTheme.dusk => l10n.themeDusk,
+    AppTheme.night => l10n.themeNight,
   };
 
-  String get description => switch (this) {
-    AppTheme.light => 'Helder blauw',
-    AppTheme.sand => 'Warm papier',
-    AppTheme.dusk => 'Blauw-grijs donker',
-    AppTheme.night => 'OLED zwart',
+  String description(AppLocalizations l10n) => switch (this) {
+    AppTheme.light => l10n.themeLightDesc,
+    AppTheme.sand => l10n.themeSandDesc,
+    AppTheme.dusk => l10n.themeDuskDesc,
+    AppTheme.night => l10n.themeNightDesc,
   };
 }
 

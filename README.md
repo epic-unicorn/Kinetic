@@ -22,11 +22,11 @@ Two Flutter apps share crypto and sync logic in `packages/webdav` (AES-256-GCM, 
 ## Features
 
 - **Personal tasks** — quick-add, swipe-to-complete, priorities, categories, due dates, recurrence, and **smart reminder chips** that propose contextual times from title and history. Enabling a reminder defaults to **one hour from now, rounded up to the next half hour**; the time dialog focuses the hour field so you can type immediately
-- **Partner coordination** — QR pairing, encrypted task proposals, accept/decline flow; partner-targeted suggestions require an explicit **Naar partner** action after a **Dit ziet je partner** preview (nothing is auto-sent)
+- **Partner coordination** — QR pairing, encrypted task proposals, accept/decline flow; partner-targeted suggestions require an explicit **Send to partner** action after a **What your partner sees** preview (nothing is auto-sent)
 - **Kids tasks** — assign tasks per child with configurable XP; the kids app syncs assignments and awards XP on completion
 - **Notes** — markdown notes, personal or shared with partner; list rows show title, reminder, and shared badge only (body is hidden). Same bottom-sheet editor layout as tasks
 - **AI suggestions** — fully offline heuristic engine (habits, calendar, stale open tasks, seasonal history, privacy-preserving partner hints) with human-readable explanations
-- **Themes** — Licht, Zand, Schemer, Nacht (OLED)
+- **Themes** — Light, Sand, Dusk, Night (OLED)
 - **Connection-aware send** — partner and kids listed individually with WebDAV presence status before forwarding
 - **Encryption** — 12-word BIP-39 vault; derived AES-256-GCM key in device secure storage. Same phrase for WebDAV and `.kvault` backup
 - **WebDAV sync** — optional; bring your own server, no vendor backend
@@ -58,7 +58,7 @@ melos run test        # run all tests
 cd apps/parent && flutter run
 ```
 
-No server required — the app works fully offline. Configure WebDAV in **Instellingen** to enable sync and family pairing.
+No server required — the app works fully offline. Configure WebDAV in **Settings** to enable sync and family pairing.
 
 ### Build a release APK
 
@@ -69,42 +69,48 @@ flutter build apk --release
 
 CI builds and signs both APKs on every push to `main`, `develop`, or `feature/**`, and on any `v*` tag (see [`.github/workflows/build-release.yml`](.github/workflows/build-release.yml)).
 
+## Localization
+
+Both apps ship **English** and **Dutch** UI via Flutter `gen-l10n` (ARB files under `apps/*/lib/l10n`). English is the template locale; Dutch lives in `app_nl.arb`. After editing ARB files, run `flutter gen-l10n` (or `flutter pub get`) in the app directory.
+
+Tasks/notes suggestion copy in the parent app is still being migrated; nav, settings, vault, family pairing, and the kids app are localized.
+
 ## Family Setup
 
 ### Partner pairing
 
-1. **Instellingen → Familie → Partner** → share QR (12 family words + entropy QR)
+1. **Settings → Family → Partner** → share QR (12 family words + entropy QR)
 2. Partner scans **or** types the 12 words and confirms the fingerprint
 3. Proposals sync automatically via WebDAV
 
 ### Kids enrollment
 
-1. **Instellingen → Familie → Kinderen** → generate QR with family key + kid UUID (no WebDAV password)
+1. **Settings → Family → Kids** → generate QR with family key + kid UUID (no WebDAV password)
 2. Child device scans the QR and types the WebDAV password once
 3. Parent sends tasks targeted to that child's UUID
 
 Ship parent **and** kids 0.3.0 together: an old kids app would save an empty password from a new QR.
 
-The **Familie** screen shows **Voorstellen** and **Kinderen** tabs only when a partner is paired or kids are enrolled. Shared notes require partner pairing.
+The **Family** screen shows **Proposals** and **Kids** tabs only when a partner is paired or kids are enrolled. Shared notes require partner pairing.
 
 ## AI Suggestion Engine
 
-A fully offline, heuristic-based engine surfaces task suggestions in the parent **Taken** screen. No API calls — runs entirely on-device.
+A fully offline, heuristic-based engine surfaces task suggestions in the parent **Tasks** screen. No API calls — runs entirely on-device.
 
 An empty run does **not** start the 24-hour throttle, so creating tasks can surface hints on the next open. After at least one suggestion is created, that path waits 24 hours.
 
 | Detector | Trigger | Target | What the partner sees |
 |---|---|---|---|
-| **Habit** | Same non-recurring title completed ≥ 2× and the median interval is overdue, **or** one completion of a strong keyword (e.g. boodschappen) after ≥ 14 days | You | — |
-| **Calendar** | Month-based prompts with no history required (belasting in March, schoolspullen in August, kerst in December) | You | — |
+| **Habit** | Same non-recurring title completed ≥ 2× and the median interval is overdue, **or** one completion of a strong keyword (e.g. Dutch `boodschappen` / groceries) after ≥ 14 days | You | — |
+| **Calendar** | Month-based prompts with no history required (Dutch examples: `belasting` in March, `schoolspullen` in August, `kerst` in December) | You | — |
 | **Stale** | Open task older than 7 days with no due date or reminder | You (sets a reminder on the existing task) | — |
 | **Seasonal** | Task completed in the same calendar month in a prior year | You | — |
 | **Partner complement** | Keywords in **your** open tasks (including private) | Partner suggestion | A **generic** template only — never the private title or notes |
-| **Load balance** | ≥ 3 open tasks in the same category (private included; `other` needs ≥ 5) | Partner suggestion | A generic “kan jij iets in [categorie] oppakken?” line |
+| **Load balance** | ≥ 3 open tasks in the same category (private included; `other` needs ≥ 5) | Partner suggestion | A generic “can you pick something up in [category]?” line |
 
-Partner hints are capped at one per keyword-family per 14 days. **Naar partner** always shows **Dit ziet je partner** before anything is sent. Nothing is auto-sent.
+Partner hints are capped at one per keyword-family per 14 days. **Send to partner** always shows **What your partner sees** before anything is sent. Nothing is auto-sent.
 
-Suggestions appear in a banner on the **Privé** tab and in structured sections on **Voorstellen** (**Voor jou** / **Voor partner** / **Van partner**). See [`apps/parent/docs/SMART_FEATURES.md`](apps/parent/docs/SMART_FEATURES.md) for reminder chips and send-sheet details.
+Suggestions appear in a banner on the **Private** tab and in structured sections on **Proposals** (**For you** / **For partner** / **From partner**). See [`apps/parent/docs/SMART_FEATURES.md`](apps/parent/docs/SMART_FEATURES.md) for reminder chips and send-sheet details.
 
 ## Encryption
 
@@ -114,7 +120,7 @@ Suggestions appear in a banner on the **Privé** tab and in structured sections 
 | **Family key** | 12 BIP-39 words → derived AES-256-GCM key. QR carries 16-byte entropy (no WebDAV password). Fingerprint in settings. Recovered via `family.key.enc` after a personal vault restore. A 0.2.x random family key is kept as-is (no words until you create a new family vault). |
 | **Kid UUID** | Per enrolled child device for task targeting |
 
-On first launch the parent app asks **Nieuwe kluis** or **Kluis herstellen**. Restore is either a `.kvault` file plus the 12 words (offline) **or** WebDAV login plus the same 12 words (no file). After reinstall, the same phrase unlocks the server copy via `/kinetic/{user}/vault.meta`.
+On first launch the parent app asks **New vault** or **Restore vault**. Restore is either a `.kvault` file plus the 12 words (offline) **or** WebDAV login plus the same 12 words (no file). After reinstall, the same phrase unlocks the server copy via `/kinetic/{user}/vault.meta`.
 
 Export never includes the mnemonic, the raw key, or the WebDAV password. Settings can **verify** the phrase without showing the words, or **show** them after Face ID / fingerprint / PIN.
 
@@ -124,7 +130,7 @@ A random 32-byte AES key cannot be turned into a BIP-39 mnemonic. On first 0.3 l
 
 The **family key is not rotated** (that would break partner and kids). Old random family keys keep working; they have no words until you explicitly create a new family vault and re-enroll.
 
-A one-time **Oude back-up (.kbak2)** path on the welcome screen restores the 0.2 file (plaintext key in JSON) and then uses the same rotate-to-mnemonic flow. New backups are `.kvault` only.
+A one-time **Legacy backup (.kbak2)** path on the welcome screen restores the 0.2 file (plaintext key in JSON) and then uses the same rotate-to-mnemonic flow. New backups are `.kvault` only.
 
 ## Releases
 

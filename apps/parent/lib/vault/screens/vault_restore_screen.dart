@@ -5,12 +5,13 @@ import 'package:uuid/uuid.dart';
 
 import '../../db/app_database.dart';
 import '../../db/full_backup_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart';
 import '../../settings/settings_repository.dart';
 import '../../sync/webdav_config_repository.dart';
+import '../family_vault_sync.dart';
 import '../vault_repository.dart';
 import '../widgets/mnemonic_phrase_field.dart';
-import '../family_vault_sync.dart';
 
 class VaultRestoreScreen extends StatefulWidget {
   const VaultRestoreScreen({
@@ -37,6 +38,7 @@ class _VaultRestoreScreenState extends State<VaultRestoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_path == _RestorePath.file) {
       return _RestoreFileScreen(
         db: widget.db,
@@ -55,25 +57,25 @@ class _VaultRestoreScreenState extends State<VaultRestoreScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Kluis herstellen')),
+      appBar: AppBar(title: Text(l10n.vaultRestoreTitle)),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Kies hoe je de kluis terugzet. De herstelzin is in beide gevallen dezelfde.',
+            l10n.vaultRestoreIntro,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
           ListTile(
             leading: const Icon(Icons.folder_open_outlined),
-            title: const Text('Vanaf bestand'),
-            subtitle: const Text('12 woorden + versleuteld .kvault-bestand. Geen internet nodig.'),
+            title: Text(l10n.vaultRestoreFromFile),
+            subtitle: Text(l10n.vaultRestoreFromFileSubtitle),
             onTap: () => setState(() => _path = _RestorePath.file),
           ),
           ListTile(
             leading: const Icon(Icons.cloud_outlined),
-            title: const Text('Vanaf WebDAV'),
-            subtitle: const Text('Server, inloggegevens en 12 woorden. Geen bestand nodig.'),
+            title: Text(l10n.vaultRestoreFromWebDav),
+            subtitle: Text(l10n.vaultRestoreFromWebDavSubtitle),
             onTap: () => setState(() => _path = _RestorePath.webdav),
           ),
         ],
@@ -115,6 +117,7 @@ class _RestoreFileScreenState extends State<_RestoreFileScreen> {
   }
 
   Future<void> _restore() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -132,7 +135,7 @@ class _RestoreFileScreenState extends State<_RestoreFileScreen> {
       }
       final bytes = result.files.first.bytes;
       if (bytes == null) {
-        throw const FormatException('Kon het bestand niet lezen.');
+        throw FormatException(l10n.vaultCouldNotReadFile);
       }
       await FullBackupService.importVaultFromBytes(
         widget.db,
@@ -155,9 +158,10 @@ class _RestoreFileScreenState extends State<_RestoreFileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Herstellen vanaf bestand'),
+        title: Text(l10n.vaultRestoreFileTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : widget.onBack,
@@ -169,7 +173,7 @@ class _RestoreFileScreenState extends State<_RestoreFileScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Vul je herstelzin in en kies daarna het .kvault-bestand.',
+              l10n.vaultRestoreFileBody,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 16),
@@ -190,7 +194,7 @@ class _RestoreFileScreenState extends State<_RestoreFileScreen> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Bestand kiezen en herstellen'),
+                  : Text(l10n.vaultChooseFileAndRestore),
             ),
           ],
         ),
@@ -235,6 +239,7 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
   }
 
   Future<void> _restore() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -265,13 +270,9 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
         );
         switch (status) {
           case VaultMetaStatus.missing:
-            throw const FormatException(
-              'Geen kluis op deze server. Maak een nieuwe kluis of kies een andere server.',
-            );
+            throw FormatException(l10n.vaultNoVaultOnServer);
           case VaultMetaStatus.wrongPhrase:
-            throw const FormatException(
-              'Deze herstelzin hoort niet bij de kluis op deze server.',
-            );
+            throw FormatException(l10n.vaultPhraseMismatchServer);
           case VaultMetaStatus.unlocked:
             break;
         }
@@ -309,9 +310,10 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Herstellen vanaf WebDAV'),
+        title: Text(l10n.vaultRestoreWebDavTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : widget.onBack,
@@ -321,15 +323,15 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'Log in op je server en vul dezelfde 12 woorden in als bij het aanmaken van de kluis.',
+            l10n.vaultRestoreWebDavBody,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _urlCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Server-URL',
-              prefixIcon: Icon(Icons.link),
+            decoration: InputDecoration(
+              labelText: l10n.vaultServerUrl,
+              prefixIcon: const Icon(Icons.link),
             ),
             keyboardType: TextInputType.url,
             autocorrect: false,
@@ -337,9 +339,9 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _userCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Gebruikersnaam',
-              prefixIcon: Icon(Icons.person_outline),
+            decoration: InputDecoration(
+              labelText: l10n.vaultUsername,
+              prefixIcon: const Icon(Icons.person_outline),
             ),
             autocorrect: false,
           ),
@@ -347,7 +349,7 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
           TextField(
             controller: _passCtrl,
             decoration: InputDecoration(
-              labelText: 'Wachtwoord',
+              labelText: l10n.vaultPassword,
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
                 icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
@@ -374,7 +376,7 @@ class _RestoreWebDavScreenState extends State<_RestoreWebDavScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Kluis ontgrendelen'),
+                : Text(l10n.vaultUnlock),
           ),
         ],
       ),

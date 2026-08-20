@@ -96,7 +96,7 @@ class _KineticQrScanViewState extends State<KineticQrScanView> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                error.message ?? 'Camera niet beschikbaar',
+                error.message ?? 'Camera unavailable',
                 textAlign: TextAlign.center,
               ),
             ),

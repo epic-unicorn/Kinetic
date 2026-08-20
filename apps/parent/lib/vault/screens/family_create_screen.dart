@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
 class FamilyCreateResult {
   const FamilyCreateResult({
     required this.entropy,
@@ -71,15 +73,14 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
     final words = _words;
     final entropy = _entropy;
     if (words == null || entropy == null) return;
+    final l10n = AppLocalizations.of(context);
     final ok = KineticVault.quizMatches(
       mnemonic: words,
       indices: _quiz,
       answers: _quizCtrls.map((c) => c.text).toList(),
     );
     if (!ok) {
-      setState(
-        () => _quizError = 'Niet alle woorden kloppen. Probeer opnieuw.',
-      );
+      setState(() => _quizError = l10n.vaultQuizMismatch);
       return;
     }
     setState(() => _busy = true);
@@ -93,35 +94,41 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _quizError = 'Kon de familiesleutel niet aanmaken: $e';
+        _quizError = l10n.familyCreateFailed('$e');
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final words = _words;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_step == 0 ? 'Familiesleutel' : 'Bevestigen'),
+        title: Text(
+          _step == 0 ? l10n.familyCreateTitle : l10n.vaultConfirm,
+        ),
       ),
       body: words == null
           ? const Center(child: CircularProgressIndicator())
           : _step == 0
-          ? _buildShowWords(context, words)
-          : _buildQuiz(context),
+          ? _buildShowWords(context, words, l10n)
+          : _buildQuiz(context, l10n),
     );
   }
 
-  Widget _buildShowWords(BuildContext context, List<String> words) {
+  Widget _buildShowWords(
+    BuildContext context,
+    List<String> words,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Schrijf deze 12 woorden op. Ze horen bij de familiesleutel die je '
-            'deelt met je partner. We slaan de woorden niet op.',
+            l10n.familyCreateWriteWords,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -157,29 +164,29 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: words.join(' ')));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Herstelzin gekopieerd')),
+                SnackBar(content: Text(l10n.vaultPhraseCopied)),
               );
             },
             icon: const Icon(Icons.copy),
-            label: const Text('Kopiëren'),
+            label: Text(l10n.commonCopy),
           ),
           FilledButton(
             onPressed: _startQuiz,
-            child: const Text('Ik heb ze opgeschreven'),
+            child: Text(l10n.vaultIWroteThemDown),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuiz(BuildContext context) {
+  Widget _buildQuiz(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Vul de gevraagde woorden in om te bevestigen dat je de zin hebt bewaard.',
+            l10n.vaultQuizPrompt,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
@@ -187,7 +194,7 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
             TextFormField(
               controller: _quizCtrls[i],
               decoration: InputDecoration(
-                labelText: 'Woord ${_quiz[i] + 1}',
+                labelText: l10n.vaultWordN(_quiz[i] + 1),
               ),
               autocorrect: false,
               enableSuggestions: false,
@@ -210,7 +217,7 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
                     _step = 0;
                     _quizError = null;
                   }),
-            child: const Text('Terug naar de woorden'),
+            child: Text(l10n.vaultBackToWords),
           ),
           FilledButton(
             onPressed: _busy ? null : _confirmQuiz,
@@ -220,7 +227,7 @@ class _FamilyCreateScreenState extends State<FamilyCreateScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Doorgaan'),
+                : Text(l10n.commonContinue),
           ),
         ],
       ),

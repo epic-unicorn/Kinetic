@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../models/kids_task.dart';
 import '../services/kids_task_repository.dart';
 
@@ -20,20 +22,24 @@ class KidsTaskDetailScreen extends StatefulWidget {
 class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return StreamBuilder<KidsTask?>(
       stream: widget.repository.watchOne(widget.taskId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Laden...')),
+            appBar: AppBar(title: Text(l10n.loading)),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (snapshot.hasError || snapshot.data == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Fout')),
-            body: Center(child: Text('Taak niet gevonden: ${snapshot.error}')),
+            appBar: AppBar(title: Text(l10n.error)),
+            body: Center(
+              child: Text(l10n.taskNotFound(snapshot.error ?? '')),
+            ),
           );
         }
 
@@ -41,7 +47,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
         final scheme = Theme.of(context).colorScheme;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Taakdetails')),
+          appBar: AppBar(title: Text(l10n.taskDetails)),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -80,7 +86,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                               ),
                               if (task.isCompleted)
                                 Text(
-                                  'Afgerond',
+                                  l10n.completed,
                                   style: TextStyle(
                                     color: scheme.onSurfaceVariant,
                                     fontSize: 12,
@@ -97,7 +103,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
 
                 // Details section
                 Text(
-                  'Gegevens',
+                  l10n.details,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -114,17 +120,17 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Vervaldatum',
+                              l10n.dueDate,
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             if (task.dueDate != null)
                               Text(
-                                _formatFullDate(task.dueDate!),
+                                _formatFullDate(context, task.dueDate!),
                                 style: Theme.of(context).textTheme.bodyMedium,
                               )
                             else
                               Text(
-                                'Geen vervaldatum',
+                                l10n.noDueDate,
                                 style: TextStyle(
                                   color: scheme.onSurfaceVariant,
                                 ),
@@ -152,11 +158,11 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Prioriteit',
+                              l10n.priority,
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             Text(
-                              _priorityLabel(task.priority),
+                              _priorityLabel(l10n, task.priority),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ],
@@ -179,11 +185,11 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Categorie',
+                              l10n.category,
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             Text(
-                              _categoryLabel(task.category),
+                              _categoryLabel(l10n, task.category),
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ],
@@ -206,7 +212,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Ervaring',
+                              l10n.experience,
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
                             Text(
@@ -224,7 +230,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                 // Notes section
                 if (task.notes != null && task.notes!.isNotEmpty) ...[
                   Text(
-                    'Opmerkingen',
+                    l10n.notes,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
@@ -249,7 +255,7 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
                       Navigator.pop(context);
                     },
                     icon: const Icon(Icons.delete),
-                    label: const Text('Verwijderen'),
+                    label: Text(l10n.delete),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
@@ -273,41 +279,28 @@ class _KidsTaskDetailScreenState extends State<KidsTaskDetailScreen> {
     };
   }
 
-  String _priorityLabel(TaskPriority priority) {
+  String _priorityLabel(AppLocalizations l10n, TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.urgent => 'Urgent',
-      TaskPriority.high => 'Hoog',
-      TaskPriority.normal => 'Normaal',
-      TaskPriority.low => 'Laag',
+      TaskPriority.urgent => l10n.priorityUrgent,
+      TaskPriority.high => l10n.priorityHigh,
+      TaskPriority.normal => l10n.priorityNormal,
+      TaskPriority.low => l10n.priorityLow,
     };
   }
 
-  String _categoryLabel(TaskCategory category) {
+  String _categoryLabel(AppLocalizations l10n, TaskCategory category) {
     return switch (category) {
-      TaskCategory.household => 'Huishouden',
-      TaskCategory.school => 'School',
-      TaskCategory.health => 'Gezondheid',
-      TaskCategory.shopping => 'Boodschappen',
-      TaskCategory.entertainment => 'Recreatie',
-      TaskCategory.other => 'Overig',
+      TaskCategory.household => l10n.categoryHousehold,
+      TaskCategory.school => l10n.categorySchool,
+      TaskCategory.health => l10n.categoryHealth,
+      TaskCategory.shopping => l10n.categoryShopping,
+      TaskCategory.entertainment => l10n.categoryEntertainment,
+      TaskCategory.other => l10n.categoryOther,
     };
   }
 
-  String _formatFullDate(DateTime date) {
-    final months = [
-      'januari',
-      'februari',
-      'maart',
-      'april',
-      'mei',
-      'juni',
-      'juli',
-      'augustus',
-      'september',
-      'oktober',
-      'november',
-      'december',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  String _formatFullDate(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.yMMMMd(locale).format(date);
   }
 }
