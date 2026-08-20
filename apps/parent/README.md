@@ -6,22 +6,22 @@ Parent-facing Flutter app. Manage personal tasks and notes locally, coordinate w
 
 | Screen | Description |
 |---|---|
-| **Taken** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. Enabling a reminder defaults to one hour from now rounded up to the next half hour; the time dialog focuses hours. **Smart reminder chips** propose contextual times based on title and history. **Doorsturen** sends tasks to partner or individual kids with connection-aware gating. A **suggestion banner** on the Privé tab shows on-device self suggestions. |
-| **Familie** | Conditionally visible when partner is paired or kids are connected. **Voorstellen** tab: structured sections for self suggestions, partner suggestions (generic templates + **Dit ziet je partner** preview), and incoming partner proposals. **Kinderen** tab: overview of tasks assigned to each enrolled child. |
-| **Notities** | Markdown notes, personal or shared. List rows show a note icon, title, reminder, and “Gedeeld” — **not** the body. Editor uses the same bottom-sheet layout as tasks. |
-| **Instellingen** | WebDAV config, connection test, **theme selector** (Licht, Zand, Schemer, Nacht). **Kluis**: verify or show the 12-word phrase (device lock). **Familie** section: Partner pairing (share/scan QR), Kids enrollment (QR without WebDAV password) with status. **Back-up & Herstel**: encrypted `.kvault` export/import (passphrase required; no key in the file). Restoring a backup automatically reschedules all notifications. |
+| **Tasks** | Personal task manager — quick-add, swipe-to-complete, priorities, categories, due dates with separate date/time controls, recurrence. Enabling a reminder defaults to one hour from now rounded up to the next half hour; the time dialog focuses hours. **Smart reminder chips** propose contextual times based on title and history. **Forward** sends tasks to partner or individual kids with connection-aware gating. A **suggestion banner** on the Private tab shows on-device self suggestions. |
+| **Family** | Conditionally visible when partner is paired or kids are connected. **Proposals** tab: structured sections for self suggestions, partner suggestions (generic templates + **What your partner sees** preview), and incoming partner proposals. **Kids** tab: overview of tasks assigned to each enrolled child. |
+| **Notes** | Markdown notes, personal or shared. List rows show a note icon, title, reminder, and “Shared” — **not** the body. Editor uses the same bottom-sheet layout as tasks. |
+| **Settings** | WebDAV config, connection test, **theme selector** (Light, Sand, Dusk, Night). **Vault**: verify or show the 12-word recovery phrase (device lock). **Family** section: Partner pairing (share/scan QR), Kids enrollment (QR without WebDAV password) with status. **Backup & Restore**: encrypted `.kvault` export/import (passphrase required; no key in the file). Restoring a backup automatically reschedules all notifications. |
 
 ## Family Setup
 
 ### Partner Pairing
-1. Settings → Familie → Partner → "Familiesleutel delen via QR"
+1. Settings → Family → Partner → "Share family key via QR"
 2. Write down the 12 family words (quiz), then show the QR (entropy only)
 3. Partner scans **or** types the same 12 words and checks the fingerprint
 4. Partnership activated; `family.key.enc` is stored in the personal WebDAV folder
 
 ### Kids Enrollment
 Each child device enrolls independently:
-1. Settings → Familie → Kinderen → "Kinderenapp koppelen"
+1. Settings → Family → Kids → "Link kids app"
 2. Generate QR with family key + unique kid UUID (no WebDAV password)
 3. Child device scans QR and types the WebDAV password once
 4. Child receives tasks targeted to their UUID
@@ -29,14 +29,14 @@ Each child device enrolls independently:
 
 ## Themes
 
-Four Material 3 themes, chosen in **Instellingen**:
+Four Material 3 themes, chosen in **Settings**:
 
 | Id | Label | Description |
 |---|---|---|
-| `light` | Licht | Helder blauw |
-| `sand` | Zand | Warm papier |
-| `dusk` | Schemer | Blauw-grijs donker |
-| `night` | Nacht | OLED zwart |
+| `light` | Light | Bright blue |
+| `sand` | Sand | Warm paper |
+| `dusk` | Dusk | Blue-grey dark |
+| `night` | Night | OLED black |
 
 Persisted name `dark` (pre-0.3) maps to `dusk`.
 
@@ -51,7 +51,7 @@ The personal key is **derived from the 12 words**, not from the WebDAV password.
 ## Data Model
 
 ### Tasks
-- `xpReward` (integer, default 10): XP the child earns when completing a task sent via "Stuur naar kinderen". Configurable per task before sending.
+- `xpReward` (integer, default 10): XP the child earns when completing a task sent via "Send to kids". Configurable per task before sending.
 - `targetKidId` (nullable): When set, task is encrypted as shared task with this UUID in `xKineticTargetKidId` iCal property. Kids sync orchestrator filters: only displays tasks where `xKineticTargetKidId == myKidId` or `xKineticTargetKidId` is null.
 
 ### Security
@@ -77,20 +77,21 @@ All secrets are stored at runtime via secure storage — no `--dart-define` flag
 lib/
 ├── db/            — Drift schema (PersonalTasks with targetKidId column, PersonalNotes, PartnerProposals, AiSuggestions)
 ├── family/        — FamilyConnectionService (presence-based send gating)
+├── l10n/          — ARB localizations (English template + Dutch)
 ├── notifications/ — local notification scheduling
 ├── partner/       — proposals, family screen, services
 ├── secure/        — secure storage wrappers
 ├── settings/      — WebDAV config, theme, family key share/scan screens
 ├── sync/          — SyncOrchestrator (WebDAV pull/push, LWW merge, xKineticTargetKidId embedding)
-├── theme/         — Material 3 themes (Licht, Zand, Schemer, Nacht)
+├── theme/         — Material 3 themes (Light, Sand, Dusk, Night)
 ├── todo/          — task & note models, repositories, screens, reminder time helper, suggestion engine
 ├── vault/         — BIP-39 onboarding gate, restore (file / WebDAV), verify
-└── main.dart      — root shell with conditional Familie nav item
+└── main.dart      — root shell with conditional Family nav item
 ```
 
 ## AI Suggestion Engine
 
-A fully **offline, heuristic-based** engine that surfaces task suggestions in the **Taken** screen. No API calls or external models are used.
+A fully **offline, heuristic-based** engine that surfaces task suggestions in the **Tasks** screen. No API calls or external models are used.
 
 See also: [docs/SMART_FEATURES.md](docs/SMART_FEATURES.md) for reminder chips, send gating, and suggestion UI details.
 
@@ -98,12 +99,12 @@ See also: [docs/SMART_FEATURES.md](docs/SMART_FEATURES.md) for reminder chips, s
 
 The engine runs on start and resume. A path is throttled for 24 hours **only after it created at least one suggestion**. Empty runs do not block later hits.
 
-Partner-targeted detectors create suggestions — they do not auto-send proposals. Sending always goes through **Dit ziet je partner**.
+Partner-targeted detectors create suggestions — they do not auto-send proposals. Sending always goes through **What your partner sees**.
 
 | Detector | Trigger | Action |
 |---|---|---|
 | **Habit** | Same non-recurring task ≥ 2× overdue vs median interval, or one strong-keyword completion after ≥ 14 days | Suggests re-doing the task (→ you) |
-| **Calendar** | Month prompt (belasting / schoolspullen / kerst) with no prior-year history required | Suggests a seasonal chore (→ you) |
+| **Calendar** | Month prompt (Dutch keyword examples: belasting / schoolspullen / kerst) with no prior-year history required | Suggests a seasonal chore (→ you) |
 | **Stale** | Open task > 7 days with no due date or reminder | Suggests setting a reminder on that task (→ you) |
 | **Seasonal** | Completed in the same calendar month last year | Suggests re-doing it (→ you) |
 | **Partner complement** | Keywords in **your** open tasks, including private | Generic partner hint — never copies the private title (→ partner) |
@@ -113,16 +114,16 @@ Each suggestion stores an `explanation` field with a human-readable reason. Heur
 
 ### Suggestion UI
 
-- **Privé tab**: `SuggestionBanner` shows the first pending self suggestion
-- **Voorstellen tab**: three sections — **Voor jou**, **Voor partner**, **Van partner** (inbox)
-- Actions per card: **Toevoegen** / **Herinnering** (stale), **Naar partner** (when paired, with preview), **Sluiten**; long-press to snooze 7 days
-- Proposals created from partner suggestions are marked `autoGenerated` with a "Via suggestie" badge
+- **Private tab**: `SuggestionBanner` shows the first pending self suggestion
+- **Proposals tab**: three sections — **For you**, **For partner**, **From partner** (inbox)
+- Actions per card: **Add** / **Reminder** (stale), **Send to partner** (when paired, with preview), **Dismiss**; long-press to snooze 7 days
+- Proposals created from partner suggestions are marked `autoGenerated` with a "Via suggestion" badge
 
 Suggestions are stored in the local `AiSuggestions` table and never synced to WebDAV.
 
 ## Smart Reminder Chips
 
-`ReminderProposalEngine` proposes contextual reminder chips when the Herinnering row has no date set. Signals include habit time-of-day, habit interval, title keywords, category defaults, and time-of-day fallbacks. The best chip is marked with ✨; long-press shows why it was suggested.
+`ReminderProposalEngine` proposes contextual reminder chips when the Reminder row has no date set. Signals include habit time-of-day, habit interval, title keywords, category defaults, and time-of-day fallbacks. The best chip is marked with ✨; long-press shows why it was suggested.
 
 ## Connection-Aware Send
 
@@ -146,12 +147,12 @@ Suggestions are stored in the local `AiSuggestions` table and never synced to We
 
 ### Backup Format
 - **`.kvault` (current)**: JSON wrapper `{version, format: kvault, ciphertext}`. Ciphertext is AES-256-GCM with the derived vault key. Inner payload has the encrypted database blob and theme — **not** the mnemonic, raw key, or WebDAV password. Import requires the 12 words.
-- Legacy `.kbak2` (plaintext `personalKey` in JSON) is no longer written. First-run **Oude back-up (.kbak2)** still imports it, then asks for a new 12-word phrase (the old key cannot become a mnemonic).
+- Legacy `.kbak2` (plaintext `personalKey` in JSON) is no longer written. First-run **Legacy backup (.kbak2)** still imports it, then asks for a new 12-word phrase (the old key cannot become a mnemonic).
 
 ### Presence & Heartbeat Protocol
 Every sync cycle each device writes an encrypted **presence file** to `/kinetic/shared/presence/{deviceId}.json` (family key). The file contains `deviceId`, `deviceType` (`'parent'` or `'kid'`), `displayName`, and `lastSeen` (UTC ISO-8601).
 
-- **Parent Settings screen** reads presence files for the connected partner and displays a relative last-seen timestamp ("zojuist", "X minuten geleden", etc.).
+- **Parent Settings screen** reads presence files for the connected partner and displays a relative last-seen timestamp ("just now", "X minutes ago", etc.).
 - **Kids Settings screen** reads presence files for each enrolled kid, showing last-seen per kid in the list.
 - Entries older than **14 days** are shown as a stale warning with error styling.
 
@@ -165,14 +166,14 @@ When a device explicitly leaves the family, it writes an encrypted **tombstone**
 
 ## Conditional UI
 
-**Familie nav item** is only visible when:
+**Family nav item** is only visible when:
 - Partner is paired (Flag: `kinetic_partner_paired == true`) OR
 - At least one child is enrolled (`enrolledKids.length > 0`)
 
-**Voorstellen tab** in Familie screen:
+**Proposals tab** in Family screen:
 - Visible only when `partnerPaired == true`
-- Shows "Geen voorstellen" when no proposals exist
+- Shows "No proposals" when no proposals exist
 
-**Kinderen tab** in Familie screen:
+**Kids tab** in Family screen:
 - Visible only when `enrolledKidsCount > 0`
 - Displays live overview pulled from `/kinetic/shared/tasks/` grouped by enrolled kid name

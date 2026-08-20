@@ -5,6 +5,7 @@ import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../../db/app_database.dart';
 import '../../db/full_backup_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../main.dart';
 import '../../settings/settings_repository.dart';
 import '../../sync/webdav_config_repository.dart';
@@ -30,6 +31,7 @@ class VaultWelcomeScreen extends StatelessWidget {
   final VoidCallback onNeedsMigration;
 
   Future<void> _importLegacyBackup(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: false,
@@ -40,7 +42,7 @@ class VaultWelcomeScreen extends StatelessWidget {
     if (bytes == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kon het bestand niet lezen.')),
+        SnackBar(content: Text(l10n.vaultCouldNotReadFile)),
       );
       return;
     }
@@ -56,13 +58,14 @@ class VaultWelcomeScreen extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ongeldige oude back-up: $e')),
+        SnackBar(content: Text(l10n.vaultInvalidLegacyBackup('$e'))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -78,15 +81,13 @@ class VaultWelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Jouw kluis',
+                l10n.vaultWelcomeTitle,
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Kinetic Link bewaart taken en notities met een herstelzin van '
-                '12 woorden. Schrijf die zin op papier. Op dit apparaat kun je '
-                'hem later opnieuw tonen (met schermvergrendeling).',
+                l10n.vaultWelcomeBody,
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,
               ),
@@ -102,7 +103,7 @@ class VaultWelcomeScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Nieuwe kluis'),
+                child: Text(l10n.vaultNewVault),
               ),
               const SizedBox(height: 12),
               OutlinedButton(
@@ -119,12 +120,12 @@ class VaultWelcomeScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Kluis herstellen'),
+                child: Text(l10n.vaultRestoreVault),
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () => _importLegacyBackup(context),
-                child: const Text('Oude back-up (.kbak2)'),
+                child: Text(l10n.vaultLegacyBackup),
               ),
             ],
           ),
@@ -140,14 +141,14 @@ class VaultCreateScreen extends StatefulWidget {
     required this.vaultRepo,
     required this.onUnlocked,
     this.headline,
-    this.confirmLabel = 'Kluis aanmaken',
+    this.confirmLabel,
     this.afterUnlock,
   });
 
   final VaultRepository vaultRepo;
   final VoidCallback onUnlocked;
   final String? headline;
-  final String confirmLabel;
+  final String? confirmLabel;
   final Future<void> Function()? afterUnlock;
 
   @override
@@ -198,6 +199,7 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
   Future<void> _confirmQuiz() async {
     final words = _words;
     if (words == null) return;
+    final l10n = AppLocalizations.of(context);
     final answers = _quizCtrls.map((c) => c.text).toList();
     final ok = KineticVault.quizMatches(
       mnemonic: words,
@@ -205,7 +207,7 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
       answers: answers,
     );
     if (!ok) {
-      setState(() => _quizError = 'Niet alle woorden kloppen. Probeer opnieuw.');
+      setState(() => _quizError = l10n.vaultQuizMismatch);
       return;
     }
     setState(() => _busy = true);
@@ -218,36 +220,41 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _quizError = 'Kon de kluis niet aanmaken: $e';
+        _quizError = l10n.vaultCreateFailed('$e');
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final words = _words;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_step == 0 ? 'Herstelzin' : 'Bevestigen'),
+        title: Text(
+          _step == 0 ? l10n.vaultRecoveryPhrase : l10n.vaultConfirm,
+        ),
       ),
       body: words == null
           ? const Center(child: CircularProgressIndicator())
           : _step == 0
-          ? _buildShowWords(context, words)
-          : _buildQuiz(context),
+          ? _buildShowWords(context, words, l10n)
+          : _buildQuiz(context, l10n),
     );
   }
 
-  Widget _buildShowWords(BuildContext context, List<String> words) {
+  Widget _buildShowWords(
+    BuildContext context,
+    List<String> words,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            widget.headline ??
-                'Schrijf deze 12 woorden op papier en bewaar ze veilig. '
-                    'Zonder deze zin kun je de kluis niet op een nieuw apparaat herstellen.',
+            widget.headline ?? l10n.vaultWriteWords,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -283,29 +290,29 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: words.join(' ')));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Herstelzin gekopieerd')),
+                SnackBar(content: Text(l10n.vaultPhraseCopied)),
               );
             },
             icon: const Icon(Icons.copy),
-            label: const Text('Kopiëren'),
+            label: Text(l10n.commonCopy),
           ),
           FilledButton(
             onPressed: _startQuiz,
-            child: const Text('Ik heb ze opgeschreven'),
+            child: Text(l10n.vaultIWroteThemDown),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuiz(BuildContext context) {
+  Widget _buildQuiz(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Vul de gevraagde woorden in om te bevestigen dat je de zin hebt bewaard.',
+            l10n.vaultQuizPrompt,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
@@ -313,7 +320,7 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
             TextFormField(
               controller: _quizCtrls[i],
               decoration: InputDecoration(
-                labelText: 'Woord ${_quiz[i] + 1}',
+                labelText: l10n.vaultWordN(_quiz[i] + 1),
               ),
               autocorrect: false,
               enableSuggestions: false,
@@ -336,7 +343,7 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
                     _step = 0;
                     _quizError = null;
                   }),
-            child: const Text('Terug naar de woorden'),
+            child: Text(l10n.vaultBackToWords),
           ),
           FilledButton(
             onPressed: _busy ? null : _confirmQuiz,
@@ -346,7 +353,7 @@ class _VaultCreateScreenState extends State<VaultCreateScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(widget.confirmLabel),
+                : Text(widget.confirmLabel ?? l10n.vaultCreateVault),
           ),
         ],
       ),

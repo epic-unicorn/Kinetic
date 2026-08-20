@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_qr_scanner/kinetic_qr_scanner.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../sync/webdav_config_repository.dart';
 
 // ---------------------------------------------------------------------------
@@ -50,7 +51,8 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
       await _showConfirmDialog(data);
     } on FormatException catch (e) {
       if (!mounted) return;
-      _showError('Ongeldige QR-code: $e');
+      final l10n = AppLocalizations.of(context);
+      _showError(l10n.invalidQrCode(e));
       if (mounted) setState(() => _processing = false);
     }
   }
@@ -103,9 +105,10 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Familie koppelen'), centerTitle: false),
+      appBar: AppBar(title: Text(l10n.linkFamilyTitle), centerTitle: false),
       body: Column(
         children: [
           Expanded(
@@ -130,15 +133,13 @@ class _KidsEnrollmentScreenState extends State<KidsEnrollmentScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Scan de QR-code',
+                  l10n.scanQrCode,
                   style: tt.titleMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Open de Kinetic-app van je ouder, ga naar '
-                  'Instellingen → Familie → Kinderenapp koppelen, '
-                  'scan de QR-code en typ daarna het WebDAV-wachtwoord.',
+                  l10n.scanQrInstructions,
                   style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
@@ -198,32 +199,34 @@ class _EnrollmentConfirmDialogState extends State<_EnrollmentConfirmDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return AlertDialog(
-      title: const Text('Familie koppelen'),
+      title: Text(l10n.linkFamilyTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'QR-code gevonden. Koppel dit apparaat aan de familie?',
+            l10n.qrCodeFoundConfirm,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           _InfoRow(
             icon: Icons.person_outline,
-            label: 'Account',
+            label: l10n.account,
             value: widget.data.username,
           ),
           const SizedBox(height: 6),
           _InfoRow(
             icon: Icons.cloud_outlined,
-            label: 'Server',
+            label: l10n.server,
             value: widget.data.serverUrl,
           ),
           if (_needsPassword) ...[
             const SizedBox(height: 16),
             Text(
-              'Typ het WebDAV-wachtwoord van je ouder. Dat staat niet in de QR-code.',
+              l10n.enterWebDavPassword,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -233,7 +236,7 @@ class _EnrollmentConfirmDialogState extends State<_EnrollmentConfirmDialog> {
               autocorrect: false,
               enableSuggestions: false,
               decoration: InputDecoration(
-                labelText: 'WebDAV-wachtwoord',
+                labelText: l10n.webDavPassword,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -250,11 +253,11 @@ class _EnrollmentConfirmDialogState extends State<_EnrollmentConfirmDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuleren'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: const Text('Koppelen'),
+          child: Text(l10n.link),
         ),
       ],
     );

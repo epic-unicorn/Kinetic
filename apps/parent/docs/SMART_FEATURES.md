@@ -4,11 +4,11 @@ This document describes the smart reminder chips, reminder time defaults, notes 
 
 ## Notes list
 
-Note rows use a folded-note icon (same visual weight as a task checkbox) plus title, reminder, and a “Gedeeld” badge. The markdown body is **not** previewed in the list.
+Note rows use a folded-note icon (same visual weight as a task checkbox) plus title, reminder, and a “Shared” badge. The markdown body is **not** previewed in the list.
 
 ## Reminder time picker
 
-When a reminder is enabled on a **new** task (or “Tijd toevoegen” on an all-day reminder), the default instant is **one hour from now, rounded up to the next half hour**.
+When a reminder is enabled on a **new** task (or “Add time” on an all-day reminder), the default instant is **one hour from now, rounded up to the next half hour**.
 
 | Now | Default |
 |---|---|
@@ -23,7 +23,7 @@ The same picker is used for note reminders.
 
 ## Smart reminder chips
 
-When creating or editing a task, the **Herinnering** row shows contextual `ActionChip` suggestions instead of four static presets.
+When creating or editing a task, the **Reminder** row shows contextual `ActionChip` suggestions instead of four static presets.
 
 ### Engine
 
@@ -33,12 +33,12 @@ When creating or editing a task, the **Herinnering** row shows contextual `Actio
 
 | Signal | Example chip | Trigger |
 |--------|--------------|---------|
-| Habit time | `Za 10:00` | ≥2 completions with same title; most common weekday + hour |
-| Habit interval | `Over 2 dagen` | Median interval exceeded by ≥80% |
-| Keyword | `Morgen 07:00` | Title contains `school`, `sport`, `boodschappen`, … |
-| Category | `Za 09:00` | Default per `TaskCategory` when no history |
-| Contextual | `Vanavond 20:00` | Time-of-day aware quick options |
-| Fallback | `1 uur` | Backfill to always show 4 chips |
+| Habit time | `Sat 10:00` | ≥2 completions with same title; most common weekday + hour |
+| Habit interval | `In 2 days` | Median interval exceeded by ≥80% |
+| Keyword | `Tomorrow 07:00` | Title contains Dutch keyword examples such as `school`, `sport`, `boodschappen`, … |
+| Category | `Sat 09:00` | Default per `TaskCategory` when no history |
+| Contextual | `Tonight 20:00` | Time-of-day aware quick options |
+| Fallback | `1 hour` | Backfill to always show 4 chips |
 
 The first chip is highlighted with a ✨ icon. Long-press shows a tooltip with the explanation.
 
@@ -58,10 +58,10 @@ When WebDAV presence is unavailable (no sync configured), enrolled members are t
 
 ### Send sheet
 
-The **Doorsturen** button is disabled when nobody is connected. The sheet lists:
+The **Forward** button is disabled when nobody is connected. The sheet lists:
 
 - **Partner** — one row with connection status
-- **Kinderen** — one row per enrolled kid with connection status
+- **Kids** — one row per enrolled kid with connection status
 
 Offline members are visible but disabled. XP reward is still configured in the confirm dialog.
 
@@ -79,24 +79,24 @@ Partner detectors run when a partner is paired (`proposalRepo != null`). They do
 
 | Detector | Target | Trigger | Payload |
 |----------|--------|---------|---------|
-| **Habit** | Voor jou | Same non-recurring title completed ≥ 2× and days since last ≥ 80% of the median interval, **or** a single completion of a strong keyword (`boodschappen`, `wasgoed`, …) after ≥ 14 days | Original title |
-| **Calendar** | Voor jou | Month-based prompt with no history (March belasting, August schoolspullen, December kerst) unless an open task already covers that theme | Fixed prompt title |
-| **Stale** | Voor jou | Open task older than 7 days with no due date and no reminder | Same title; **Toevoegen / Herinnering** sets due date on the existing task |
-| **Seasonal** | Voor jou | Completed in the same calendar month in a prior year | Original title |
-| **Partner complement** | Voor partner | Keywords in **your** open tasks, including private (e.g. `school`, `huiswerk`, `dokter`) | **Generic template only** — never the source title or notes |
-| **Load balance** | Voor partner | ≥ 3 open tasks in one category (private counted; `other` needs ≥ 5) | Generic “Kan jij deze week iets in [categorie] oppakken?” |
+| **Habit** | For you | Same non-recurring title completed ≥ 2× and days since last ≥ 80% of the median interval, **or** a single completion of a strong keyword (Dutch examples: `boodschappen`, `wasgoed`, …) after ≥ 14 days | Original title |
+| **Calendar** | For you | Month-based prompt with no history (March belasting, August schoolspullen, December kerst — Dutch keyword examples) unless an open task already covers that theme | Fixed prompt title |
+| **Stale** | For you | Open task older than 7 days with no due date and no reminder | Same title; **Add / Reminder** sets due date on the existing task |
+| **Seasonal** | For you | Completed in the same calendar month in a prior year | Original title |
+| **Partner complement** | For partner | Keywords in **your** open tasks, including private (e.g. `school`, `huiswerk`, `dokter`) | **Generic template only** — never the source title or notes |
+| **Load balance** | For partner | ≥ 3 open tasks in one category (private counted; `other` needs ≥ 5) | Generic “Can you pick something up in [category] this week?” |
 
 Keyword families and calendar prompts live in `lib/todo/services/suggestion_heuristics.dart`. Partner templates are capped at one per family per 14 days (`hasRecentWithTitle`).
 
-Example: a private task “Afspraak GZA schoolarts 14:30” can produce “Schoolronde of opvang deze week?” — the partner never sees GZA or the time.
+Example: a private task “Afspraak GZA schoolarts 14:30” can produce “School round or childcare this week?” — the partner never sees GZA or the time.
 
 ### UI
 
-- **Privé tab**: `SuggestionBanner` shows the first pending self suggestion
-- **Voorstellen tab**: three sections — **Voor jou**, **Voor partner**, **Van partner**
-- **Naar partner** opens **Dit ziet je partner** (`confirmAndSendSuggestionToPartner`) before sending
-- Partner-targeted proposals are marked `autoGenerated` with a “Via suggestie” badge
-- Stale suggestions use **Herinnering** instead of creating a duplicate task
+- **Private tab**: `SuggestionBanner` shows the first pending self suggestion
+- **Proposals tab**: three sections — **For you**, **For partner**, **From partner**
+- **Send to partner** opens **What your partner sees** (`confirmAndSendSuggestionToPartner`) before sending
+- Partner-targeted proposals are marked `autoGenerated` with a “Via suggestion” badge
+- Stale suggestions use **Reminder** instead of creating a duplicate task
 
 ### Database
 

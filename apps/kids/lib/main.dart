@@ -1,8 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
 import 'enrollment/kids_enrollment_screen.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'notifications/kids_notification_service.dart';
 import 'sync/sync_orchestrator.dart';
 import 'sync/webdav_config_repository.dart';
@@ -38,6 +40,13 @@ class KineticKidsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kinetic Kids',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: colorScheme,
@@ -147,7 +156,11 @@ class _KidsAppShellState extends State<_KidsAppShell>
             if (mounted) setState(() => _xpResetAt = resetAt);
           },
           onNewTaskReceived: (taskTitle) {
-            widget.notificationService.showNewTaskNotification(taskTitle);
+            final l10n = AppLocalizations.of(context);
+            widget.notificationService.showNewTaskNotification(
+              taskTitle,
+              title: l10n.newTaskNotificationTitle,
+            );
           },
         );
       });
@@ -162,25 +175,23 @@ class _KidsAppShellState extends State<_KidsAppShell>
   }
 
   Future<void> _leaveFamily() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Familie verlaten?'),
-        content: const Text(
-          'De koppeling met de familie wordt verwijderd. '
-          'Je lokale opdrachten blijven bewaard.',
-        ),
+        title: Text(l10n.leaveFamilyTitle),
+        content: Text(l10n.leaveFamilyMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(ctx).colorScheme.error,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verlaten'),
+            child: Text(l10n.leave),
           ),
         ],
       ),
