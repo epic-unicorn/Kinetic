@@ -40,6 +40,8 @@ class KineticKidsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kinetic Kids',
       debugShowCheckedModeBanner: false,
+      // Default to English; device Dutch no longer overrides.
+      locale: const Locale('en'),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

@@ -1129,6 +1129,1290 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This QR code contains the server, account, and family key — not the WebDAV password. Type that password once on the kids device. Only share the code with the kids app on a trusted device.'**
   String get kidsEnrollWhatSharedBody;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settingsLanguageEnglish;
+
+  /// No description provided for @settingsLanguageDutch.
+  ///
+  /// In en, this message translates to:
+  /// **'Nederlands'**
+  String get settingsLanguageDutch;
+
+  /// No description provided for @settingsLanguageChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose language'**
+  String get settingsLanguageChoose;
+
+  /// No description provided for @commonAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get commonAdd;
+
+  /// No description provided for @commonSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get commonSend;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get commonRetry;
+
+  /// No description provided for @commonDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get commonDismiss;
+
+  /// No description provided for @commonCloseAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonCloseAction;
+
+  /// No description provided for @commonExporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting…'**
+  String get commonExporting;
+
+  /// No description provided for @commonImporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get commonImporting;
+
+  /// No description provided for @commonNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get commonNone;
+
+  /// No description provided for @commonEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get commonEveryone;
+
+  /// No description provided for @commonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get commonTitle;
+
+  /// No description provided for @commonNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get commonNotes;
+
+  /// No description provided for @commonContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get commonContent;
+
+  /// No description provided for @commonLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get commonLow;
+
+  /// No description provided for @commonMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get commonMedium;
+
+  /// No description provided for @commonHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get commonHigh;
+
+  /// No description provided for @commonPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get commonPrivate;
+
+  /// No description provided for @commonShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get commonShared;
+
+  /// No description provided for @commonKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids'**
+  String get commonKids;
+
+  /// No description provided for @commonPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner'**
+  String get commonPartner;
+
+  /// No description provided for @commonReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get commonReminder;
+
+  /// No description provided for @commonTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get commonTime;
+
+  /// No description provided for @commonCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get commonCategory;
+
+  /// No description provided for @commonPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get commonPriority;
+
+  /// No description provided for @commonNoCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No category'**
+  String get commonNoCategory;
+
+  /// No description provided for @commonSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving: {error}'**
+  String commonSaveError(String error);
+
+  /// No description provided for @commonDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting: {error}'**
+  String commonDeleteError(String error);
+
+  /// No description provided for @relativeWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} weeks ago'**
+  String relativeWeeksAgo(int count);
+
+  /// No description provided for @dateToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dateToday;
+
+  /// No description provided for @dateTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dateTomorrow;
+
+  /// No description provided for @dateYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get dateYesterday;
+
+  /// No description provided for @dateDaysOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d overdue'**
+  String dateDaysOverdue(int count);
+
+  /// No description provided for @dateInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'In {count} days'**
+  String dateInDays(int count);
+
+  /// No description provided for @dateWeekdayMonday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get dateWeekdayMonday;
+
+  /// No description provided for @dateWeekdayTuesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get dateWeekdayTuesday;
+
+  /// No description provided for @dateWeekdayWednesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get dateWeekdayWednesday;
+
+  /// No description provided for @dateWeekdayThursday.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get dateWeekdayThursday;
+
+  /// No description provided for @dateWeekdayFriday.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get dateWeekdayFriday;
+
+  /// No description provided for @dateWeekdaySaturday.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get dateWeekdaySaturday;
+
+  /// No description provided for @dateWeekdaySunday.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get dateWeekdaySunday;
+
+  /// No description provided for @dateMonthJan.
+  ///
+  /// In en, this message translates to:
+  /// **'Jan'**
+  String get dateMonthJan;
+
+  /// No description provided for @dateMonthFeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Feb'**
+  String get dateMonthFeb;
+
+  /// No description provided for @dateMonthMar.
+  ///
+  /// In en, this message translates to:
+  /// **'Mar'**
+  String get dateMonthMar;
+
+  /// No description provided for @dateMonthApr.
+  ///
+  /// In en, this message translates to:
+  /// **'Apr'**
+  String get dateMonthApr;
+
+  /// No description provided for @dateMonthMay.
+  ///
+  /// In en, this message translates to:
+  /// **'May'**
+  String get dateMonthMay;
+
+  /// No description provided for @dateMonthJun.
+  ///
+  /// In en, this message translates to:
+  /// **'Jun'**
+  String get dateMonthJun;
+
+  /// No description provided for @dateMonthJul.
+  ///
+  /// In en, this message translates to:
+  /// **'Jul'**
+  String get dateMonthJul;
+
+  /// No description provided for @dateMonthAug.
+  ///
+  /// In en, this message translates to:
+  /// **'Aug'**
+  String get dateMonthAug;
+
+  /// No description provided for @dateMonthSep.
+  ///
+  /// In en, this message translates to:
+  /// **'Sep'**
+  String get dateMonthSep;
+
+  /// No description provided for @dateMonthOct.
+  ///
+  /// In en, this message translates to:
+  /// **'Oct'**
+  String get dateMonthOct;
+
+  /// No description provided for @dateMonthNov.
+  ///
+  /// In en, this message translates to:
+  /// **'Nov'**
+  String get dateMonthNov;
+
+  /// No description provided for @dateMonthDec.
+  ///
+  /// In en, this message translates to:
+  /// **'Dec'**
+  String get dateMonthDec;
+
+  /// No description provided for @connNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get connNotConnected;
+
+  /// No description provided for @connNotConnectedSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected since {when}'**
+  String connNotConnectedSince(String when);
+
+  /// No description provided for @connUnknownNoSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection unknown (no sync)'**
+  String get connUnknownNoSync;
+
+  /// No description provided for @connStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection stale ({when})'**
+  String connStale(String when);
+
+  /// No description provided for @connConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connConnected;
+
+  /// No description provided for @connConnectedSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected ({when})'**
+  String connConnectedSince(String when);
+
+  /// No description provided for @notifChannelName.
+  ///
+  /// In en, this message translates to:
+  /// **'Task reminders'**
+  String get notifChannelName;
+
+  /// No description provided for @notifChannelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders for tasks and assignments'**
+  String get notifChannelDesc;
+
+  /// No description provided for @notifReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get notifReminderTitle;
+
+  /// No description provided for @backupNoVault.
+  ///
+  /// In en, this message translates to:
+  /// **'No vault on this device.'**
+  String get backupNoVault;
+
+  /// No description provided for @backupSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved: {path}'**
+  String backupSaved(String path);
+
+  /// No description provided for @backupExportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error exporting: {error}'**
+  String backupExportError(String error);
+
+  /// No description provided for @backupVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify recovery phrase'**
+  String get backupVerifyTitle;
+
+  /// No description provided for @backupVerifyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your 12 words. We will not show the phrase; we only check that it matches.'**
+  String get backupVerifyBody;
+
+  /// No description provided for @backupVerifyOk.
+  ///
+  /// In en, this message translates to:
+  /// **'The recovery phrase matches.'**
+  String get backupVerifyOk;
+
+  /// No description provided for @backupVerifyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This recovery phrase does not belong to this vault.'**
+  String get backupVerifyMismatch;
+
+  /// No description provided for @backupRevealTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get backupRevealTitle;
+
+  /// No description provided for @backupRevealMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'We cannot show the words again on this device. Use your paper copy, or restore the vault with the 12 words.'**
+  String get backupRevealMissing;
+
+  /// No description provided for @backupImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get backupImportTitle;
+
+  /// No description provided for @backupImportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 12 words of the vault inside the .kvault file. This replaces your current tasks and notes.'**
+  String get backupImportBody;
+
+  /// No description provided for @backupCouldNotReadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the file.'**
+  String get backupCouldNotReadFile;
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored successfully.'**
+  String get backupRestored;
+
+  /// No description provided for @backupInvalidFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid backup file: {error}'**
+  String backupInvalidFile(String error);
+
+  /// No description provided for @backupImportError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error importing: {error}'**
+  String backupImportError(String error);
+
+  /// No description provided for @backupRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring backup…'**
+  String get backupRestoring;
+
+  /// No description provided for @webdavSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up WebDAV'**
+  String get webdavSetupTitle;
+
+  /// No description provided for @webdavUrlRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the server URL'**
+  String get webdavUrlRequired;
+
+  /// No description provided for @webdavUsernameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the username'**
+  String get webdavUsernameRequired;
+
+  /// No description provided for @webdavPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password'**
+  String get webdavPasswordRequired;
+
+  /// No description provided for @webdavTestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get webdavTestConnection;
+
+  /// No description provided for @webdavTestingConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing connection…'**
+  String get webdavTestingConnection;
+
+  /// No description provided for @webdavConnectionOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection succeeded'**
+  String get webdavConnectionOk;
+
+  /// No description provided for @webdavTestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Test the connection before saving.'**
+  String get webdavTestFirst;
+
+  /// No description provided for @webdavCreateVaultFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a vault before linking WebDAV.'**
+  String get webdavCreateVaultFirst;
+
+  /// No description provided for @webdavPhraseMismatchServer.
+  ///
+  /// In en, this message translates to:
+  /// **'This server already has a vault that does not match your recovery phrase.'**
+  String get webdavPhraseMismatchServer;
+
+  /// No description provided for @webdavConfigSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV configuration saved.'**
+  String get webdavConfigSaved;
+
+  /// No description provided for @webdavSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving: {error}'**
+  String webdavSaveError(String error);
+
+  /// No description provided for @webdavMigrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing data found'**
+  String get webdavMigrationTitle;
+
+  /// No description provided for @webdavMigrationIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'The WebDAV server already has encrypted files:'**
+  String get webdavMigrationIntro;
+
+  /// No description provided for @webdavMigrationTaskFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{  • 1 task file} other{  • {count} task files}}'**
+  String webdavMigrationTaskFiles(int count);
+
+  /// No description provided for @webdavMigrationNoteFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{  • 1 note file} other{  • {count} note files}}'**
+  String webdavMigrationNoteFiles(int count);
+
+  /// No description provided for @webdavMigrationChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'These files are encrypted with a vault. Choose how to continue:'**
+  String get webdavMigrationChoose;
+
+  /// No description provided for @webdavMigrationCleanOption.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Clean install — remove the old files on the server and start fresh.'**
+  String get webdavMigrationCleanOption;
+
+  /// No description provided for @webdavMigrationImportOption.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Import backup — select a .kvault file. This vault\'s recovery phrase unlocks the file.'**
+  String get webdavMigrationImportOption;
+
+  /// No description provided for @webdavMigrationClean.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean install'**
+  String get webdavMigrationClean;
+
+  /// No description provided for @webdavMigrationImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get webdavMigrationImport;
+
+  /// No description provided for @webdavBackupRestoredSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup restored. The app will now sync with the server.'**
+  String get webdavBackupRestoredSync;
+
+  /// No description provided for @webdavRestoreError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error restoring backup: {error}'**
+  String webdavRestoreError(String error);
+
+  /// No description provided for @webdavMigrationCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Migration check failed: {error}'**
+  String webdavMigrationCheckFailed(String error);
+
+  /// No description provided for @webdavFilesDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files deleted.'**
+  String webdavFilesDeleted(int count);
+
+  /// No description provided for @webdavCleanupError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error cleaning up: {error}'**
+  String webdavCleanupError(String error);
+
+  /// No description provided for @tasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get tasksTitle;
+
+  /// No description provided for @tasksCompletedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks'**
+  String get tasksCompletedTooltip;
+
+  /// No description provided for @tasksTabPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get tasksTabPrivate;
+
+  /// No description provided for @tasksTabSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions'**
+  String get tasksTabSuggestions;
+
+  /// No description provided for @tasksTabKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids'**
+  String get tasksTabKids;
+
+  /// No description provided for @tasksSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed, tap to retry.'**
+  String get tasksSyncFailed;
+
+  /// No description provided for @tasksSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing'**
+  String get tasksSyncing;
+
+  /// No description provided for @tasksForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For you'**
+  String get tasksForYou;
+
+  /// No description provided for @tasksForPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'For partner'**
+  String get tasksForPartner;
+
+  /// No description provided for @tasksFromPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'From partner'**
+  String get tasksFromPartner;
+
+  /// No description provided for @tasksRefreshSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh suggestions'**
+  String get tasksRefreshSuggestions;
+
+  /// No description provided for @tasksAddReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get tasksAddReminder;
+
+  /// No description provided for @tasksAddTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get tasksAddTask;
+
+  /// No description provided for @tasksToPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'To partner'**
+  String get tasksToPartner;
+
+  /// No description provided for @tasksNoPartnerSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No partner suggestions'**
+  String get tasksNoPartnerSuggestions;
+
+  /// No description provided for @tasksNoPartnerSuggestionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your partner has not suggested any tasks yet'**
+  String get tasksNoPartnerSuggestionsHint;
+
+  /// No description provided for @tasksViaSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Via suggestion'**
+  String get tasksViaSuggestion;
+
+  /// No description provided for @tasksReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get tasksReject;
+
+  /// No description provided for @tasksAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get tasksAccept;
+
+  /// No description provided for @tasksProposalAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion accepted'**
+  String get tasksProposalAccepted;
+
+  /// No description provided for @tasksProposalRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion rejected'**
+  String get tasksProposalRejected;
+
+  /// No description provided for @tasksLoadProposalsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading suggestions'**
+  String get tasksLoadProposalsError;
+
+  /// No description provided for @tasksXpResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset XP for {name}?'**
+  String tasksXpResetTitle(String name);
+
+  /// No description provided for @tasksXpResetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This resets the XP counter to 0. The assignments stay.'**
+  String get tasksXpResetBody;
+
+  /// No description provided for @tasksXpResetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get tasksXpResetAction;
+
+  /// No description provided for @tasksXpResetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'XP reset for {name}'**
+  String tasksXpResetDone(String name);
+
+  /// No description provided for @tasksXpResetError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error resetting: {error}'**
+  String tasksXpResetError(String error);
+
+  /// No description provided for @tasksLoadKidsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading kids assignments'**
+  String get tasksLoadKidsError;
+
+  /// No description provided for @tasksNoKidsAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'No kids assignments'**
+  String get tasksNoKidsAssignments;
+
+  /// No description provided for @tasksNoKidsAssignmentsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a task to the kids app to see it here.'**
+  String get tasksNoKidsAssignmentsHint;
+
+  /// No description provided for @tasksResetXp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset XP'**
+  String get tasksResetXp;
+
+  /// No description provided for @tasksDoneOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Done on {day}/{month}'**
+  String tasksDoneOn(int day, int month);
+
+  /// No description provided for @tasksCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks'**
+  String get tasksCompletedTitle;
+
+  /// No description provided for @tasksDeleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all'**
+  String get tasksDeleteAll;
+
+  /// No description provided for @tasksDeleteCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete completed tasks'**
+  String get tasksDeleteCompletedTitle;
+
+  /// No description provided for @tasksDeleteCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete all completed tasks? This cannot be undone.'**
+  String get tasksDeleteCompletedBody;
+
+  /// No description provided for @tasksEmptySuggestionsPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions from the smart planner and proposals from your partner appear here'**
+  String get tasksEmptySuggestionsPartner;
+
+  /// No description provided for @tasksEmptySuggestionsSolo.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestions from the smart planner based on your habits appear here'**
+  String get tasksEmptySuggestionsSolo;
+
+  /// No description provided for @tasksNoSuggestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No suggestions'**
+  String get tasksNoSuggestions;
+
+  /// No description provided for @tasksAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All done!'**
+  String get tasksAllDone;
+
+  /// No description provided for @tasksNoOpenTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'You have no open tasks'**
+  String get tasksNoOpenTasks;
+
+  /// No description provided for @tasksNoCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed tasks'**
+  String get tasksNoCompleted;
+
+  /// No description provided for @tasksNoCompletedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks appear here'**
+  String get tasksNoCompletedHint;
+
+  /// No description provided for @tasksAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment'**
+  String get tasksAssignment;
+
+  /// No description provided for @taskDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task?'**
+  String get taskDeleteTitle;
+
+  /// No description provided for @taskDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" will be permanently deleted. This cannot be undone.'**
+  String taskDeleteBody(String title);
+
+  /// No description provided for @taskForwardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward task'**
+  String get taskForwardTitle;
+
+  /// No description provided for @taskAssignmentCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment created ✓'**
+  String get taskAssignmentCreated;
+
+  /// No description provided for @taskNoConnectedFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'No connected partner or kids'**
+  String get taskNoConnectedFamily;
+
+  /// No description provided for @taskStaleConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection stale'**
+  String get taskStaleConnectionTitle;
+
+  /// No description provided for @taskStalePartnerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your partner was last seen {status}. Send anyway?'**
+  String taskStalePartnerBody(String status);
+
+  /// No description provided for @taskStaleKidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was last seen {status}. Send anyway?'**
+  String taskStaleKidBody(String name, String status);
+
+  /// No description provided for @taskSendAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Send anyway'**
+  String get taskSendAnyway;
+
+  /// No description provided for @taskSendToPartnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to partner?'**
+  String get taskSendToPartnerTitle;
+
+  /// No description provided for @taskSendToPartnerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" will be sent as a proposal to your partner and removed from your list once they accept it.'**
+  String taskSendToPartnerBody(String title);
+
+  /// No description provided for @taskSendToKidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {name}?'**
+  String taskSendToKidTitle(String name);
+
+  /// No description provided for @taskSendToKidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The task disappears from your list once the child completes it.'**
+  String get taskSendToKidBody;
+
+  /// No description provided for @taskSendToKidLead.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" will be sent as an assignment to {name}.'**
+  String taskSendToKidLead(String title, String name);
+
+  /// No description provided for @taskXpReward.
+  ///
+  /// In en, this message translates to:
+  /// **'XP reward:'**
+  String get taskXpReward;
+
+  /// No description provided for @taskNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Task name'**
+  String get taskNameHint;
+
+  /// No description provided for @taskAddTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Add time'**
+  String get taskAddTime;
+
+  /// No description provided for @taskAddCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Add category'**
+  String get taskAddCategory;
+
+  /// No description provided for @taskRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get taskRepeat;
+
+  /// No description provided for @taskForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get taskForward;
+
+  /// No description provided for @taskRecurrenceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No recurrence'**
+  String get taskRecurrenceNone;
+
+  /// No description provided for @taskRecurrenceDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get taskRecurrenceDaily;
+
+  /// No description provided for @taskRecurrenceWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays'**
+  String get taskRecurrenceWeekdays;
+
+  /// No description provided for @taskRecurrenceWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get taskRecurrenceWeekly;
+
+  /// No description provided for @taskRecurrenceBiweekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Biweekly'**
+  String get taskRecurrenceBiweekly;
+
+  /// No description provided for @taskRecurrenceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get taskRecurrenceMonthly;
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesTitle;
+
+  /// No description provided for @notesTabPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get notesTabPrivate;
+
+  /// No description provided for @notesTabShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get notesTabShared;
+
+  /// No description provided for @notesNewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New note'**
+  String get notesNewTooltip;
+
+  /// No description provided for @notesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading notes'**
+  String get notesLoadError;
+
+  /// No description provided for @notesEmptyShared.
+  ///
+  /// In en, this message translates to:
+  /// **'No shared notes'**
+  String get notesEmptyShared;
+
+  /// No description provided for @notesEmptyPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'No private notes'**
+  String get notesEmptyPrivate;
+
+  /// No description provided for @notesEmptySharedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes shared with your partner appear here'**
+  String get notesEmptySharedHint;
+
+  /// No description provided for @notesEmptyPrivateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your private notes appear here'**
+  String get notesEmptyPrivateHint;
+
+  /// No description provided for @notesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Note saved'**
+  String get notesSaved;
+
+  /// No description provided for @notesSharedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get notesSharedBadge;
+
+  /// No description provided for @notesTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get notesTitleRequired;
+
+  /// No description provided for @notesDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note?'**
+  String get notesDeleteTitle;
+
+  /// No description provided for @notesDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot undo this.'**
+  String get notesDeleteBody;
+
+  /// No description provided for @notesSharedWithPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with partner'**
+  String get notesSharedWithPartner;
+
+  /// No description provided for @suggestWebDavRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Link WebDAV first to send a suggestion.'**
+  String get suggestWebDavRequired;
+
+  /// No description provided for @suggestPartnerSeesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What your partner sees'**
+  String get suggestPartnerSeesTitle;
+
+  /// No description provided for @suggestPartnerSeesGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Intentionally generic — no private titles or notes.'**
+  String get suggestPartnerSeesGeneric;
+
+  /// No description provided for @suggestPartnerSeesFull.
+  ///
+  /// In en, this message translates to:
+  /// **'The title and any notes from this suggestion will be included.'**
+  String get suggestPartnerSeesFull;
+
+  /// No description provided for @suggestSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get suggestSend;
+
+  /// No description provided for @suggestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion sent to partner'**
+  String get suggestSent;
+
+  /// No description provided for @suggestSnoozeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze'**
+  String get suggestSnoozeTitle;
+
+  /// No description provided for @suggestSnoozeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze this suggestion for 7 days?'**
+  String get suggestSnoozeBody;
+
+  /// No description provided for @suggestSnoozeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze'**
+  String get suggestSnoozeAction;
+
+  /// No description provided for @suggestAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get suggestAdd;
+
+  /// No description provided for @suggestReasonHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit'**
+  String get suggestReasonHabit;
+
+  /// No description provided for @suggestReasonPartner.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner complement'**
+  String get suggestReasonPartner;
+
+  /// No description provided for @suggestReasonSeasonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal'**
+  String get suggestReasonSeasonal;
+
+  /// No description provided for @suggestReasonLoadBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Load balance'**
+  String get suggestReasonLoadBalance;
+
+  /// No description provided for @suggestReasonStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get suggestReasonStale;
+
+  /// No description provided for @suggestReasonCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get suggestReasonCalendar;
+
+  /// No description provided for @categoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get categoryTitle;
+
+  /// No description provided for @categoryNewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get categoryNewHint;
+
+  /// No description provided for @categoryNewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'New category…'**
+  String get categoryNewAction;
+
+  /// No description provided for @quickAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New task…'**
+  String get quickAddHint;
+
+  /// No description provided for @quickAddMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get quickAddMoreOptions;
+
+  /// No description provided for @timeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid time (00:00 – 23:59).'**
+  String get timeInvalid;
+
+  /// No description provided for @timeOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get timeOk;
 }
 
 class _AppLocalizationsDelegate

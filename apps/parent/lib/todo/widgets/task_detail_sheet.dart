@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../../family/family_connection_service.dart';
@@ -211,7 +212,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij opslaan: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).commonSaveError('$e'))));
       }
     }
   }
@@ -220,14 +221,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Taak verwijderen?'),
+        title: Text(AppLocalizations.of(context).taskDeleteTitle),
         content: Text(
-          '"${_titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : widget.task!.title}" wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.',
+          AppLocalizations.of(context).taskDeleteBody(
+            _titleCtrl.text.trim().isNotEmpty
+                ? _titleCtrl.text.trim()
+                : widget.task!.title,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -235,7 +240,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Verwijderen'),
+            child: Text(AppLocalizations.of(context).commonDelete),
           ),
         ],
       ),
@@ -256,7 +261,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
 
     if (!_canSend) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Geen verbonden partner of kinderen')),
+        SnackBar(content: Text(AppLocalizations.of(context).taskNoConnectedFamily)),
       );
       return;
     }
@@ -277,14 +282,14 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                   child: Text(
-                    'Taak doorsturen',
+                    AppLocalizations.of(context).taskForwardTitle,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 if (task.kidsTaskId != null)
-                  const ListTile(
-                    leading: Icon(Icons.bolt, color: kColorTeal),
-                    title: Text('Opdracht aangemaakt \u2713'),
+                  ListTile(
+                    leading: const Icon(Icons.bolt, color: kColorTeal),
+                    title: Text(AppLocalizations.of(context).taskAssignmentCreated),
                     enabled: false,
                   )
                 else ...[
@@ -292,7 +297,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                       child: Text(
-                        'Partner',
+                        AppLocalizations.of(context).commonPartner,
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ),
@@ -304,7 +309,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                             : Theme.of(context).disabledColor,
                       ),
                       title: Text(_partnerStatus!.name),
-                      subtitle: Text(_partnerStatus!.statusLabel),
+                      subtitle: Text(_partnerStatus!.statusLabel(AppLocalizations.of(context))),
                       enabled: _partnerStatus!.isConnected,
                       selected: selectedPartner != null,
                       onTap: _partnerStatus!.isConnected
@@ -319,7 +324,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                       child: Text(
-                        'Kinderen',
+                        AppLocalizations.of(context).commonKids,
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ),
@@ -332,7 +337,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                               : Theme.of(context).disabledColor,
                         ),
                         title: Text(kid.name),
-                        subtitle: Text(kid.statusLabel),
+                        subtitle: Text(kid.statusLabel(AppLocalizations.of(context))),
                         enabled: kid.isConnected,
                         selected: selectedKid?.id == kid.id,
                         onTap: kid.isConnected
@@ -350,7 +355,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Annuleren'),
+                          child: Text(AppLocalizations.of(context).commonCancel),
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
@@ -365,7 +370,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                                   }
                                 }
                               : null,
-                          child: const Text('Sturen'),
+                          child: Text(AppLocalizations.of(context).commonSend),
                         ),
                       ],
                     ),
@@ -388,19 +393,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Verbinding verouderd'),
+          title: Text(AppLocalizations.of(context).taskStaleConnectionTitle),
           content: Text(
-            'Je partner is voor het laatst gezien ${_partnerStatus!.statusLabel.toLowerCase()}. '
-            'Toch sturen?',
+            AppLocalizations.of(context).taskStalePartnerBody(
+              _partnerStatus!.statusLabel(AppLocalizations.of(context)).toLowerCase(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuleren'),
+              child: Text(AppLocalizations.of(context).commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Toch sturen'),
+              child: Text(AppLocalizations.of(context).taskSendAnyway),
             ),
           ],
         ),
@@ -411,18 +417,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Stuur naar partner?'),
+        title: Text(AppLocalizations.of(context).taskSendToPartnerTitle),
         content: Text(
-          '"${task.title}" wordt als voorstel naar je partner gestuurd en verdwijnt uit jouw lijst zodra zij/hij het accepteert.',
+          AppLocalizations.of(context).taskSendToPartnerBody(task.title),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sturen'),
+            child: Text(AppLocalizations.of(context).commonSend),
           ),
         ],
       ),
@@ -453,19 +459,21 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Verbinding verouderd'),
+          title: Text(AppLocalizations.of(context).taskStaleConnectionTitle),
           content: Text(
-            '${selectedKid.name} is voor het laatst gezien '
-            '${selectedKid.statusLabel.toLowerCase()}. Toch sturen?',
+            AppLocalizations.of(context).taskStaleKidBody(
+              selectedKid.name,
+              selectedKid.statusLabel(AppLocalizations.of(context)).toLowerCase(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuleren'),
+              child: Text(AppLocalizations.of(context).commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Toch sturen'),
+              child: Text(AppLocalizations.of(context).taskSendAnyway),
             ),
           ],
         ),
@@ -485,21 +493,21 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Stuur naar ${enrolledKid.name}?'),
+        title: Text(AppLocalizations.of(context).taskSendToKidTitle(enrolledKid.name)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"${task.title}" wordt als opdracht naar ${enrolledKid.name} gestuurd. '
-              'De taak verdwijnt uit jouw lijst zodra het kind hem afrondt.',
+              '${AppLocalizations.of(context).taskSendToKidLead(task.title, enrolledKid.name)} '
+              '${AppLocalizations.of(context).taskSendToKidBody}',
             ),
             const SizedBox(height: 16),
             Row(
               children: [
                 const Icon(Icons.star_outline, size: 18),
                 const SizedBox(width: 8),
-                const Text('XP beloning:'),
+                Text(AppLocalizations.of(context).taskXpReward),
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 72,
@@ -524,11 +532,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sturen'),
+            child: Text(AppLocalizations.of(context).commonSend),
           ),
         ],
       ),
@@ -577,7 +585,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               autofocus: widget.task == null,
               style: tt.titleLarge,
               decoration: InputDecoration(
-                hintText: 'Taaknaam',
+                hintText: AppLocalizations.of(context).taskNameHint,
                 hintStyle: tt.titleLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -595,7 +603,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               controller: _notesCtrl,
               style: tt.bodyMedium,
               decoration: InputDecoration(
-                hintText: 'Notities',
+                hintText: AppLocalizations.of(context).commonNotes,
                 hintStyle: tt.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -612,7 +620,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           // Herinnering row — combined date + time
           DetailMetaRow(
             icon: Icons.alarm_outlined,
-            label: 'Herinnering',
+            label: AppLocalizations.of(context).commonReminder,
             active: _dueDate != null,
             onTap: _dueDate != null ? null : () => _pickReminder(),
             titleWidget: _dueDate != null
@@ -658,7 +666,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                           ),
                           child: Text(
                             _isAllDay
-                                ? 'Tijd toevoegen'
+                                ? AppLocalizations.of(context).taskAddTime
                                 : _formatTimeOnly(_dueDate!.toLocal()),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
@@ -727,12 +735,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           DetailMetaRow(
             icon: Icons.flag_outlined,
             label: _priority == TaskPriority.none
-                ? 'Prioriteit'
-                : 'Prioriteit: ${switch (_priority) {
-                    TaskPriority.low => 'Laag',
-                    TaskPriority.medium => 'Middel',
-                    TaskPriority.high => 'Hoog',
-                    TaskPriority.none => 'Geen',
+                ? AppLocalizations.of(context).commonPriority
+                : '${AppLocalizations.of(context).commonPriority}: ${switch (_priority) {
+                    TaskPriority.low => AppLocalizations.of(context).commonLow,
+                    TaskPriority.medium => AppLocalizations.of(context).commonMedium,
+                    TaskPriority.high => AppLocalizations.of(context).commonHigh,
+                    TaskPriority.none => AppLocalizations.of(context).commonNone,
                   }}',
             active: _priority != TaskPriority.none,
             color: _priority != TaskPriority.none
@@ -742,7 +750,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           ),
           DetailMetaRow(
             icon: Icons.label_outline,
-            label: _customCategory ?? 'Categorie toevoegen',
+            label: _customCategory ?? AppLocalizations.of(context).taskAddCategory,
             active: _customCategory != null,
             onTap: () => _pickCategory(context),
             trailing: _customCategory != null
@@ -755,7 +763,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           if (_dueDate != null)
             DetailMetaRow(
               icon: Icons.repeat,
-              label: _recurrenceRule ?? 'Herhalen',
+              label: _recurrenceRule ?? AppLocalizations.of(context).taskRepeat,
               active: _recurrenceRule != null,
               onTap: () => _pickRecurrence(context),
             ),
@@ -771,15 +779,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     color: Theme.of(context).colorScheme.error,
-                    tooltip: 'Verwijderen',
+                    tooltip: AppLocalizations.of(context).commonDelete,
                     onPressed: _saving ? null : () => _confirmDelete(context),
                   ),
                 if (widget.hasFamilyKey && widget.task != null)
                   IconButton(
                     icon: const Icon(Icons.send_outlined),
                     tooltip: _canSend
-                        ? 'Doorsturen'
-                        : 'Geen verbonden partner of kinderen',
+                        ? AppLocalizations.of(context).taskForward
+                        : AppLocalizations.of(context).taskNoConnectedFamily,
                     onPressed: _saving || !_canSend
                         ? null
                         : () => _showSendDialog(context),
@@ -787,12 +795,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Annuleren'),
+                  child: Text(AppLocalizations.of(context).commonCancel),
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  child: Text(widget.task == null ? 'Toevoegen' : 'Opslaan'),
+                  child: Text(widget.task == null ? AppLocalizations.of(context).commonAdd : AppLocalizations.of(context).commonSave),
                 ),
               ],
             ),
@@ -905,13 +913,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   String _formatDateOnly(DateTime d) {
     final now = DateTime.now();
     if (d.year == now.year && d.month == now.month && d.day == now.day) {
-      return 'Vandaag';
+      return AppLocalizations.of(context).dateToday;
     }
     final tomorrow = now.add(const Duration(days: 1));
     if (d.year == tomorrow.year &&
         d.month == tomorrow.month &&
         d.day == tomorrow.day) {
-      return 'Morgen';
+      return AppLocalizations.of(context).dateTomorrow;
     }
     return '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
   }
@@ -950,10 +958,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       : priorityColor(p),
                 ),
                 title: Text(switch (p) {
-                  TaskPriority.none => 'Geen',
-                  TaskPriority.low => 'Laag',
-                  TaskPriority.medium => 'Middel',
-                  TaskPriority.high => 'Hoog',
+                  TaskPriority.none => AppLocalizations.of(context).commonNone,
+                  TaskPriority.low => AppLocalizations.of(context).commonLow,
+                  TaskPriority.medium => AppLocalizations.of(context).commonMedium,
+                  TaskPriority.high => AppLocalizations.of(context).commonHigh,
                 }),
                 trailing: _priority == p
                     ? const Icon(Icons.check, color: kColorTeal)
@@ -972,11 +980,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
   void _pickRecurrence(BuildContext context) {
     // Simple recurrence picker — RRULE strings
     final options = <(String, String)>[
-      ('Dagelijks', 'FREQ=DAILY'),
-      ('Werkdagen', 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR'),
-      ('Wekelijks', 'FREQ=WEEKLY'),
-      ('Tweewekelijks', 'FREQ=WEEKLY;INTERVAL=2'),
-      ('Maandelijks', 'FREQ=MONTHLY'),
+      (AppLocalizations.of(context).taskRecurrenceDaily, 'FREQ=DAILY'),
+      (AppLocalizations.of(context).taskRecurrenceWeekdays, 'FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR'),
+      (AppLocalizations.of(context).taskRecurrenceWeekly, 'FREQ=WEEKLY'),
+      (AppLocalizations.of(context).taskRecurrenceBiweekly, 'FREQ=WEEKLY;INTERVAL=2'),
+      (AppLocalizations.of(context).taskRecurrenceMonthly, 'FREQ=MONTHLY'),
     ];
     showModalBottomSheet(
       context: context,
@@ -986,7 +994,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           children: [
             ListTile(
               leading: const Icon(Icons.block_outlined),
-              title: const Text('Geen herhaling'),
+              title: Text(AppLocalizations.of(context).taskRecurrenceNone),
               onTap: () {
                 Navigator.pop(ctx);
                 setState(() => _recurrenceRule = null);

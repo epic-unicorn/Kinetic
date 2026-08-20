@@ -241,6 +241,9 @@ class AppSettings extends Table {
   // Legacy stored value 'dark' is mapped to dusk at read time.
   TextColumn get theme => text().withDefault(const Constant('dark'))();
 
+  // UI language: 'en' | 'nl'
+  TextColumn get localeCode => text().withDefault(const Constant('en'))();
+
   // JSON-encoded ordered list of task category labels (nullable = no saved order)
   TextColumn get taskCategoryOrder => text().nullable()();
 

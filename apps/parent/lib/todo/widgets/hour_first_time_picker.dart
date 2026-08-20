@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
 /// 24-hour time dialog that focuses and selects the hour field so the user
 /// can type immediately.
 Future<TimeOfDay?> showHourFirstTimePicker({
@@ -137,7 +139,7 @@ class _HourFirstTimePickerDialogState
         minute == null ||
         minute < 0 ||
         minute > 59) {
-      setState(() => _error = 'Voer een geldige tijd in (00:00 – 23:59).');
+      setState(() => _error = AppLocalizations.of(context).timeInvalid);
       return;
     }
     Navigator.of(context).pop(TimeOfDay(hour: hour, minute: minute));
@@ -145,11 +147,12 @@ class _HourFirstTimePickerDialogState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return AlertDialog(
-      title: const Text('Tijd'),
+      title: Text(l10n.commonTime),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -190,9 +193,9 @@ class _HourFirstTimePickerDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Annuleren'),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('OK')),
+        FilledButton(onPressed: _submit, child: Text(l10n.timeOk)),
       ],
     );
   }

@@ -93,6 +93,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showThemeSelector(context),
               ),
+              ListTile(
+                leading: Icon(Icons.language_outlined, color: iconColor),
+                title: Text(l10n.settingsLanguage),
+                subtitle: Text(
+                  localeNotifier.value.languageCode == 'nl'
+                      ? l10n.settingsLanguageDutch
+                      : l10n.settingsLanguageEnglish,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showLanguageSelector(context),
+              ),
               _SectionHeader(label: l10n.settingsSectionSync),
               ListTile(
                 leading: Icon(Icons.cloud_outlined, color: iconColor),
@@ -238,16 +249,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showLanguageSelector(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsLanguageChoose),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final entry in [
+              (const Locale('en'), l10n.settingsLanguageEnglish),
+              (const Locale('nl'), l10n.settingsLanguageDutch),
+            ])
+              RadioListTile<Locale>(
+                title: Text(entry.$2),
+                value: entry.$1,
+                groupValue: localeNotifier.value,
+                onChanged: (locale) async {
+                  if (locale == null) return;
+                  localeNotifier.value = locale;
+                  await widget.settingsRepo.saveLocale(locale);
+                  if (context.mounted) Navigator.pop(dialogContext);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Combined backup export (database + personal key in one .kbak2 package)
   // ---------------------------------------------------------------------------
 
   Future<void> _exportFullBackup() async {
+    final l10n = AppLocalizations.of(context);
     final key = await widget.configRepo.loadPersonalKeyBytes();
     if (key == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Geen kluis op dit apparaat.')),
+        SnackBar(content: Text(l10n.backupNoVault)),
       );
       return;
     }
@@ -256,12 +298,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Text('Exporteren…'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Text(AppLocalizations.of(ctx).commonExporting),
           ],
         ),
       ),
@@ -290,15 +332,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       if (savedPath != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Back-up opgeslagen: $savedPath')),
+          SnackBar(content: Text(AppLocalizations.of(context).backupSaved(savedPath))),
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij exporteren: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).backupExportError('$e')),
+          ),
+        );
       }
     }
   }
@@ -311,36 +355,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ctrl = TextEditingController();
     final phrase = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(body),
-            const SizedBox(height: 12),
-            MnemonicPhraseField(controller: ctrl),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
+        return AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(body),
+              const SizedBox(height: 12),
+              MnemonicPhraseField(controller: ctrl),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: Text(l10n.commonContinue),
+            ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuleren'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Doorgaan'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     ctrl.dispose();
     return phrase;
   }
 
   Future<void> _verifyPhrase() async {
+    final l10n = AppLocalizations.of(context);
     final phrase = await _askPhrase(
-      title: 'Herstelzin controleren',
-      body: 'Vul je 12 woorden in. We tonen de zin niet; we controleren alleen of hij klopt.',
+      title: l10n.backupVerifyTitle,
+      body: l10n.backupVerifyBody,
     );
     if (phrase == null || !mounted) return;
     final vaultRepo = VaultRepository(
@@ -352,35 +400,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok
-              ? 'De herstelzin klopt.'
-              : 'Deze herstelzin hoort niet bij deze kluis.',
+          ok ? l10n.backupVerifyOk : l10n.backupVerifyMismatch,
         ),
       ),
     );
   }
 
   Future<void> _revealPhrase() async {
+    final l10n = AppLocalizations.of(context);
     final vaultRepo = VaultRepository(
       FlutterSecureKeyValueStore(),
       widget.configRepo,
     );
     await showMnemonicReveal(
       context: context,
-      title: 'Herstelzin',
+      title: l10n.backupRevealTitle,
       loadWords: vaultRepo.loadPersonalMnemonic,
-      missingMessage:
-          'We kunnen de woorden op dit apparaat niet opnieuw tonen. '
-          'Gebruik je papieren kopie, of herstel de kluis met de 12 woorden.',
+      missingMessage: l10n.backupRevealMissing,
     );
   }
 
   Future<void> _importFullBackup() async {
+    final l10n = AppLocalizations.of(context);
     final phrase = await _askPhrase(
-      title: 'Back-up importeren',
-      body:
-          'Vul de 12 woorden in van de kluis die in het .kvault-bestand zit. '
-          'Dit vervangt je huidige taken en notities.',
+      title: l10n.backupImportTitle,
+      body: l10n.backupImportBody,
     );
     if (phrase == null || phrase.trim().isEmpty || !mounted) return;
 
@@ -395,7 +439,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (fileBytes == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kon het bestand niet lezen.')),
+        SnackBar(content: Text(l10n.backupCouldNotReadFile)),
       );
       return;
     }
@@ -403,12 +447,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Text('Importeren…'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Text(AppLocalizations.of(ctx).commonImporting),
           ],
         ),
       ),
@@ -432,22 +476,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await _loadConfig();
         widget.onRestoreComplete?.call();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Back-up succesvol hersteld.')),
+          SnackBar(content: Text(AppLocalizations.of(context).backupRestored)),
         );
       }
     } on FormatException catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Ongeldig back-upbestand: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).backupInvalidFile('$e')),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij importeren: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).backupImportError('$e')),
+          ),
+        );
       }
     }
   }
@@ -561,53 +609,45 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         final choice = await showDialog<_MigrationChoice>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Bestaande gegevens gevonden'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Op de WebDAV-server staan al versleutelde bestanden:',
+          builder: (ctx) {
+            final l10n = AppLocalizations.of(ctx);
+            return AlertDialog(
+              title: Text(l10n.webdavMigrationTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.webdavMigrationIntro),
+                  const SizedBox(height: 8),
+                  Text(l10n.webdavMigrationTaskFiles(taskFiles.length)),
+                  Text(l10n.webdavMigrationNoteFiles(noteFiles.length)),
+                  const SizedBox(height: 16),
+                  Text(l10n.webdavMigrationChoose),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.webdavMigrationCleanOption,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.webdavMigrationImportOption,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, _MigrationChoice.clean),
+                  child: Text(l10n.webdavMigrationClean),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '  • ${taskFiles.length} taakbestand${taskFiles.length == 1 ? '' : 'en'}',
-                ),
-                Text(
-                  '  • ${noteFiles.length} notitiebestand${noteFiles.length == 1 ? '' : 'en'}',
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Deze bestanden zijn versleuteld met een kluis. '
-                  'Kies hoe je verder wilt gaan:',
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '1. Schone installatie — verwijder de oude bestanden op de server '
-                  'en begin opnieuw.',
-                  style: TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '2. Back-up importeren — selecteer een .kvault-bestand. '
-                  'De herstelzin van deze kluis ontsleutelt het bestand.',
-                  style: TextStyle(fontSize: 13),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.pop(ctx, _MigrationChoice.importBackup),
+                  child: Text(l10n.webdavMigrationImport),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, _MigrationChoice.clean),
-                child: const Text('Schone installatie'),
-              ),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.pop(ctx, _MigrationChoice.importBackup),
-                child: const Text('Back-up importeren'),
-              ),
-            ],
-          ),
+            );
+          },
         );
 
         if (choice == null) return;
@@ -629,7 +669,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         if (fileBytes == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Kon het bestand niet lezen.')),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).backupCouldNotReadFile),
+              ),
             );
           }
           return;
@@ -639,12 +681,12 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         showDialog<void>(
           context: context,
           barrierDismissible: false,
-          builder: (_) => const AlertDialog(
+          builder: (ctx) => AlertDialog(
             content: Row(
               children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text('Back-up herstellen…'),
+                const CircularProgressIndicator(),
+                const SizedBox(width: 20),
+                Text(AppLocalizations.of(ctx).backupRestoring),
               ],
             ),
           ),
@@ -662,9 +704,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
             Navigator.of(context).pop(); // dismiss progress
             widget.onRestoreComplete?.call();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Back-up hersteld. De app synchroniseert nu met de server.',
+                  AppLocalizations.of(context).webdavBackupRestoredSync,
                 ),
               ),
             );
@@ -673,7 +715,11 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
           if (mounted) {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Fout bij herstellen van back-up: $e')),
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(context).webdavRestoreError('$e'),
+                ),
+              ),
             );
           }
         }
@@ -684,9 +730,13 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       debugPrint('[Migration] Error: $e');
       debugPrintStack(stackTrace: st);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Migratiecontrole mislukt: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).webdavMigrationCheckFailed('$e'),
+            ),
+          ),
+        );
       }
     }
   }
@@ -742,26 +792,31 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${taskFiles.length + noteFiles.length} bestanden verwijderd.',
+              AppLocalizations.of(context).webdavFilesDeleted(
+                taskFiles.length + noteFiles.length,
+              ),
             ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij opschonen: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).webdavCleanupError('$e'),
+            ),
+          ),
+        );
       }
     }
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     if (_testResult != 'ok') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Test de verbinding eerst voordat je opslaat.'),
-        ),
+        SnackBar(content: Text(l10n.webdavTestFirst)),
       );
       return;
     }
@@ -783,11 +838,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
       if (existingKey == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Maak eerst een kluis voordat je WebDAV koppelt.',
-              ),
-            ),
+            SnackBar(content: Text(l10n.webdavCreateVaultFirst)),
           );
         }
         setState(() => _saving = false);
@@ -821,9 +872,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
         if (meta == VaultMetaStatus.wrongPhrase) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Op deze server staat al een kluis die niet bij jouw herstelzin past.',
+                  AppLocalizations.of(context).webdavPhraseMismatchServer,
                 ),
               ),
             );
@@ -887,16 +938,20 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('WebDAV-configuratie opgeslagen.')),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).webdavConfigSaved),
+          ),
         );
         widget.onConfigSaved?.call();
         Navigator.of(context).pop();
       }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Fout bij opslaan: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).webdavSaveError('$e')),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -905,8 +960,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('WebDAV instellen'), centerTitle: false),
+      appBar: AppBar(title: Text(l10n.webdavSetupTitle), centerTitle: false),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -915,31 +971,31 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
             // Server URL
             TextFormField(
               controller: _urlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Server-URL',
+              decoration: InputDecoration(
+                labelText: l10n.vaultServerUrl,
                 hintText: 'https://nextcloud.example.com/remote.php/dav',
-                prefixIcon: Icon(Icons.link),
+                prefixIcon: const Icon(Icons.link),
               ),
               keyboardType: TextInputType.url,
               autocorrect: false,
               onChanged: (_) => setState(() => _testResult = null),
               validator: (v) => WebDavUrl.validationError(
                 v,
-                emptyMessage: 'Vul de server-URL in',
+                emptyMessage: l10n.webdavUrlRequired,
               ),
             ),
             const SizedBox(height: 16),
             // Username
             TextFormField(
               controller: _userCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Gebruikersnaam',
-                prefixIcon: Icon(Icons.person_outline),
+              decoration: InputDecoration(
+                labelText: l10n.vaultUsername,
+                prefixIcon: const Icon(Icons.person_outline),
               ),
               autocorrect: false,
               onChanged: (_) => setState(() => _testResult = null),
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Vul de gebruikersnaam in'
+                  ? l10n.webdavUsernameRequired
                   : null,
             ),
             const SizedBox(height: 16),
@@ -947,7 +1003,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
             TextFormField(
               controller: _passCtrl,
               decoration: InputDecoration(
-                labelText: 'Wachtwoord',
+                labelText: l10n.vaultPassword,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -960,7 +1016,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
               obscureText: _obscurePassword,
               onChanged: (_) => setState(() => _testResult = null),
               validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Vul het wachtwoord in' : null,
+                  (v == null || v.isEmpty) ? l10n.webdavPasswordRequired : null,
             ),
             const SizedBox(height: 28),
             // Test connection button
@@ -974,7 +1030,9 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                     )
                   : const Icon(Icons.wifi_tethering),
               label: Text(
-                _testing ? 'Verbinding testen…' : 'Verbinding testen',
+                _testing
+                    ? l10n.webdavTestingConnection
+                    : l10n.webdavTestConnection,
               ),
             ),
             if (_testResult != null) ...[
@@ -995,7 +1053,7 @@ class _WebDavSetupScreenState extends State<WebDavSetupScreen> {
                       ),
                     )
                   : const Icon(Icons.save_outlined),
-              label: Text(_saving ? 'Opslaan…' : 'Opslaan'),
+              label: Text(_saving ? l10n.commonSaving : l10n.commonSave),
             ),
           ],
         ),
@@ -1015,6 +1073,7 @@ class _TestResultBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isOk = result == 'ok';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1038,7 +1097,7 @@ class _TestResultBanner extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              isOk ? 'Verbinding geslaagd' : result,
+              isOk ? l10n.webdavConnectionOk : result,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: isOk ? Colors.green : Colors.redAccent,
               ),

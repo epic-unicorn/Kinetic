@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../todo/services/todo_repository.dart';
 import '../../todo/widgets/task_detail_sheet.dart';
@@ -65,6 +66,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
@@ -113,7 +115,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
                 controller: _ctrl,
                 style: Theme.of(context).textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  hintText: 'Nieuwe taak…',
+                  hintText: l10n.quickAddHint,
                   hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -131,7 +133,7 @@ class _QuickAddBarState extends State<QuickAddBar> {
                 Icons.expand_less,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              tooltip: 'Meer opties',
+              tooltip: l10n.quickAddMoreOptions,
               onPressed: _openFull,
             ),
           ],

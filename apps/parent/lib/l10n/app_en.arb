@@ -304,5 +304,382 @@
     }
   },
   "kidsEnrollWhatShared": "What is shared?",
-  "kidsEnrollWhatSharedBody": "This QR code contains the server, account, and family key — not the WebDAV password. Type that password once on the kids device. Only share the code with the kids app on a trusted device."
+  "kidsEnrollWhatSharedBody": "This QR code contains the server, account, and family key — not the WebDAV password. Type that password once on the kids device. Only share the code with the kids app on a trusted device.",
+
+  "settingsLanguage": "Language",
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageDutch": "Nederlands",
+  "settingsLanguageChoose": "Choose language",
+
+  "commonAdd": "Add",
+  "commonSend": "Send",
+  "commonRetry": "Try again",
+  "commonDismiss": "Dismiss",
+  "commonCloseAction": "Close",
+  "commonExporting": "Exporting…",
+  "commonImporting": "Importing…",
+  "commonNone": "None",
+  "commonEveryone": "Everyone",
+  "commonTitle": "Title",
+  "commonNotes": "Notes",
+  "commonContent": "Content",
+  "commonLow": "Low",
+  "commonMedium": "Medium",
+  "commonHigh": "High",
+  "commonPrivate": "Private",
+  "commonShared": "Shared",
+  "commonKids": "Kids",
+  "commonPartner": "Partner",
+  "commonReminder": "Reminder",
+  "commonTime": "Time",
+  "commonCategory": "Category",
+  "commonPriority": "Priority",
+  "commonNoCategory": "No category",
+  "commonSaveError": "Error saving: {error}",
+  "@commonSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "commonDeleteError": "Error deleting: {error}",
+  "@commonDeleteError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "relativeWeeksAgo": "{count} weeks ago",
+  "@relativeWeeksAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "dateToday": "Today",
+  "dateTomorrow": "Tomorrow",
+  "dateYesterday": "Yesterday",
+  "dateDaysOverdue": "{count}d overdue",
+  "@dateDaysOverdue": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dateInDays": "In {count} days",
+  "@dateInDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dateWeekdayMonday": "Monday",
+  "dateWeekdayTuesday": "Tuesday",
+  "dateWeekdayWednesday": "Wednesday",
+  "dateWeekdayThursday": "Thursday",
+  "dateWeekdayFriday": "Friday",
+  "dateWeekdaySaturday": "Saturday",
+  "dateWeekdaySunday": "Sunday",
+  "dateMonthJan": "Jan",
+  "dateMonthFeb": "Feb",
+  "dateMonthMar": "Mar",
+  "dateMonthApr": "Apr",
+  "dateMonthMay": "May",
+  "dateMonthJun": "Jun",
+  "dateMonthJul": "Jul",
+  "dateMonthAug": "Aug",
+  "dateMonthSep": "Sep",
+  "dateMonthOct": "Oct",
+  "dateMonthNov": "Nov",
+  "dateMonthDec": "Dec",
+
+  "connNotConnected": "Not connected",
+  "connNotConnectedSince": "Not connected since {when}",
+  "@connNotConnectedSince": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "connUnknownNoSync": "Connection unknown (no sync)",
+  "connStale": "Connection stale ({when})",
+  "@connStale": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "connConnected": "Connected",
+  "connConnectedSince": "Connected ({when})",
+  "@connConnectedSince": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+
+  "notifChannelName": "Task reminders",
+  "notifChannelDesc": "Reminders for tasks and assignments",
+  "notifReminderTitle": "Reminder",
+
+  "backupNoVault": "No vault on this device.",
+  "backupSaved": "Backup saved: {path}",
+  "@backupSaved": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "backupExportError": "Error exporting: {error}",
+  "@backupExportError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupVerifyTitle": "Verify recovery phrase",
+  "backupVerifyBody": "Enter your 12 words. We will not show the phrase; we only check that it matches.",
+  "backupVerifyOk": "The recovery phrase matches.",
+  "backupVerifyMismatch": "This recovery phrase does not belong to this vault.",
+  "backupRevealTitle": "Recovery phrase",
+  "backupRevealMissing": "We cannot show the words again on this device. Use your paper copy, or restore the vault with the 12 words.",
+  "backupImportTitle": "Import backup",
+  "backupImportBody": "Enter the 12 words of the vault inside the .kvault file. This replaces your current tasks and notes.",
+  "backupCouldNotReadFile": "Could not read the file.",
+  "backupRestored": "Backup restored successfully.",
+  "backupInvalidFile": "Invalid backup file: {error}",
+  "@backupInvalidFile": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupImportError": "Error importing: {error}",
+  "@backupImportError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "backupRestoring": "Restoring backup…",
+
+  "webdavSetupTitle": "Set up WebDAV",
+  "webdavUrlRequired": "Enter the server URL",
+  "webdavUsernameRequired": "Enter the username",
+  "webdavPasswordRequired": "Enter the password",
+  "webdavTestConnection": "Test connection",
+  "webdavTestingConnection": "Testing connection…",
+  "webdavConnectionOk": "Connection succeeded",
+  "webdavTestFirst": "Test the connection before saving.",
+  "webdavCreateVaultFirst": "Create a vault before linking WebDAV.",
+  "webdavPhraseMismatchServer": "This server already has a vault that does not match your recovery phrase.",
+  "webdavConfigSaved": "WebDAV configuration saved.",
+  "webdavSaveError": "Error saving: {error}",
+  "@webdavSaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavMigrationTitle": "Existing data found",
+  "webdavMigrationIntro": "The WebDAV server already has encrypted files:",
+  "webdavMigrationTaskFiles": "{count, plural, =1{  • 1 task file} other{  • {count} task files}}",
+  "@webdavMigrationTaskFiles": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavMigrationNoteFiles": "{count, plural, =1{  • 1 note file} other{  • {count} note files}}",
+  "@webdavMigrationNoteFiles": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavMigrationChoose": "These files are encrypted with a vault. Choose how to continue:",
+  "webdavMigrationCleanOption": "1. Clean install — remove the old files on the server and start fresh.",
+  "webdavMigrationImportOption": "2. Import backup — select a .kvault file. This vault's recovery phrase unlocks the file.",
+  "webdavMigrationClean": "Clean install",
+  "webdavMigrationImport": "Import backup",
+  "webdavBackupRestoredSync": "Backup restored. The app will now sync with the server.",
+  "webdavRestoreError": "Error restoring backup: {error}",
+  "@webdavRestoreError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavMigrationCheckFailed": "Migration check failed: {error}",
+  "@webdavMigrationCheckFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "webdavFilesDeleted": "{count} files deleted.",
+  "@webdavFilesDeleted": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "webdavCleanupError": "Error cleaning up: {error}",
+  "@webdavCleanupError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "tasksTitle": "Tasks",
+  "tasksCompletedTooltip": "Completed tasks",
+  "tasksTabPrivate": "Private",
+  "tasksTabSuggestions": "Suggestions",
+  "tasksTabKids": "Kids",
+  "tasksSyncFailed": "Sync failed, tap to retry.",
+  "tasksSyncing": "Syncing",
+  "tasksForYou": "For you",
+  "tasksForPartner": "For partner",
+  "tasksFromPartner": "From partner",
+  "tasksRefreshSuggestions": "Refresh suggestions",
+  "tasksAddReminder": "Reminder",
+  "tasksAddTask": "Add",
+  "tasksToPartner": "To partner",
+  "tasksNoPartnerSuggestions": "No partner suggestions",
+  "tasksNoPartnerSuggestionsHint": "Your partner has not suggested any tasks yet",
+  "tasksViaSuggestion": "Via suggestion",
+  "tasksReject": "Reject",
+  "tasksAccept": "Accept",
+  "tasksProposalAccepted": "Suggestion accepted",
+  "tasksProposalRejected": "Suggestion rejected",
+  "tasksLoadProposalsError": "Error loading suggestions",
+  "tasksXpResetTitle": "Reset XP for {name}?",
+  "@tasksXpResetTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "tasksXpResetBody": "This resets the XP counter to 0. The assignments stay.",
+  "tasksXpResetAction": "Reset",
+  "tasksXpResetDone": "XP reset for {name}",
+  "@tasksXpResetDone": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "tasksXpResetError": "Error resetting: {error}",
+  "@tasksXpResetError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "tasksLoadKidsError": "Error loading kids assignments",
+  "tasksNoKidsAssignments": "No kids assignments",
+  "tasksNoKidsAssignmentsHint": "Send a task to the kids app to see it here.",
+  "tasksResetXp": "Reset XP",
+  "tasksDoneOn": "Done on {day}/{month}",
+  "@tasksDoneOn": {
+    "placeholders": {
+      "day": {"type": "int"},
+      "month": {"type": "int"}
+    }
+  },
+  "tasksCompletedTitle": "Completed tasks",
+  "tasksDeleteAll": "Delete all",
+  "tasksDeleteCompletedTitle": "Delete completed tasks",
+  "tasksDeleteCompletedBody": "Are you sure you want to delete all completed tasks? This cannot be undone.",
+  "tasksEmptySuggestionsPartner": "Suggestions from the smart planner and proposals from your partner appear here",
+  "tasksEmptySuggestionsSolo": "Suggestions from the smart planner based on your habits appear here",
+  "tasksNoSuggestions": "No suggestions",
+  "tasksAllDone": "All done!",
+  "tasksNoOpenTasks": "You have no open tasks",
+  "tasksNoCompleted": "No completed tasks",
+  "tasksNoCompletedHint": "Completed tasks appear here",
+  "tasksAssignment": "Assignment",
+
+  "taskDeleteTitle": "Delete task?",
+  "taskDeleteBody": "\"{title}\" will be permanently deleted. This cannot be undone.",
+  "@taskDeleteBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "taskForwardTitle": "Forward task",
+  "taskAssignmentCreated": "Assignment created ✓",
+  "taskNoConnectedFamily": "No connected partner or kids",
+  "taskStaleConnectionTitle": "Connection stale",
+  "taskStalePartnerBody": "Your partner was last seen {status}. Send anyway?",
+  "@taskStalePartnerBody": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "taskStaleKidBody": "{name} was last seen {status}. Send anyway?",
+  "@taskStaleKidBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "taskSendAnyway": "Send anyway",
+  "taskSendToPartnerTitle": "Send to partner?",
+  "taskSendToPartnerBody": "\"{title}\" will be sent as a proposal to your partner and removed from your list once they accept it.",
+  "@taskSendToPartnerBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "taskSendToKidTitle": "Send to {name}?",
+  "@taskSendToKidTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "taskSendToKidBody": "The task disappears from your list once the child completes it.",
+  "taskSendToKidLead": "\"{title}\" will be sent as an assignment to {name}.",
+  "@taskSendToKidLead": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "taskXpReward": "XP reward:",
+  "taskNameHint": "Task name",
+  "taskAddTime": "Add time",
+  "taskAddCategory": "Add category",
+  "taskRepeat": "Repeat",
+  "taskForward": "Forward",
+  "taskRecurrenceNone": "No recurrence",
+  "taskRecurrenceDaily": "Daily",
+  "taskRecurrenceWeekdays": "Weekdays",
+  "taskRecurrenceWeekly": "Weekly",
+  "taskRecurrenceBiweekly": "Biweekly",
+  "taskRecurrenceMonthly": "Monthly",
+
+  "notesTitle": "Notes",
+  "notesTabPrivate": "Private",
+  "notesTabShared": "Shared",
+  "notesNewTooltip": "New note",
+  "notesLoadError": "Error loading notes",
+  "notesEmptyShared": "No shared notes",
+  "notesEmptyPrivate": "No private notes",
+  "notesEmptySharedHint": "Notes shared with your partner appear here",
+  "notesEmptyPrivateHint": "Your private notes appear here",
+  "notesSaved": "Note saved",
+  "notesSharedBadge": "Shared",
+  "notesTitleRequired": "Title is required",
+  "notesDeleteTitle": "Delete note?",
+  "notesDeleteBody": "You cannot undo this.",
+  "notesSharedWithPartner": "Shared with partner",
+
+  "suggestWebDavRequired": "Link WebDAV first to send a suggestion.",
+  "suggestPartnerSeesTitle": "What your partner sees",
+  "suggestPartnerSeesGeneric": "Intentionally generic — no private titles or notes.",
+  "suggestPartnerSeesFull": "The title and any notes from this suggestion will be included.",
+  "suggestSend": "Send",
+  "suggestSent": "Suggestion sent to partner",
+  "suggestSnoozeTitle": "Snooze",
+  "suggestSnoozeBody": "Snooze this suggestion for 7 days?",
+  "suggestSnoozeAction": "Snooze",
+  "suggestAdd": "Add",
+  "suggestReasonHabit": "Habit",
+  "suggestReasonPartner": "Partner complement",
+  "suggestReasonSeasonal": "Seasonal",
+  "suggestReasonLoadBalance": "Load balance",
+  "suggestReasonStale": "Open task",
+  "suggestReasonCalendar": "Calendar",
+
+  "categoryTitle": "Category",
+  "categoryNewHint": "New category",
+  "categoryNewAction": "New category…",
+
+  "quickAddHint": "New task…",
+  "quickAddMoreOptions": "More options",
+
+  "timeInvalid": "Enter a valid time (00:00 – 23:59).",
+  "timeOk": "OK"
 }

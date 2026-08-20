@@ -51,7 +51,11 @@ IconData categoryIcon(TaskCategory c) => switch (c) {
 // Due date formatting helpers
 // ---------------------------------------------------------------------------
 
-String formatDueDate(DateTime due, {bool allDay = true}) {
+String formatDueDate(
+  DateTime due,
+  AppLocalizations l10n, {
+  bool allDay = true,
+}) {
   final now = DateTime.now();
   final d = due.toLocal();
   final diff = DateTime(
@@ -61,12 +65,12 @@ String formatDueDate(DateTime due, {bool allDay = true}) {
   ).difference(DateTime(now.year, now.month, now.day)).inDays;
 
   final datePart = switch (diff) {
-    0 => 'Vandaag',
-    1 => 'Morgen',
-    -1 => 'Gisteren',
-    _ when diff < 0 => '${diff.abs()}d te laat',
-    _ when diff < 7 => _weekday(d.weekday),
-    _ => '${d.day} ${_month(d.month)}',
+    0 => l10n.dateToday,
+    1 => l10n.dateTomorrow,
+    -1 => l10n.dateYesterday,
+    _ when diff < 0 => l10n.dateDaysOverdue(diff.abs()),
+    _ when diff < 7 => _weekday(d.weekday, l10n),
+    _ => '${d.day} ${_month(d.month, l10n)}',
   };
 
   if (allDay) return datePart;
@@ -85,32 +89,32 @@ bool isOverdue(DateTime due, {bool isAllDay = false}) {
   return effective.isBefore(now);
 }
 
-String _weekday(int w) => const [
-  '',
-  'Maandag',
-  'Dinsdag',
-  'Woensdag',
-  'Donderdag',
-  'Vrijdag',
-  'Zaterdag',
-  'Zondag',
-][w];
+String _weekday(int w, AppLocalizations l10n) => switch (w) {
+  1 => l10n.dateWeekdayMonday,
+  2 => l10n.dateWeekdayTuesday,
+  3 => l10n.dateWeekdayWednesday,
+  4 => l10n.dateWeekdayThursday,
+  5 => l10n.dateWeekdayFriday,
+  6 => l10n.dateWeekdaySaturday,
+  7 => l10n.dateWeekdaySunday,
+  _ => '',
+};
 
-String _month(int m) => const [
-  '',
-  'jan',
-  'feb',
-  'mrt',
-  'apr',
-  'mei',
-  'jun',
-  'jul',
-  'aug',
-  'sep',
-  'okt',
-  'nov',
-  'dec',
-][m];
+String _month(int m, AppLocalizations l10n) => switch (m) {
+  1 => l10n.dateMonthJan,
+  2 => l10n.dateMonthFeb,
+  3 => l10n.dateMonthMar,
+  4 => l10n.dateMonthApr,
+  5 => l10n.dateMonthMay,
+  6 => l10n.dateMonthJun,
+  7 => l10n.dateMonthJul,
+  8 => l10n.dateMonthAug,
+  9 => l10n.dateMonthSep,
+  10 => l10n.dateMonthOct,
+  11 => l10n.dateMonthNov,
+  12 => l10n.dateMonthDec,
+  _ => '',
+};
 
 // ---------------------------------------------------------------------------
 // Theme definitions

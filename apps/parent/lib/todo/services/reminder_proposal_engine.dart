@@ -51,23 +51,23 @@ class ReminderProposalEngine {
   static const _scoreFallback = 10;
 
   static const _keywordRules = <String, ({int hour, int minute, String label})>{
-    'school': (hour: 7, minute: 0, label: 'Morgen 07:00'),
-    'huiswerk': (hour: 7, minute: 0, label: 'Morgen 07:00'),
-    'sport': (hour: 18, minute: 0, label: 'Vanavond 18:00'),
-    'training': (hour: 18, minute: 0, label: 'Vanavond 18:00'),
-    'zwemmen': (hour: 18, minute: 0, label: 'Vanavond 18:00'),
-    'boodschappen': (hour: 10, minute: 0, label: 'Za 10:00'),
-    'supermarkt': (hour: 10, minute: 0, label: 'Za 10:00'),
-    'belasting': (hour: 9, minute: 0, label: 'Over 3 dagen'),
-    'deadline': (hour: 9, minute: 0, label: 'Over 3 dagen'),
-    'verjaardag': (hour: 10, minute: 0, label: 'Over 3 dagen'),
-    'cadeau': (hour: 10, minute: 0, label: 'Over 3 dagen'),
-    'kapper': (hour: 9, minute: 0, label: 'Morgen 09:00'),
-    'tandarts': (hour: 9, minute: 0, label: 'Morgen 09:00'),
-    'afspraak': (hour: 9, minute: 0, label: 'Morgen 09:00'),
+    'school': (hour: 7, minute: 0, label: 'Tomorrow 07:00'),
+    'huiswerk': (hour: 7, minute: 0, label: 'Tomorrow 07:00'),
+    'sport': (hour: 18, minute: 0, label: 'Tonight 18:00'),
+    'training': (hour: 18, minute: 0, label: 'Tonight 18:00'),
+    'zwemmen': (hour: 18, minute: 0, label: 'Tonight 18:00'),
+    'boodschappen': (hour: 10, minute: 0, label: 'Sat 10:00'),
+    'supermarkt': (hour: 10, minute: 0, label: 'Sat 10:00'),
+    'belasting': (hour: 9, minute: 0, label: 'In 3 days'),
+    'deadline': (hour: 9, minute: 0, label: 'In 3 days'),
+    'verjaardag': (hour: 10, minute: 0, label: 'In 3 days'),
+    'cadeau': (hour: 10, minute: 0, label: 'In 3 days'),
+    'kapper': (hour: 9, minute: 0, label: 'Tomorrow 09:00'),
+    'tandarts': (hour: 9, minute: 0, label: 'Tomorrow 09:00'),
+    'afspraak': (hour: 9, minute: 0, label: 'Tomorrow 09:00'),
   };
 
-  static const _dutchWeekdays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+  static const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   List<ReminderChipProposal> propose({
     required String title,
@@ -165,10 +165,10 @@ class ReminderProposalEngine {
       _ScoredCandidate(
         at: at,
         label:
-            '${_dutchWeekdays[weekday - 1]} ${hour.toString().padLeft(2, '0')}:00',
+            '${_weekdayShort[weekday - 1]} ${hour.toString().padLeft(2, '0')}:00',
         score: _scoreHabitTime,
         explanation:
-            'Je deed deze taak $count× op ${_dutchWeekdays[weekday - 1].toLowerCase()}ochtend',
+            'You did this task ${count}× on ${_weekdayShort[weekday - 1]} mornings',
         source: _ReminderProposalSource.habitTime,
       ),
     ];
@@ -208,8 +208,8 @@ class ReminderProposalEngine {
 
     final daysUntil = at.difference(clock).inDays;
     final label = daysUntil <= 1
-        ? 'Morgen ${medianHour.toString().padLeft(2, '0')}:00'
-        : 'Over $daysUntil dagen';
+        ? 'Tomorrow ${medianHour.toString().padLeft(2, '0')}:00'
+        : 'In $daysUntil days';
 
     return [
       _ScoredCandidate(
@@ -217,7 +217,7 @@ class ReminderProposalEngine {
         label: label,
         score: _scoreHabitInterval,
         explanation:
-            'Gemiddeld elke $median dagen, laatst $daysSince dagen geleden',
+            'About every $median days, last $daysSince days ago',
         source: _ReminderProposalSource.habitInterval,
       ),
     ];
@@ -257,7 +257,7 @@ class ReminderProposalEngine {
           at: at,
           label: rule.label,
           score: _scoreKeyword,
-          explanation: 'Past bij "${entry.key}" in de titel',
+          explanation: 'Matches "${entry.key}" in the title',
           source: _ReminderProposalSource.keyword,
         ),
       );
@@ -277,25 +277,25 @@ class ReminderProposalEngine {
     switch (cat) {
       case TaskCategory.school:
         at = _tomorrowAt(clock, 7, 0);
-        label = 'Morgen 07:00';
-        explanation = 'Schooltaken plan je meestal in de ochtend';
+        label = 'Tomorrow 07:00';
+        explanation = 'School tasks are usually planned in the morning';
       case TaskCategory.household:
         at = _nextWeekdayAt(clock, DateTime.saturday, 9, 0);
-        label = 'Za 09:00';
-        explanation = 'Huishoudtaken plan je vaak in het weekend';
+        label = 'Sat 09:00';
+        explanation = 'Household tasks are often planned on weekends';
       case TaskCategory.health:
         at = _tomorrowAt(clock, 8, 0);
-        label = 'Morgen 08:00';
-        explanation = 'Gezondheidstaken herinner je vaak in de ochtend';
+        label = 'Tomorrow 08:00';
+        explanation = 'Health tasks are often reminded in the morning';
       case TaskCategory.finance:
       case TaskCategory.admin:
         at = _tomorrowAt(clock, 9, 0);
-        label = 'Morgen 09:00';
-        explanation = 'Administratieve taken plan je vaak overdag';
+        label = 'Tomorrow 09:00';
+        explanation = 'Admin tasks are often planned during the day';
       case TaskCategory.other:
         at = _tomorrowAt(clock, 9, 0);
-        label = 'Morgen 09:00';
-        explanation = 'Standaard ochtendherinnering';
+        label = 'Tomorrow 09:00';
+        explanation = 'Default morning reminder';
     }
 
     return [
@@ -315,9 +315,9 @@ class ReminderProposalEngine {
       results.add(
         _ScoredCandidate(
           at: DateTime(clock.year, clock.month, clock.day, 20, 0),
-          label: 'Vanavond 20:00',
+          label: 'Tonight 20:00',
           score: _scoreContextual,
-          explanation: 'Snelle avondherinnering',
+          explanation: 'Quick evening reminder',
           source: _ReminderProposalSource.contextual,
         ),
       );
@@ -325,9 +325,9 @@ class ReminderProposalEngine {
     results.add(
       _ScoredCandidate(
         at: _tomorrowAt(clock, 9, 0),
-        label: 'Morgen 09:00',
+        label: 'Tomorrow 09:00',
         score: _scoreContextual,
-        explanation: 'Standaard ochtendherinnering',
+        explanation: 'Default morning reminder',
         source: _ReminderProposalSource.contextual,
       ),
     );
@@ -335,9 +335,9 @@ class ReminderProposalEngine {
       results.add(
         _ScoredCandidate(
           at: _tomorrowAt(clock, 20, 0),
-          label: 'Morgen 20:00',
+          label: 'Tomorrow 20:00',
           score: _scoreContextual - 1,
-          explanation: 'Herinnering morgenavond',
+          explanation: 'Reminder tomorrow evening',
           source: _ReminderProposalSource.contextual,
         ),
       );
@@ -349,9 +349,9 @@ class ReminderProposalEngine {
     return [
       _ScoredCandidate(
         at: clock.add(const Duration(hours: 1)),
-        label: 'Over 1 uur',
+        label: 'In 1 hour',
         score: _scoreFallback,
-        explanation: 'Snelle herinnering',
+        explanation: 'Quick reminder',
         source: _ReminderProposalSource.fallback,
       ),
       ..._contextualCandidates(clock),

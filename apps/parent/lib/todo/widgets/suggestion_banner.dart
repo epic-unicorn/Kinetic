@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../../partner/services/partner_proposal_repository.dart';
 import '../../todo/models/ai_suggestion.dart';
 import '../../todo/services/ai_suggestion_repository.dart';
@@ -82,7 +83,8 @@ class _BannerCard extends StatelessWidget {
     this.activeListId,
   });
 
-  String _reasonLabel(SuggestionReason r) => r.label;
+  String _reasonLabel(SuggestionReason r, AppLocalizations l10n) =>
+      r.label(l10n);
 
   Future<void> _accept(BuildContext context) async {
     await acceptSelfSuggestion(
@@ -114,6 +116,7 @@ class _BannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -121,20 +124,23 @@ class _BannerCard extends StatelessWidget {
       onLongPress: () async {
         final ok = await showDialog<bool>(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Uitstellen'),
-            content: const Text('Suggestie 7 dagen uitstellen?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuleren'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Uitstellen'),
-              ),
-            ],
-          ),
+          builder: (ctx) {
+            final dialogL10n = AppLocalizations.of(ctx);
+            return AlertDialog(
+              title: Text(dialogL10n.suggestSnoozeTitle),
+              content: Text(dialogL10n.suggestSnoozeBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(dialogL10n.commonCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(dialogL10n.suggestSnoozeAction),
+                ),
+              ],
+            );
+          },
         );
         if (ok == true) await _snooze();
       },
@@ -171,7 +177,7 @@ class _BannerCard extends StatelessWidget {
                         ),
                         Chip(
                           label: Text(
-                            _reasonLabel(suggestion.reason),
+                            _reasonLabel(suggestion.reason, l10n),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSecondaryContainer,
                             ),
@@ -202,7 +208,7 @@ class _BannerCard extends StatelessWidget {
                       spacing: 6,
                       children: [
                         _ActionButton(
-                          label: 'Toevoegen',
+                          label: l10n.suggestAdd,
                           icon: Icons.add,
                           onPressed: () => _accept(context),
                           colorScheme: colorScheme,
@@ -210,13 +216,13 @@ class _BannerCard extends StatelessWidget {
                         ),
                         if (partnerPaired && proposalRepo != null)
                           _ActionButton(
-                            label: '→ Partner',
+                            label: '→ ${l10n.commonPartner}',
                             icon: Icons.person_outline,
                             onPressed: () => _sendToPartner(context),
                             colorScheme: colorScheme,
                           ),
                         _ActionButton(
-                          label: 'Sluiten',
+                          label: l10n.commonCloseAction,
                           icon: Icons.close,
                           onPressed: _dismiss,
                           colorScheme: colorScheme,
