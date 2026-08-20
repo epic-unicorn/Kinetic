@@ -383,8 +383,7 @@ class SyncOrchestrator {
           const PersonalNotesCompanion(syncState: Value('clean')),
         );
       } catch (e) {
-        // Log the error instead of silently failing
-        print('Error pushing note ${row.id}: $e');
+        if (kDebugMode) debugPrint('Error pushing note ${row.id}: $e');
         // Leave dirty for next cycle.
       }
     }
@@ -405,7 +404,11 @@ class SyncOrchestrator {
 
     // 3. Pull from server.
     final remoteList = await service.pullNotes();
-    print('Pulled ${remoteList.length} notes from server (personal + shared)');
+    if (kDebugMode) {
+      debugPrint(
+        'Pulled ${remoteList.length} notes from server (personal + shared)',
+      );
+    }
 
     final localList = await _db.select(_db.personalNotes).get();
     final remoteIds = remoteList.map((n) => n.uid).toSet();
@@ -417,9 +420,11 @@ class SyncOrchestrator {
       if (local.isShared &&
           local.syncState == 'clean' &&
           !remoteIds.contains(local.id)) {
-        print(
-          'Shared note deleted on partner device, removing locally: ${local.id}',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Shared note deleted on partner device, removing locally: ${local.id}',
+          );
+        }
         await (_db.delete(
           _db.personalNotes,
         )..where((t) => t.id.equals(local.id))).go();
@@ -436,18 +441,22 @@ class SyncOrchestrator {
       final existing = localList.where((r) => r.id == note.uid).firstOrNull;
       if (existing == null) {
         // New from server — insert.
-        print(
-          'Inserting new note from server: ${note.uid} (isShared=${note.isShared})',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Inserting new note from server: ${note.uid} (isShared=${note.isShared})',
+          );
+        }
         await _db
             .into(_db.personalNotes)
             .insertOnConflictUpdate(_icalNoteToCompanion(note, etag: null));
       } else if (existing.syncState != 'dirty' &&
           note.updatedAt.isAfter(existing.updatedAt)) {
         // Remote is newer and local has no pending changes — adopt remote.
-        print(
-          'Updating existing note from server: ${note.uid} (isShared=${note.isShared})',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            'Updating existing note from server: ${note.uid} (isShared=${note.isShared})',
+          );
+        }
         await (_db.update(_db.personalNotes)
               ..where((t) => t.id.equals(note.uid)))
             .write(_icalNoteToCompanion(note, etag: existing.webdavEtag));

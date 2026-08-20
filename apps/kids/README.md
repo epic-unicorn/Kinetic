@@ -6,7 +6,7 @@ Parent-app themes, reminder picker, notes list, and the suggestion engine do **n
 
 ## Setup
 
-1. Parent generates enrollment QR in Settings → Familie → Kinderen → "Kinderenapp koppelen"
+1. Parent generates enrollment QR in Settings → Family → Kids → "Link kids app"
 2. Parent shows QR to child
 3. Child opens Kinetic Kids app → scans QR → types the WebDAV password
 4. Kid device is enrolled with:
@@ -20,7 +20,7 @@ Parent-app themes, reminder picker, notes list, and the suggestion engine do **n
 | Screen | Description |
 |---|---|
 | **Home** | Pending and completed task lists. Tap to open detail. Sync button in the app bar triggers a manual WebDAV pull/push. |
-| **Task detail** | Category, priority, due date, XP reward, notes. "Klaar!" button completes the task (sets `status: completed`) and queues a sync push. |
+| **Task detail** | Category, priority, due date, XP reward, notes. **Done!** button completes the task (sets `status: completed`) and queues a sync push. |
 
 ## How sync works
 

@@ -31,9 +31,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   kinetic_webdav:
     path: ../../packages/webdav
+
+  kinetic_qr_scanner:
+    path: ../../packages/kinetic_qr_scanner
 
   # Database and ORM
   drift: ^2.26.1
@@ -44,9 +50,6 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
-
-  # QR scanning for family enrollment
-  mobile_scanner: ^6.0.0
 
   # Local notifications for task alerts
   flutter_local_notifications: ^18.0.1
@@ -71,6 +74,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
