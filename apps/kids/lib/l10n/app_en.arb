@@ -1,0 +1,74 @@
+{
+  "@@locale": "en",
+  "leaveFamilyTitle": "Leave family?",
+  "leaveFamilyMessage": "The link with the family will be removed. Your local tasks will be kept.",
+  "cancel": "Cancel",
+  "leave": "Leave",
+  "linkFamilyTitle": "Link family",
+  "scanQrCode": "Scan the QR code",
+  "scanQrInstructions": "Open your parent's Kinetic app, go to Settings → Family → Link kids app, scan the QR code, then enter the WebDAV password.",
+  "invalidQrCode": "Invalid QR code: {error}",
+  "@invalidQrCode": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrCodeFoundConfirm": "QR code found. Link this device to the family?",
+  "account": "Account",
+  "server": "Server",
+  "enterWebDavPassword": "Enter your parent's WebDAV password. It is not in the QR code.",
+  "webDavPassword": "WebDAV password",
+  "link": "Link",
+  "myTasks": "My Tasks",
+  "sync": "Sync",
+  "leaveFamily": "Leave family",
+  "errorWithDetails": "Error: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "allDone": "All done!",
+  "noTasksRightNow": "No tasks right now.",
+  "stillToDo": "To do",
+  "completed": "Completed",
+  "priorityUrgent": "Urgent",
+  "priorityHigh": "High",
+  "priorityNormal": "Normal",
+  "priorityLow": "Low",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "overdue": "Overdue",
+  "loading": "Loading...",
+  "error": "Error",
+  "taskNotFound": "Task not found: {error}",
+  "@taskNotFound": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "taskDetails": "Task details",
+  "details": "Details",
+  "dueDate": "Due date",
+  "noDueDate": "No due date",
+  "priority": "Priority",
+  "category": "Category",
+  "experience": "Experience",
+  "notes": "Notes",
+  "delete": "Delete",
+  "categoryHousehold": "Household",
+  "categorySchool": "School",
+  "categoryHealth": "Health",
+  "categoryShopping": "Shopping",
+  "categoryEntertainment": "Entertainment",
+  "categoryOther": "Other",
+  "notificationChannelName": "Tasks",
+  "notificationChannelDescription": "Notifications for new tasks from your parent.",
+  "newTaskNotificationTitle": "New task"
+}

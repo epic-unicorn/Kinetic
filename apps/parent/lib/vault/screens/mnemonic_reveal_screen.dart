@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/generated/app_localizations.dart';
 import '../vault_biometrics.dart';
 
 /// Confirms the device lock (or a warning) and shows [words].
@@ -10,6 +11,7 @@ Future<void> showMnemonicReveal({
   required Future<List<String>?> Function() loadWords,
   required String missingMessage,
 }) async {
+  final l10n = AppLocalizations.of(context);
   final words = await loadWords();
   if (!context.mounted) return;
   if (words == null || words.isEmpty) {
@@ -21,7 +23,7 @@ Future<void> showMnemonicReveal({
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            child: Text(l10n.commonOk),
           ),
         ],
       ),
@@ -30,7 +32,7 @@ Future<void> showMnemonicReveal({
   }
 
   final locked = await VaultBiometrics.authenticate(
-    reason: 'Toon de herstelzin op dit apparaat',
+    reason: l10n.vaultBiometricsReason,
   );
   if (!context.mounted) return;
   if (locked == false) return;
@@ -38,19 +40,16 @@ Future<void> showMnemonicReveal({
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Geen schermvergrendeling'),
-        content: const Text(
-          'Dit apparaat heeft geen Face ID, vingerafdruk of pincode. '
-          'Iedereen met toegang tot de app kan de woorden zien. Doorgaan?',
-        ),
+        title: Text(l10n.vaultNoScreenLockTitle),
+        content: Text(l10n.vaultNoScreenLockBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuleren'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Toch tonen'),
+            child: Text(l10n.vaultShowAnyway),
           ),
         ],
       ),
@@ -77,6 +76,7 @@ class MnemonicRevealScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Padding(
@@ -85,8 +85,7 @@ class MnemonicRevealScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Schrijf de woorden opnieuw op papier als je de kopie kwijt bent. '
-              'Laat dit scherm niet openstaan.',
+              l10n.vaultRevealWarning,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 16),
@@ -122,11 +121,11 @@ class MnemonicRevealScreen extends StatelessWidget {
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: words.join(' ')));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Herstelzin gekopieerd')),
+                  SnackBar(content: Text(l10n.vaultPhraseCopied)),
                 );
               },
               icon: const Icon(Icons.copy),
-              label: const Text('Kopiëren'),
+              label: Text(l10n.commonCopy),
             ),
           ],
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/generated/app_localizations.dart';
+
 class MnemonicPhraseField extends StatelessWidget {
   const MnemonicPhraseField({
     super.key,
@@ -12,6 +14,7 @@ class MnemonicPhraseField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return TextField(
       controller: controller,
       minLines: 3,
@@ -20,7 +23,7 @@ class MnemonicPhraseField extends StatelessWidget {
       enableSuggestions: false,
       textCapitalization: TextCapitalization.none,
       decoration: InputDecoration(
-        labelText: 'Herstelzin (12 woorden)',
+        labelText: l10n.vaultPhraseFieldLabel,
         alignLabelWithHint: true,
         errorText: errorText,
       ),
