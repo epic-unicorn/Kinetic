@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../db/app_database.dart';
 import '../db/full_backup_service.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_header.dart';
@@ -71,10 +72,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isConnected = _config != null;
     return Scaffold(
       appBar: AppBar(
-        title: AppHeader(title: 'Instellingen', centerTitle: false),
+        title: AppHeader(title: l10n.settingsTitle, centerTitle: false),
         centerTitle: false,
       ),
       body: ValueListenableBuilder<AppTheme>(
@@ -83,22 +85,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final iconColor = kColorTeal;
           return ListView(
             children: [
-              const _SectionHeader(label: 'Uiterlijk'),
+              _SectionHeader(label: l10n.settingsSectionAppearance),
               ListTile(
                 leading: Icon(Icons.palette_outlined, color: iconColor),
-                title: const Text('Thema'),
-                subtitle: Text(currentTheme.label),
+                title: Text(l10n.settingsTheme),
+                subtitle: Text(currentTheme.label(l10n)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showThemeSelector(context),
               ),
-              const _SectionHeader(label: 'Synchronisatie'),
+              _SectionHeader(label: l10n.settingsSectionSync),
               ListTile(
                 leading: Icon(Icons.cloud_outlined, color: iconColor),
-                title: const Text('WebDAV configureren'),
+                title: Text(l10n.settingsWebDavConfigure),
                 subtitle: Text(
                   isConnected
-                      ? 'Verbonden'
-                      : 'Verbind met een Nextcloud- of WebDAV-server',
+                      ? l10n.settingsWebDavConnected
+                      : l10n.settingsWebDavConnectHint,
                 ),
                 trailing: isConnected
                     ? Icon(Icons.check_circle, color: iconColor)
@@ -119,14 +121,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               if (isConnected) ...[
-                const _SectionHeader(label: 'Familie'),
+                _SectionHeader(label: l10n.settingsSectionFamily),
                 ListTile(
                   leading: Icon(Icons.people_outline, color: iconColor),
-                  title: const Text('Partner'),
+                  title: Text(l10n.settingsPartner),
                   subtitle: Text(
                     _partnerPaired
-                        ? 'Partner gekoppeld'
-                        : 'Koppel met je partner',
+                        ? l10n.settingsPartnerPaired
+                        : l10n.settingsPartnerLinkHint,
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
@@ -145,11 +147,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 ListTile(
                   leading: Icon(Icons.child_care, color: iconColor),
-                  title: const Text('Kinderen'),
+                  title: Text(l10n.settingsKids),
                   subtitle: Text(
                     _enrolledKidsCount > 0
-                        ? '$_enrolledKidsCount kind${_enrolledKidsCount == 1 ? '' : 'eren'} gekoppeld'
-                        : 'Koppel de kinderenapp',
+                        ? l10n.settingsKidsEnrolledCount(_enrolledKidsCount)
+                        : l10n.settingsKidsLinkHint,
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
@@ -166,41 +168,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
               ],
-              const _SectionHeader(label: 'Kluis'),
+              _SectionHeader(label: l10n.settingsSectionVault),
               ListTile(
                 leading: Icon(Icons.verified_user_outlined, color: iconColor),
-                title: const Text('Herstelzin controleren'),
-                subtitle: const Text(
-                  'Controleer of je de 12 woorden nog kent. We tonen ze niet.',
-                ),
+                title: Text(l10n.settingsVerifyPhrase),
+                subtitle: Text(l10n.settingsVerifyPhraseSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _verifyPhrase(),
               ),
               ListTile(
                 leading: Icon(Icons.visibility_outlined, color: iconColor),
-                title: const Text('Herstelzin tonen'),
-                subtitle: const Text(
-                  'Toon de 12 woorden op dit apparaat (schermvergrendeling).',
-                ),
+                title: Text(l10n.settingsShowPhrase),
+                subtitle: Text(l10n.settingsShowPhraseSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _revealPhrase(),
               ),
-              const _SectionHeader(label: 'Back-up & Herstel'),
+              _SectionHeader(label: l10n.settingsSectionBackup),
               ListTile(
                 leading: Icon(Icons.backup_outlined, color: iconColor),
-                title: const Text('Back-up exporteren'),
-                subtitle: const Text(
-                  'Versleuteld .kvault-bestand. De herstelzin zit er niet in.',
-                ),
+                title: Text(l10n.settingsExportBackup),
+                subtitle: Text(l10n.settingsExportBackupSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _exportFullBackup(),
               ),
               ListTile(
                 leading: Icon(Icons.restore_outlined, color: iconColor),
-                title: const Text('Back-up importeren'),
-                subtitle: const Text(
-                  'Herstel vanuit .kvault met je 12 woorden',
-                ),
+                title: Text(l10n.settingsImportBackup),
+                subtitle: Text(l10n.settingsImportBackupSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _importFullBackup(),
               ),
@@ -212,18 +206,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showThemeSelector(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Thema kiezen'),
+        title: Text(l10n.themeChoose),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final theme in AppTheme.values)
                 RadioListTile<AppTheme>(
-                  title: Text(theme.label),
-                  subtitle: Text(theme.description),
+                  title: Text(theme.label(l10n)),
+                  subtitle: Text(theme.description(l10n)),
                   value: theme,
                   groupValue: themeNotifier.value,
                   onChanged: (newTheme) async {

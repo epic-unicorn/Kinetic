@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
 
@@ -73,10 +74,11 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
     final scheme = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final qr = _qrPayload;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Familiesleutel delen'),
+        title: Text(l10n.familyKeyShareTitle),
         centerTitle: false,
         leading: BackButton(
           onPressed: () => Navigator.of(context).pop(_confirmed),
@@ -89,25 +91,23 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
             children: [
               Text(
                 _entropy == null
-                    ? 'Laat je partner deze QR-code scannen. Deze familiesleutel '
-                        'is van vóór de herstelzin en heeft geen 12 woorden.'
-                    : 'Laat je partner deze QR-code scannen, of de 12 woorden typen.',
+                    ? l10n.familyKeyShareLegacyBody
+                    : l10n.familyKeyShareBody,
                 style: tt.titleMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'De code bevat geen WebDAV-wachtwoord. Controleer samen de vingerafdruk.',
+                l10n.familyKeyShareNoPassword,
                 style: tt.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               if (qr == null)
-                const Padding(
-                  padding: EdgeInsets.all(24),
+                Padding(
+                  padding: const EdgeInsets.all(24),
                   child: Text(
-                    'Geen herstelzin-gegevens op dit apparaat. '
-                    'Maak een nieuwe familiesleutel.',
+                    l10n.familyKeyShareNoEntropy,
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -151,7 +151,7 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'Vingerafdruk  $_fingerprint',
+                    l10n.familyKeyShareFingerprint(_fingerprint!),
                     style: tt.titleSmall?.copyWith(
                       fontFamily: 'monospace',
                       letterSpacing: 1.5,
@@ -163,7 +163,7 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                 FilledButton.icon(
                   onPressed: () => setState(() => _confirmed = true),
                   icon: const Icon(Icons.check),
-                  label: const Text('Partner heeft gescand'),
+                  label: Text(l10n.familyKeyPartnerScanned),
                 )
               else
                 Row(
@@ -172,7 +172,7 @@ class _FamilyKeyShareScreenState extends State<FamilyKeyShareScreen> {
                     Icon(Icons.check_circle, color: kColorTeal, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Familiesleutel gedeeld',
+                      l10n.familyKeyShared,
                       style: tt.bodySmall?.copyWith(color: kColorTeal),
                     ),
                   ],

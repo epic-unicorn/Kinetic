@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import '../db/app_database.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../sync/sync_orchestrator.dart';
 import '../sync/webdav_config_repository.dart';
 import '../theme/app_themes.dart';
@@ -57,12 +58,13 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
     if (config?.familyKeyBytes != null) {
       fingerprint = await KineticVault.fingerprint(config!.familyKeyBytes!);
     }
-    if (mounted)
+    if (mounted) {
       setState(() {
         _config = config;
         _partnerPaired = paired;
         _fingerprint = fingerprint;
       });
+    }
   }
 
   Future<void> _loadPresence() async {
@@ -136,17 +138,16 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
   Future<void> _verifyFamilyPhrase() async {
     final stored = await widget.configRepo.loadFamilyKey();
     if (stored == null || !mounted) return;
+    final l10n = AppLocalizations.of(context);
     final ctrl = TextEditingController();
     final phrase = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Familiesleutel controleren'),
+        title: Text(l10n.partnerVerifyTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Vul de 12 woorden in. We tonen ze niet; we controleren alleen of ze kloppen.',
-            ),
+            Text(l10n.partnerVerifyBody),
             const SizedBox(height: 12),
             MnemonicPhraseField(controller: ctrl),
           ],
@@ -154,11 +155,11 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuleren'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Controleren'),
+            child: Text(l10n.commonVerify),
           ),
         ],
       ),
@@ -172,60 +173,50 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            ok
-                ? 'De familiesleutel klopt.'
-                : 'Deze herstelzin hoort niet bij deze familiesleutel.',
+            ok ? l10n.partnerVerifyOk : l10n.partnerVerifyMismatch,
           ),
         ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Deze herstelzin hoort niet bij deze familiesleutel.'),
-        ),
+        SnackBar(content: Text(l10n.partnerVerifyMismatch)),
       );
     }
   }
 
   Future<void> _revealFamilyPhrase() async {
+    final l10n = AppLocalizations.of(context);
     await showMnemonicReveal(
       context: context,
-      title: 'Familiesleutel',
+      title: l10n.familyCreateTitle,
       loadWords: () async {
         final entropy = await widget.configRepo.loadFamilyEntropy();
         if (entropy == null) return null;
         return KineticVault.mnemonicFromEntropy(entropy);
       },
-      missingMessage:
-          'Deze familiesleutel is van voor de herstelzin (0.2) of kwam binnen '
-          'als ruwe sleutel. We kunnen de woorden niet tonen. Maak een nieuwe '
-          'familiesleutel en laat partner en kinderen opnieuw koppelen.',
+      missingMessage: l10n.partnerRevealMissing,
     );
   }
 
   Future<void> _leaveFamily() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Partner ontkoppelen?'),
-        content: const Text(
-          'Alle gedeelde notities worden van dit apparaat verwijderd. '
-          'Je eigen taken en privé-notities blijven behouden. '
-          'Je partner verliest de verbinding niet — '
-          'alleen jij verlaat de gedeelde werkruimte.',
-        ),
+        title: Text(l10n.partnerUnlinkTitle),
+        content: Text(l10n.partnerUnlinkBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Annuleren'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(ctx).colorScheme.error,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Verlaten'),
+            child: Text(l10n.commonLeave),
           ),
         ],
       ),
@@ -248,6 +239,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final config = _config;
     final paired = _partnerPaired;
 
@@ -257,7 +249,7 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Partner'), centerTitle: false),
+      appBar: AppBar(title: Text(l10n.settingsPartner), centerTitle: false),
       body: ListView(
         children: [
           if (config != null) ...[
@@ -271,29 +263,23 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
             if (!paired) ...[
               ListTile(
                 leading: const Icon(Icons.people_outline, color: kColorTeal),
-                title: const Text('Familiesleutel delen via QR'),
-                subtitle: const Text(
-                  'Laat je partner de QR-code scannen om samen te werken.',
-                ),
+                title: Text(l10n.partnerShareViaQr),
+                subtitle: Text(l10n.partnerShareViaQrSubtitle),
                 trailing: const Icon(Icons.qr_code),
                 onTap: _exportFamilyKey,
               ),
               ListTile(
                 leading: const Icon(Icons.qr_code_scanner, color: kColorTeal),
-                title: const Text('Familiesleutel scannen'),
-                subtitle: const Text(
-                  'Scan de QR of typ de 12 woorden van je partner.',
-                ),
+                title: Text(l10n.partnerScanKey),
+                subtitle: Text(l10n.partnerScanKeySubtitle),
                 onTap: _importFamilyKey,
               ),
             ],
             if (paired) ...[
               ListTile(
                 leading: const Icon(Icons.qr_code, color: kColorTeal),
-                title: const Text('Familiesleutel opnieuw delen'),
-                subtitle: const Text(
-                  'Deel de sleutel met een nieuw apparaat van je partner.',
-                ),
+                title: Text(l10n.partnerReshareKey),
+                subtitle: Text(l10n.partnerReshareKeySubtitle),
                 trailing: const Icon(Icons.qr_code),
                 onTap: _exportFamilyKey,
               ),
@@ -302,10 +288,8 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                   Icons.verified_user_outlined,
                   color: kColorTeal,
                 ),
-                title: const Text('Herstelzin controleren'),
-                subtitle: const Text(
-                  'Controleer of je de 12 woorden van de familiesleutel nog kent.',
-                ),
+                title: Text(l10n.partnerVerifyPhrase),
+                subtitle: Text(l10n.partnerVerifyPhraseSubtitle),
                 onTap: _verifyFamilyPhrase,
               ),
               ListTile(
@@ -313,10 +297,8 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                   Icons.visibility_outlined,
                   color: kColorTeal,
                 ),
-                title: const Text('Familiesleutel tonen'),
-                subtitle: const Text(
-                  'Toon de 12 woorden op dit apparaat (schermvergrendeling).',
-                ),
+                title: Text(l10n.partnerShowKey),
+                subtitle: Text(l10n.partnerShowKeySubtitle),
                 onTap: _revealFamilyPhrase,
               ),
               ListTile(
@@ -325,12 +307,10 @@ class _PartnerSettingsScreenState extends State<PartnerSettingsScreen> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 title: Text(
-                  'Partner ontkoppelen',
+                  l10n.partnerUnlink,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
-                subtitle: const Text(
-                  'Verwijder de familiesleutel en gedeelde notities van dit apparaat.',
-                ),
+                subtitle: Text(l10n.partnerUnlinkSubtitle),
                 onTap: _leaveFamily,
               ),
             ],
@@ -354,6 +334,7 @@ class _PartnerStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
 
     // Determine stale state: warn if partner hasn't synced in 14 days.
@@ -364,7 +345,7 @@ class _PartnerStatusBanner extends StatelessWidget {
         partnerPresence != null &&
         now.difference(partnerPresence.lastSeen) > staleThreshold;
     final lastSeenText = partnerPresence != null
-        ? _formatLastSeen(now, partnerPresence.lastSeen)
+        ? _formatLastSeen(l10n, now, partnerPresence.lastSeen)
         : null;
 
     final statusColor = isStale
@@ -410,8 +391,8 @@ class _PartnerStatusBanner extends StatelessWidget {
                 children: [
                   Text(
                     paired
-                        ? 'Partner gekoppeld — familiesleutel aanwezig'
-                        : 'Partner niet gekoppeld — scan of deel de QR-code om te koppelen',
+                        ? l10n.partnerStatusPaired
+                        : l10n.partnerStatusUnpaired,
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: statusColor),
@@ -420,8 +401,8 @@ class _PartnerStatusBanner extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       isStale
-                          ? 'Waarschuwing: partner voor het laatst gezien $lastSeenText'
-                          : 'Partner voor het laatst gezien $lastSeenText',
+                          ? l10n.partnerLastSeenWarning(lastSeenText)
+                          : l10n.partnerLastSeen(lastSeenText),
                       style: Theme.of(
                         context,
                       ).textTheme.labelSmall?.copyWith(color: statusColor),
@@ -430,7 +411,7 @@ class _PartnerStatusBanner extends StatelessWidget {
                   if (fingerprint != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      'Vingerafdruk $fingerprint',
+                      l10n.partnerFingerprint(fingerprint!),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontFamily: 'monospace',
                         letterSpacing: 1.2,
@@ -447,12 +428,16 @@ class _PartnerStatusBanner extends StatelessWidget {
     );
   }
 
-  static String _formatLastSeen(DateTime now, DateTime lastSeen) {
+  static String _formatLastSeen(
+    AppLocalizations l10n,
+    DateTime now,
+    DateTime lastSeen,
+  ) {
     final diff = now.difference(lastSeen);
-    if (diff.inMinutes < 2) return 'zojuist';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} minuten geleden';
-    if (diff.inHours < 24) return '${diff.inHours} uur geleden';
-    if (diff.inDays == 1) return 'gisteren';
-    return '${diff.inDays} dagen geleden';
+    if (diff.inMinutes < 2) return l10n.relativeJustNow;
+    if (diff.inMinutes < 60) return l10n.relativeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.relativeHoursAgo(diff.inHours);
+    if (diff.inDays == 1) return l10n.relativeYesterday;
+    return l10n.relativeDaysAgo(diff.inDays);
   }
 }
