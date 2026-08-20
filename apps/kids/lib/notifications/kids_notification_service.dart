@@ -1,29 +1,43 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../l10n/generated/app_localizations.dart';
 
 /// Minimal notification service for the kids app.
 ///
 /// Shows a notification when the parent sends a new task.
 class KidsNotificationService {
   static const _kChannelId = 'kinetic_kids_tasks';
-  static const _kChannelName = 'Opdrachten';
-  static const _kChannelDesc = 'Meldingen voor nieuwe opdrachten van de ouder.';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const _kNotifDetails = NotificationDetails(
-    android: AndroidNotificationDetails(
-      _kChannelId,
-      _kChannelName,
-      channelDescription: _kChannelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    ),
-  );
+  NotificationDetails? _notifDetails;
+
+  Locale _resolveLocale() {
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    for (final supported in AppLocalizations.supportedLocales) {
+      if (supported.languageCode == locale.languageCode) {
+        return supported;
+      }
+    }
+    return AppLocalizations.supportedLocales.first;
+  }
 
   /// Must be called once at app start before showing any notifications.
   Future<void> initialize() async {
+    final l10n = lookupAppLocalizations(_resolveLocale());
+    _notifDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _kChannelId,
+        l10n.notificationChannelName,
+        channelDescription: l10n.notificationChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+    );
+
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
@@ -37,13 +51,22 @@ class KidsNotificationService {
         ?.requestNotificationsPermission();
   }
 
-  /// Shows a "Nieuwe opdracht" notification for the given [taskTitle].
-  Future<void> showNewTaskNotification(String taskTitle) async {
+  /// Shows a new-task notification for the given [taskTitle].
+  Future<void> showNewTaskNotification(
+    String taskTitle, {
+    String? title,
+  }) async {
+    final details = _notifDetails;
+    if (details == null) return;
+
+    final resolvedTitle = title ??
+        lookupAppLocalizations(_resolveLocale()).newTaskNotificationTitle;
+
     await _plugin.show(
       taskTitle.hashCode,
-      'Nieuwe opdracht',
+      resolvedTitle,
       taskTitle,
-      _kNotifDetails,
+      details,
     );
   }
 }
