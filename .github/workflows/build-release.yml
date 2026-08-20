@@ -30,7 +30,7 @@ jobs:
     if: "!endsWith(github.ref_name, '-kids') && !endsWith(github.ref_name, '-parent')"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -132,7 +132,7 @@ jobs:
     if: "!endsWith(github.ref_name, '-kids') && !endsWith(github.ref_name, '-parent')"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -237,7 +237,7 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract version from tag
         id: version
