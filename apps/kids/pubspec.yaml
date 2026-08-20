@@ -41,9 +41,12 @@ dependencies:
   kinetic_qr_scanner:
     path: ../../packages/kinetic_qr_scanner
 
-  # Database and ORM
+  # Database and ORM — encrypted via sqlite3mc hooks at workspace root
   drift: ^2.26.1
-  drift_flutter: ^0.2.4
+  sqlite3: ^3.0.0
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  flutter_secure_storage: ^9.2.4
 
   # UUID generation for domain models
   uuid: ^4.6.0

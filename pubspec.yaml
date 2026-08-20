@@ -12,3 +12,10 @@ workspace:
 
 dev_dependencies:
   melos: ^7.5.1
+
+# Bundle SQLite3MultipleCiphers so on-disk Drift DBs can be encrypted.
+# See https://drift.simonbinder.eu/platforms/encryption/
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

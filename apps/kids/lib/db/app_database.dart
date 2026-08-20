@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
 
+import 'encrypted_open.dart';
 import 'tables.dart';
 
 part 'app_database.drift.dart';
@@ -20,7 +20,7 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'kids_app');
+    return openEncryptedDatabase(name: 'kids_app');
   }
 
   /// Get all tasks

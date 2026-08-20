@@ -9,3 +9,7 @@
 
 # Keep the flutter_local_notifications receiver and its dependencies.
 -keep class com.dexterous.** { *; }
+
+# SQLite3MultipleCiphers / JNI used by package:sqlite3 encryption.
+-keep class com.jetradarmobile.sqlite.** { *; }
+-dontwarn org.sqlite.**

@@ -48,14 +48,18 @@ class WebDavConfigRepository {
     );
     final familyKeyBytes = Uint8List.fromList(base64.decode(familyKeyBase64));
 
-    return SyncConfig(
-      serverUrl: serverUrl,
-      username: username,
-      password: password,
-      parentId: '',
-      personalKeyBytes: personalKeyBytes,
-      familyKeyBytes: familyKeyBytes,
-    );
+    try {
+      return SyncConfig(
+        serverUrl: WebDavUrl.coerceHttps(serverUrl),
+        username: username,
+        password: password,
+        parentId: '',
+        personalKeyBytes: personalKeyBytes,
+        familyKeyBytes: familyKeyBytes,
+      );
+    } on FormatException {
+      return null;
+    }
   }
 
   /// Persists the kids enrollment credentials from a scanned QR payload.
@@ -66,7 +70,10 @@ class WebDavConfigRepository {
     required Uint8List familyKey,
     required String kidId,
   }) async {
-    await _store.write(key: _kServerUrl, value: serverUrl);
+    await _store.write(
+      key: _kServerUrl,
+      value: WebDavUrl.coerceHttps(serverUrl),
+    );
     await _store.write(key: _kUsername, value: username);
     await _store.write(key: _kPassword, value: password);
     await _store.write(key: _kFamilyKey, value: base64.encode(familyKey));

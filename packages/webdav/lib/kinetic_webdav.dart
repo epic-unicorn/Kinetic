@@ -7,6 +7,7 @@ export 'src/flutter_secure_key_value_store.dart';
 
 // Configuration
 export 'src/sync_config.dart';
+export 'src/webdav_url.dart';
 
 // WebDAV HTTP client
 export 'src/webdav_client.dart';
