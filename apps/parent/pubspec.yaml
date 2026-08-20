@@ -35,6 +35,9 @@ dependencies:
   kinetic_webdav:
     path: ../../packages/webdav
 
+  kinetic_qr_scanner:
+    path: ../../packages/kinetic_qr_scanner
+
   cupertino_icons: ^1.0.8
 
   # Local SQLite persistence (personal todos)
@@ -57,7 +60,6 @@ dependencies:
 
   # QR code display and scanning for partner key sharing
   qr_flutter: ^4.1.0
-  mobile_scanner: ^6.0.0
 
   # Device lock before showing a recovery phrase
   local_auth: ^2.3.0
