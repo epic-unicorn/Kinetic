@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../db/app_database.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../sync/webdav_config_repository.dart';
 import '../vault_key_rotation.dart';
 import '../vault_repository.dart';
@@ -24,6 +25,7 @@ class VaultMigrateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -39,18 +41,13 @@ class VaultMigrateScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Nieuwe herstelzin',
+                l10n.vaultMigrateTitle,
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Je huidige sleutel is willekeurig (versie 0.2) en kan niet in '
-                '12 woorden. Taken en notities op dit apparaat blijven staan. '
-                'We maken een nieuwe herstelzin. Bij de volgende sync worden '
-                'persoonlijke bestanden opnieuw versleuteld. De familiesleutel '
-                'blijft hetzelfde — partner en kinderen hoeven niet opnieuw te '
-                'koppelen.',
+                l10n.vaultMigrateBody,
                 style: Theme.of(context).textTheme.bodyLarge,
                 textAlign: TextAlign.center,
               ),
@@ -62,10 +59,8 @@ class VaultMigrateScreen extends StatelessWidget {
                       builder: (_) => VaultCreateScreen(
                         vaultRepo: vaultRepo,
                         onUnlocked: onUnlocked,
-                        confirmLabel: 'Nieuwe herstelzin activeren',
-                        headline:
-                            'Schrijf deze nieuwe 12 woorden op. De oude sleutel '
-                            'werkt daarna niet meer voor WebDAV of een .kvault.',
+                        confirmLabel: l10n.vaultMigrateActivate,
+                        headline: l10n.vaultMigrateHeadline,
                         afterUnlock: () async {
                           await markPersonalItemsDirty(db);
                           await rewriteRemoteAfterPersonalKeyRotation(
@@ -76,7 +71,7 @@ class VaultMigrateScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('Doorgaan'),
+                child: Text(l10n.commonContinue),
               ),
             ],
           ),
