@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parent/l10n/generated/app_localizations.dart';
 import 'package:parent/theme/app_themes.dart';
 
 void main() {
   group('AppTheme enum', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     test('all theme variants are defined', () {
       expect(AppTheme.values, hasLength(4));
       expect(AppTheme.light, isNotNull);
@@ -13,15 +16,15 @@ void main() {
     });
 
     test('theme labels are user-friendly', () {
-      expect(AppTheme.light.label, equals('Licht'));
-      expect(AppTheme.sand.label, equals('Zand'));
-      expect(AppTheme.dusk.label, equals('Schemer'));
-      expect(AppTheme.night.label, equals('Nacht'));
+      expect(AppTheme.light.label(l10n), equals('Light'));
+      expect(AppTheme.sand.label(l10n), equals('Sand'));
+      expect(AppTheme.dusk.label(l10n), equals('Dusk'));
+      expect(AppTheme.night.label(l10n), equals('Night'));
     });
 
     test('all themes have different labels', () {
       final themes = AppTheme.values;
-      final labels = themes.map((t) => t.label).toList();
+      final labels = themes.map((t) => t.label(l10n)).toList();
       expect(labels.toSet().length, equals(labels.length));
     });
   });

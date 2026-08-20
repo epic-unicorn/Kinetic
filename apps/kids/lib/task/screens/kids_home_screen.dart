@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../db/app_database.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../sync/sync_orchestrator.dart';
 import '../../theme/app_header.dart';
 import '../models/kids_task.dart';
@@ -50,10 +52,11 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: AppHeaderKids(title: 'Mijn Opdrachten'),
+        title: AppHeaderKids(title: l10n.myTasks),
         actions: [
           if (widget.orchestrator != null) ...[
             if (_syncing)
@@ -69,7 +72,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
               IconButton(
                 icon: const Icon(Icons.sync),
                 onPressed: _sync,
-                tooltip: 'Synchroniseren',
+                tooltip: l10n.sync,
               ),
           ],
           if (widget.onLeaveFamily != null)
@@ -78,13 +81,13 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
                 if (value == 'leave') widget.onLeaveFamily!();
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'leave',
                   child: Row(
                     children: [
-                      Icon(Icons.logout, size: 18),
-                      SizedBox(width: 8),
-                      Text('Familie verlaten'),
+                      const Icon(Icons.logout, size: 18),
+                      const SizedBox(width: 8),
+                      Text(l10n.leaveFamily),
                     ],
                   ),
                 ),
@@ -100,7 +103,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Fout: ${snapshot.error}'));
+            return Center(child: Text(l10n.errorWithDetails(snapshot.error!)));
           }
 
           final tasks = snapshot.data ?? [];
@@ -160,14 +163,14 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
                           Icon(Icons.celebration, size: 64, color: scheme.primary),
                           const SizedBox(height: 16),
                           Text(
-                            'Alles klaar!',
+                            l10n.allDone,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               color: scheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Geen opdrachten op dit moment.',
+                            l10n.noTasksRightNow,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -191,7 +194,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
               xpHeader,
               if (pendingTasks.isNotEmpty) ...[
                 Text(
-                  'Nog te doen',
+                  l10n.stillToDo,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -200,7 +203,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
               ],
               if (completedTasks.isNotEmpty) ...[
                 Text(
-                  'Afgerond',
+                  l10n.completed,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -215,6 +218,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
 
   Widget _buildTaskCard(BuildContext context, KidsTask task) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final priorityColor = _getPriorityColor(scheme, task.priority);
 
     return Card(
@@ -267,7 +271,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      _priorityLabel(task.priority),
+                      _priorityLabel(l10n, task.priority),
                       style: TextStyle(
                         fontSize: 11,
                         color: priorityColor,
@@ -279,7 +283,7 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
                   // Due date
                   if (task.dueDate != null)
                     Text(
-                      _formatDueDate(task.dueDate!),
+                      _formatDueDate(l10n, task.dueDate!),
                       style: TextStyle(
                         fontSize: 11,
                         color: scheme.onSurfaceVariant,
@@ -329,29 +333,29 @@ class _KidsHomeScreenState extends State<KidsHomeScreen> {
     };
   }
 
-  String _priorityLabel(TaskPriority priority) {
+  String _priorityLabel(AppLocalizations l10n, TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.urgent => 'Urgent',
-      TaskPriority.high => 'Hoog',
-      TaskPriority.normal => 'Normaal',
-      TaskPriority.low => 'Laag',
+      TaskPriority.urgent => l10n.priorityUrgent,
+      TaskPriority.high => l10n.priorityHigh,
+      TaskPriority.normal => l10n.priorityNormal,
+      TaskPriority.low => l10n.priorityLow,
     };
   }
 
-  String _formatDueDate(DateTime date) {
+  String _formatDueDate(AppLocalizations l10n, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
     final dueDay = DateTime(date.year, date.month, date.day);
 
     if (dueDay == today) {
-      return 'Vandaag';
+      return l10n.today;
     } else if (dueDay == tomorrow) {
-      return 'Morgen';
+      return l10n.tomorrow;
     } else if (dueDay.isBefore(today)) {
-      return 'Verlopen';
+      return l10n.overdue;
     } else {
-      return '${dueDay.day}/${dueDay.month}';
+      return DateFormat.Md().format(dueDay);
     }
   }
 }

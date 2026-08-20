@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kinetic_webdav/kinetic_webdav.dart';
 
 import 'db/app_database.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'notifications/notification_service.dart';
 import 'partner/services/partner_proposal_repository.dart';
 import 'settings/settings_repository.dart';
@@ -58,6 +59,8 @@ class KineticParentApp extends StatelessWidget {
           title: 'Kinetic Link',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(theme),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: VaultGate(
             db: db,
             settingsRepo: settingsRepo,
@@ -336,21 +339,22 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                   ),
                 ];
 
-                const destinations = <NavigationDestination>[
+                final l10n = AppLocalizations.of(context);
+                final destinations = <NavigationDestination>[
                   NavigationDestination(
-                    icon: Icon(Icons.check_circle_outline),
-                    selectedIcon: Icon(Icons.check_circle),
-                    label: 'Taken',
+                    icon: const Icon(Icons.check_circle_outline),
+                    selectedIcon: const Icon(Icons.check_circle),
+                    label: l10n.navTasks,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.note_outlined),
-                    selectedIcon: Icon(Icons.note),
-                    label: 'Notities',
+                    icon: const Icon(Icons.note_outlined),
+                    selectedIcon: const Icon(Icons.note),
+                    label: l10n.navNotes,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.settings_outlined),
-                    selectedIcon: Icon(Icons.settings),
-                    label: 'Instellingen',
+                    icon: const Icon(Icons.settings_outlined),
+                    selectedIcon: const Icon(Icons.settings),
+                    label: l10n.navSettings,
                   ),
                 ];
 
@@ -369,7 +373,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                             vertical: 8,
                           ),
                           content: Text(
-                            'Meldingenservice kon niet starten: $initErr',
+                            l10n.notifServiceFailed(initErr),
                           ),
                           leading: const Icon(
                             Icons.error_outline,
@@ -378,7 +382,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                           actions: [
                             TextButton(
                               onPressed: () => notifInitError.value = null,
-                              child: const Text('Sluiten'),
+                              child: Text(l10n.commonClose),
                             ),
                           ],
                         ),
@@ -388,9 +392,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          content: const Text(
-                            'Meldingen zijn uitgeschakeld. Zet ze aan in Instellingen om herinneringen te ontvangen.',
-                          ),
+                          content: Text(l10n.notifDisabledBanner),
                           leading: const Icon(Icons.notifications_off_outlined),
                           actions: [
                             TextButton(
@@ -404,7 +406,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                                     )
                                     .catchError((_) {});
                               },
-                              child: const Text('Instellingen'),
+                              child: Text(l10n.navSettings),
                             ),
                           ],
                         ),
@@ -414,9 +416,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          content: const Text(
-                            'Precieze herinneringen zijn uitgeschakeld. Sta "Alarmen & herinneringen" toe voor exacte tijden.',
-                          ),
+                          content: Text(l10n.notifExactAlarmBanner),
                           leading: const Icon(Icons.alarm_off_outlined),
                           actions: [
                             TextButton(
@@ -430,7 +430,7 @@ class _RootShellState extends State<_RootShell> with WidgetsBindingObserver {
                                     )
                                     .catchError((_) {});
                               },
-                              child: const Text('Instellingen'),
+                              child: Text(l10n.navSettings),
                             ),
                           ],
                         ),
