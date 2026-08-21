@@ -1,4 +1,4 @@
-<!-- Kinetic Kids app icon — source of truth. Edit here, then regenerate rasters. -->
+<!-- Kinetic Kids — geometric vector K (square terminals, kinetic gap). -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Kinetic Kids">
   <title>Kinetic Kids</title>
   <defs>
@@ -8,5 +8,11 @@
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
-  <path fill="#FFFFFF" d="M280 200 H420 V430 L680 200 H840 L530 512 L840 824 H680 L420 594 V824 H280 Z"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="118" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M320 220 V804"/>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="108" stroke-linecap="butt" stroke-linejoin="miter">
+    <path d="M400 500 L740 250"/>
+    <path d="M400 524 L740 774"/>
+  </g>
 </svg>
