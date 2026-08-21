@@ -1,7 +1,7 @@
 # Kinetic brand assets
 
-Source of truth for app icons (bold white **K** on a colored tile — same look as
-the Android launcher and in-app headers):
+Source of truth for app icons (bold white lowercase **k** on a colored tile — same
+form as the classic Android launcher, drawn as a sharp vector):
 
 | File | Role |
 |------|------|
