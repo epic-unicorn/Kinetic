@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="public/logo-mark.svg" alt="Kinetic Link logo" width="96" height="96" />
+  <img src="brand/logo-parent.svg" alt="Kinetic Link" width="88" height="88" />
+  &nbsp;&nbsp;
+  <img src="brand/logo-kids.svg" alt="Kinetic Kids" width="88" height="88" />
 </p>
 
 <h1 align="center">Kinetic Link</h1>
@@ -7,6 +9,10 @@
 <p align="center">
   <strong>Tasks. Notes. Family.</strong><br>
   Local-first family task management — encrypted on your device, optional WebDAV sync.
+</p>
+
+<p align="center">
+  <em>Kinetic Link</em> (parent) · <em>Kinetic Kids</em> (chores)
 </p>
 
 <p align="center">

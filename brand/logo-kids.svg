@@ -1,0 +1,12 @@
+<!-- Kinetic Kids app icon — source of truth. Edit here, then regenerate rasters. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Kinetic Kids">
+  <title>Kinetic Kids</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
+  <path fill="#FFFFFF" d="M280 200 H420 V430 L680 200 H840 L530 512 L840 824 H680 L420 594 V824 H280 Z"/>
+</svg>

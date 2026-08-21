@@ -1,39 +1,22 @@
 import 'package:flutter/material.dart';
 
-/// Kinetic app logo/icon widget for use in headers (kids version - fun colors)
+/// Kinetic Kids logo for headers — same art as the Android launcher.
 class KineticLogoKids extends StatelessWidget {
   final double size;
   final Color? color;
 
-  const KineticLogoKids({Key? key, this.size = 28, this.color})
-    : super(key: key);
+  const KineticLogoKids({super.key, this.size = 28, this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFF97316), // Orange
-            const Color(0xFFEC4899), // Pink
-          ],
-        ),
-        borderRadius: BorderRadius.circular(size * 0.15),
-      ),
-      child: Center(
-        child: Text(
-          'K',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size * 0.6,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.5,
-          ),
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size * 0.22),
+      child: Image.asset(
+        'assets/icons/app_icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       ),
     );
   }
@@ -47,12 +30,12 @@ class AppHeaderKids extends StatelessWidget {
   final Widget? leading;
 
   const AppHeaderKids({
-    Key? key,
+    super.key,
     required this.title,
     this.centerTitle = false,
     this.actions,
     this.leading,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
