@@ -6,27 +6,26 @@ f-droid.org requires a merge request against
 
 ## Before opening the GitLab MR
 
-1. Merge this prep PR to `main`.
-2. Create an annotated release tag matching the metadata commit:
+1. Merge the screenshots / metadata PR to `main` (icons already on main).
+2. Create an annotated release tag matching the metadata `commit:` field:
    ```bash
    git checkout main && git pull
-   git tag -a v0.3.0 -m "Kinetic 0.3.0 for F-Droid"
-   git push origin v0.3.0
+   git tag -a v0.3.3 -m "Kinetic 0.3.3 for F-Droid"
+   git push origin v0.3.3
    ```
 3. Confirm Flutter **3.44.1** builds both APKs locally:
    ```bash
    ./tool/fdroid_build.sh parent
    ./tool/fdroid_build.sh kids
    ```
-4. Replace illustrative phoneScreenshots under
-   `metadata/*/en-US/images/phoneScreenshots/` with real device captures
-   before or during the fdroiddata review if reviewers ask.
+4. Phone screenshots live under
+   `metadata/*/en-US/images/phoneScreenshots/` (`01.png`, `02.png`, …).
 5. Copy into an fdroiddata fork:
    - `metadata/net.moonbaseone.kinetic.parent.yml`
    - `metadata/net.moonbaseone.kinetic.kids.yml`
    - `metadata/net.moonbaseone.kinetic.parent/en-US/` (screenshots + icon)
    - `metadata/net.moonbaseone.kinetic.kids/en-US/` (screenshots + icon)
-5. Open one GitLab MR (or two) against `fdroid/fdroiddata` `master`.
+6. Open one GitLab MR (or two) against `fdroid/fdroiddata` `master`.
 
 ## Reproducible builds
 
