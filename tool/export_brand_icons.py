@@ -1,7 +1,6 @@
-"""Export brand icon PNG masters (no external SVG renderer required)."""
+"""Export brand icon PNG masters matching the classic header K."""
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -9,7 +8,8 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 BRAND = ROOT / "brand"
 SIZE = 1024
-RX = 120
+RX = 225  # ~22% like original logo-mark
+STROKE = 92
 
 
 def lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
@@ -38,37 +38,22 @@ def rounded_mask(size: int, radius: int) -> Image.Image:
     return mask
 
 
-def thick_segment(
-    draw: ImageDraw.ImageDraw,
-    x0: float,
-    y0: float,
-    x1: float,
-    y1: float,
-    width: float,
-    fill: tuple[int, int, int, int],
-) -> None:
-    """Axis-aligned square-capped thick line as a parallelogram."""
-    dx, dy = x1 - x0, y1 - y0
-    length = math.hypot(dx, dy) or 1.0
-    ux, uy = dx / length, dy / length
-    px, py = -uy * (width / 2.0), ux * (width / 2.0)
-    draw.polygon(
-        [
-            (x0 + px, y0 + py),
-            (x1 + px, y1 + py),
-            (x1 - px, y1 - py),
-            (x0 - px, y0 - py),
-        ],
-        fill=fill,
-    )
-
-
 def draw_k(draw: ImageDraw.ImageDraw) -> None:
+    """Classic Kinetic K: round-capped stem + chevron arms meeting at mid-stem."""
     white = (255, 255, 255, 255)
-    # Geometric stroked K with square terminals and a small kinetic gap at the joint.
-    thick_segment(draw, 320, 220, 320, 804, 118, white)
-    thick_segment(draw, 400, 500, 740, 250, 108, white)
-    thick_segment(draw, 400, 524, 740, 774, 108, white)
+    r = STROKE // 2
+    # Caps at all terminals + joint
+    for cx, cy in (
+        (307, 246),
+        (307, 778),
+        (307, 512),
+        (676, 246),
+        (676, 778),
+    ):
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=white)
+    draw.line([(307, 246), (307, 778)], fill=white, width=STROKE)
+    draw.line([(307, 512), (676, 246)], fill=white, width=STROKE)
+    draw.line([(307, 512), (676, 778)], fill=white, width=STROKE)
 
 
 def render(

@@ -1,4 +1,4 @@
-<!-- Kinetic Link — geometric vector K (square terminals, kinetic gap). -->
+<!-- Kinetic Link — hi-res of the classic header/launcher K (round caps, no link node). -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Kinetic Link">
   <title>Kinetic Link</title>
   <defs>
@@ -7,13 +7,12 @@
       <stop offset="100%" stop-color="#2563EB"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
-  <!-- Stem + arms as thick stroked segments (square caps via stroke-linecap="butt") -->
-  <g fill="none" stroke="#FFFFFF" stroke-width="118" stroke-linecap="butt" stroke-linejoin="miter">
-    <path d="M320 220 V804"/>
-  </g>
-  <g fill="none" stroke="#FFFFFF" stroke-width="108" stroke-linecap="butt" stroke-linejoin="miter">
-    <path d="M400 500 L740 250"/>
-    <path d="M400 524 L740 774"/>
+  <!-- rx ≈ 22% like original 100×100 mark (22/100) -->
+  <rect width="1024" height="1024" rx="225" fill="url(#bg)"/>
+  <!-- Same construction as public/logo-mark.svg K, scaled ×10.24, without link node -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="92" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M307 246 V778"/>
+    <path d="M307 512 L676 246"/>
+    <path d="M307 512 L676 778"/>
   </g>
 </svg>

@@ -1,4 +1,4 @@
-<!-- Kinetic Kids — geometric vector K (square terminals, kinetic gap). -->
+<!-- Kinetic Kids — same classic K geometry, kids gradient. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Kinetic Kids">
   <title>Kinetic Kids</title>
   <defs>
@@ -7,12 +7,10 @@
       <stop offset="100%" stop-color="#EC4899"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
-  <g fill="none" stroke="#FFFFFF" stroke-width="118" stroke-linecap="butt" stroke-linejoin="miter">
-    <path d="M320 220 V804"/>
-  </g>
-  <g fill="none" stroke="#FFFFFF" stroke-width="108" stroke-linecap="butt" stroke-linejoin="miter">
-    <path d="M400 500 L740 250"/>
-    <path d="M400 524 L740 774"/>
+  <rect width="1024" height="1024" rx="225" fill="url(#bg)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="92" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M307 246 V778"/>
+    <path d="M307 512 L676 246"/>
+    <path d="M307 512 L676 778"/>
   </g>
 </svg>
