@@ -34,7 +34,7 @@ dependencies:
 
   flutter_localizations:
     sdk: flutter
-  intl: any
+  intl: 0.20.3
 
   kinetic_webdav:
     path: ../../packages/webdav
