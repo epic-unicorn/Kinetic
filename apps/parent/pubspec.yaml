@@ -70,7 +70,7 @@ dependencies:
   qr_flutter: ^4.1.0
 
   # Device lock before showing a recovery phrase
-  local_auth: ^2.3.0
+  local_auth: ^3.0.2
 
   # File picker for database export/import
   file_picker: ^8.0.0
