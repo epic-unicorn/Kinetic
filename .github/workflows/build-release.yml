@@ -285,7 +285,7 @@ jobs:
           echo "PARENT_CERT_SHA256=$CERT_FP" >> $GITHUB_ENV
 
       - name: Create Kids App Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}-kids
           name: Kids App ${{ github.ref_name }}
@@ -308,7 +308,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Parent App Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}-parent
           name: Parent App ${{ github.ref_name }}
